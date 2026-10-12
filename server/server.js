@@ -2,14 +2,15 @@ const dns = require("node:dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const express = require("express");
 const dotenv = require("dotenv");
-dotenv.config({ path: "./config.env" });
+dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
 const server = express();
-// const userRoutes = require("./routes/userRoutes")
+const userRoutes = require("./routes/userRoute")
 const session = require("express-session");
-// Specify the path to the environment variable file 'config.env'
+// Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
+server.use(express.json())
 server.use(
   session({
     secret: process.env.SECRET,
@@ -18,7 +19,7 @@ server.use(
   }),
 );
 //Routes
-// server.use("/",homeRoutes)
+server.use("/user",userRoutes)
 
 async function connectDB() {
   try {
