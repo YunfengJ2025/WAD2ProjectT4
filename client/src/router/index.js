@@ -1,21 +1,42 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      redirect: '/signin',
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/signin',
+      name: 'sign-in',
+      component: () => import('../views/AuthView.vue'),
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/AuthView.vue'),
+      props: { createAccount: true },
+    },
+    {
+      path: '/plants',
+      name: 'my-plants',
+      component: () => import('../views/plant/MyPlantsView.vue'),
+    },
+    {
+      path: '/plants/new',
+      name: 'plant-new',
+      component: () => import('../views/plant/PlantFormView.vue'),
+    },
+    {
+      path: '/plants/:plantId',
+      name: 'plant-detail',
+      component: () => import('../views/plant/PlantDetailView.vue'),
+    },
+    {
+      path: '/plants/:plantId/edit',
+      name: 'plant-edit',
+      component: () => import('../views/plant/PlantFormView.vue'),
     },
   ],
 })

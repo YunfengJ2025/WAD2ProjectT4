@@ -46,6 +46,7 @@ exports.register = async (req, res) => {
     }
 
     const user = await registerUser(body);
+    req.session.userId = user.userId;
     res.status(201).json({ user: toAuthJSON(user) });
   } catch (err) {
     handleError(err, res);
@@ -70,6 +71,8 @@ exports.login = async (req, res) => {
 
     const { email, password } = body; // add this line
     const user = await loginUser(email, password);
+    // Remembered for later requests; see middleware/requireUser.js
+    req.session.userId = user.userId;
     res.json({ user: toAuthJSON(user) });
   } catch (err) {
     handleError(err, res);
