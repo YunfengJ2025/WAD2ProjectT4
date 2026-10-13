@@ -171,7 +171,6 @@ async function confirmDelete() {
             <option value="all">All</option>
             <option value="balcony">Balcony</option>
             <option value="corridor">Corridor</option>
-            <option value="indoor">Indoor</option>
           </select>
         </div>
         <div class="status-tabs" role="group" aria-label="Filter by watering status">

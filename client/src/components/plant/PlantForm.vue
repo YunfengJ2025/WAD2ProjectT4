@@ -20,7 +20,6 @@ const SUNLIGHT_OPTIONS = [
 const PLACEMENT_OPTIONS = [
   { value: 'balcony', label: 'Balcony' },
   { value: 'corridor', label: 'Corridor' },
-  { value: 'indoor', label: 'Indoor' },
 ]
 // Field order here is the order we scroll to the first error.
 const FIELDS = ['plantName', 'photo', 'frequencyDays', 'sunlight', 'plantLocation', 'notes', 'lastWateredAt']
@@ -65,7 +64,10 @@ const validators = {
     }
   },
   sunlight: () => (form.sunlight ? undefined : 'Please choose how much sun it needs'),
-  plantLocation: () => (form.plantLocation ? undefined : 'Please choose where the plant is kept'),
+  plantLocation: () =>
+    PLACEMENT_OPTIONS.some((option) => option.value === form.plantLocation)
+      ? undefined
+      : 'Please choose Balcony or Corridor',
   notes: () =>
     form.notes.length > NOTES_MAX ? `Notes cannot exceed ${NOTES_MAX} characters` : undefined,
   lastWateredAt: () =>

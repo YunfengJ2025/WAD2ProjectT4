@@ -11,7 +11,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['water', 'delete'])
 
-const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor', indoor: 'Indoor' }
+const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor' }
 const SUNLIGHT = { full: 'Full sun', partial: 'Partial sun', shade: 'Shade' }
 
 const status = computed(() => getWateringStatus(props.plant))

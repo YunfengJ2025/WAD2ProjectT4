@@ -1,3 +1,5 @@
+import router from '@/router'
+
 const BASE = '/api/plants'
 
 // Throws an Error with .status and .errors ({ field: message }) on failure.
@@ -11,6 +13,9 @@ async function request(url, options = {}) {
 
   const body = res.status === 204 ? null : await res.json().catch(() => null)
   if (!res.ok) {
+    if (res.status === 401) {
+      await router.replace('/signin')
+    }
     const err = new Error(body?.message || `Request failed (${res.status})`)
     err.status = res.status
     err.errors = body?.errors || {}

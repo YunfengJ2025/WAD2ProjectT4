@@ -66,8 +66,8 @@ const plantSchema = new mongoose.Schema(
             type: String,
             required: [true, "Plant placement is required"],
             enum: {
-                values: ["balcony", "corridor", "indoor"],
-                message: "Plant placement must be balcony, corridor or indoor",
+                values: ["balcony", "corridor"],
+                message: "Plant placement must be balcony or corridor",
             },
         },
         rainExposed: { type: Boolean, default: false },

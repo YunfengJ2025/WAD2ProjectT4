@@ -11,7 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
 
-const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor', indoor: 'Indoor' }
+const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor' }
 const SUNLIGHT = { full: 'Full sun', partial: 'Partial sun', shade: 'Shade' }
 
 const plant = ref(null)

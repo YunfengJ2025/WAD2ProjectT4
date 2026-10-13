@@ -78,3 +78,13 @@ exports.login = async (req, res) => {
     handleError(err, res);
   }
 };
+
+exports.logout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return handleError(err, res);
+    }
+    res.clearCookie("connect.sid", { path: "/" });
+    res.status(204).end();
+  });
+};
