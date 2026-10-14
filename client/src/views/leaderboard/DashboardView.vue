@@ -114,8 +114,8 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 // Component imports — covered in WAD2 wk6 (<script setup> imports)
-import InteractiveBarChart from '../components/dashboard/InteractiveBarChart.vue'
-import BadgeCard from '../components/dashboard/BadgeCard.vue'
+import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
+import BadgeCard from '../../components/dashboard/BadgeCard.vue'
 
 // ref() reactive state — covered in WAD2 wk4/wk5
 // Preview data allows frontend development before backend is ready
