@@ -249,6 +249,11 @@ onMounted(() => {
 .token-pill {
   padding: 6px 14px;
   font-size: 0.9rem;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.token-pill:hover {
+  transform: scale(1.08);
 }
 
 .token-tag {
@@ -272,10 +277,24 @@ onMounted(() => {
   gap: var(--space-md);
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+}
+
+.stat-card:hover {
+  transform: translateY(-5px) scale(1.02); /* [NOT IN WAD2 CONTENT] */
+  box-shadow: 0 16px 32px rgba(34, 197, 94, 0.12);
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.18) rotate(6deg); /* [NOT IN WAD2 CONTENT] */
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .stat-icon {
   font-size: 1.75rem;
+  transition: transform 0.3s ease;
 }
 
 .stat-val {
@@ -307,6 +326,14 @@ onMounted(() => {
 .chart-card {
   padding: var(--space-xl);
   border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+}
+
+.chart-card:hover {
+  transform: translateY(-4px); /* [NOT IN WAD2 CONTENT] */
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.07);
+  border-color: rgba(255, 255, 255, 0.9);
 }
 
 .chart-header {

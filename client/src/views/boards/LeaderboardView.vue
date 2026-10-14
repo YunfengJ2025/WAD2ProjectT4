@@ -348,23 +348,64 @@ onMounted(() => {
   width: 190px;
   padding: var(--space-lg) var(--space-md);
   position: relative;
-  transition: transform var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+  overflow: hidden;
 }
 
-/* [NOT IN WAD2 CONTENT] — linear-gradient background + translateY offset for gold podium */
+.podium-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+}
+
+.podium-card.silver {
+  border-color: rgba(203, 213, 225, 0.85);
+}
+.podium-card.silver:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(148, 163, 184, 0.28);
+}
+
+.podium-card.bronze {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.podium-card.bronze:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(180, 83, 9, 0.2);
+}
+
+/* [NOT IN WAD2 CONTENT] — linear-gradient background + translateY offset for gold podium + glowing halo */
 .podium-card.gold {
   transform: translateY(-16px);
-  border-color: rgba(251, 191, 36, 0.6);
-  background: linear-gradient(180deg, rgba(254, 243, 199, 0.7) 0%, rgba(255, 255, 255, 0.95) 100%);
-  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.18);
+  border-color: rgba(251, 191, 36, 0.85);
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.85) 0%, rgba(255, 255, 255, 0.98) 100%);
+  box-shadow: 0 16px 36px rgba(245, 158, 11, 0.28), 0 0 24px rgba(251, 191, 36, 0.22);
 }
 
-/* position: absolute crown overlay — [NOT IN WAD2 CONTENT] */
+.podium-card.gold:hover {
+  transform: translateY(-24px) scale(1.03);
+  box-shadow: 0 24px 44px rgba(245, 158, 11, 0.38), 0 0 32px rgba(251, 191, 36, 0.32);
+}
+
+/* Metallic foil light sweep across gold champion card — [NOT IN WAD2 CONTENT] */
+.podium-card.gold::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.65) 50%, transparent 60%);
+  animation: foilShimmer 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* position: absolute floating crown overlay with bobbing animation — [NOT IN WAD2 CONTENT] */
 .crown {
   position: absolute;
-  top: -14px;
-  left: calc(50% - 12px);
-  font-size: 1.5rem;
+  top: -18px;
+  left: calc(50% - 14px);
+  font-size: 1.6rem;
+  animation: crownFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.45));
 }
 
 .medal {
@@ -379,12 +420,18 @@ onMounted(() => {
   margin: var(--space-xs) auto;
   border: 2px solid var(--color-neutral-200);
   background: white;
+  transition: transform var(--transition-bounce);
+}
+
+.podium-card:hover .podium-avatar {
+  transform: scale(1.08);
 }
 
 .podium-avatar.top {
-  width: 72px;
-  height: 72px;
-  border-color: var(--color-accent-400);
+  width: 76px;
+  height: 76px;
+  border: 3px solid var(--color-accent-400);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.4);
 }
 
 .podium-card h4 {
@@ -433,18 +480,23 @@ onMounted(() => {
   gap: var(--space-md);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);
-  transition: background var(--transition-fast); /* [NOT IN WAD2 CONTENT] */
+  border: 1px solid transparent;
+  transition: all var(--transition-fast); /* [NOT IN WAD2 CONTENT] */
   animation: slideIn 0.4s ease both; /* [NOT IN WAD2 CONTENT] — CSS animation */
 }
 
 .lb-row:hover {
-  background: rgba(255, 255, 255, 0.5);
+  transform: translateX(6px);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  border-color: rgba(74, 222, 128, 0.35);
 }
 
-/* Current user row highlight */
+/* Current user row highlight with pulsing beacon effect — [NOT IN WAD2 CONTENT] */
 .lb-me {
-  background: rgba(34, 197, 94, 0.08) !important;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+  animation: userRowPulse 3s infinite ease-in-out;
 }
 
 .lb-rank {
@@ -479,12 +531,12 @@ onMounted(() => {
 }
 
 .you-tag {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(34, 197, 94, 0.18);
   color: var(--color-primary-700);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(34, 197, 94, 0.4);
   font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 7px;
+  font-weight: 800;
+  padding: 2px 8px;
   border-radius: var(--radius-full);
 }
 
@@ -500,21 +552,37 @@ onMounted(() => {
   min-width: 60px;
 }
 
-/* Proportional token bar — [NOT IN WAD2 CONTENT] custom progress indicator */
+/* Proportional token bar — [NOT IN WAD2 CONTENT] custom liquid glass indicator */
 .lb-bar-wrap {
   flex: 1;
-  background: var(--color-neutral-100);
+  background: rgba(231, 229, 228, 0.7);
   border-radius: var(--radius-full);
-  height: 8px;
+  height: 9px;
   overflow: hidden;
+  position: relative;
 }
 
-/* [NOT IN WAD2 CONTENT] — animated width via @keyframes + transition */
+/* [NOT IN WAD2 CONTENT] — animated width with liquid glow and leading bead */
 .lb-bar {
   height: 100%;
   border-radius: var(--radius-full);
   transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
   animation: barWide 1s ease both;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  position: relative;
+}
+
+.lb-bar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ffffff;
+  opacity: 0.85;
 }
 
 @keyframes barWide { /* [NOT IN WAD2 CONTENT] */
@@ -527,6 +595,11 @@ onMounted(() => {
   color: #92400e;
   min-width: 80px;
   text-align: right;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lb-tokens:hover, .token-pill:hover {
+  transform: scale(1.08);
 }
 
 /* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */

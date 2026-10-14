@@ -43,26 +43,32 @@ defineProps({ badge: { type: Object, required: true } })
   padding: var(--space-md);
   border-radius: var(--radius-xl);
   /* [NOT IN WAD2 CONTENT] — CSS transition property for hover animation */
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base);
   opacity: 0.75;
   filter: grayscale(0.7); /* [NOT IN WAD2 CONTENT] — CSS filter property */
+  position: relative;
 }
 
-/* Unlocked state — full colour, green glow */
+/* Unlocked state — full colour, green glow, elevated depth */
 .badge-card.unlocked {
   filter: none;
   opacity: 1;
-  border-color: rgba(74, 222, 128, 0.5);
+  border-color: rgba(74, 222, 128, 0.65);
   /* [NOT IN WAD2 CONTENT] — linear-gradient background */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%);
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.18), 0 0 16px rgba(74, 222, 128, 0.15);
 }
 
 .badge-card:hover {
-  transform: translateY(-2px); /* [NOT IN WAD2 CONTENT] — CSS transform on hover */
+  transform: translateY(-4px) scale(1.02); /* [NOT IN WAD2 CONTENT] — CSS transform on hover */
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
 }
 
-/* Icon circle wrapper */
+.badge-card.unlocked:hover {
+  box-shadow: 0 16px 36px rgba(34, 197, 94, 0.25), 0 0 24px rgba(74, 222, 128, 0.25);
+}
+
+/* Icon circle wrapper with breathing pulse on unlocked badges */
 .badge-icon-wrap {
   position: relative;
   font-size: 2rem;
@@ -73,10 +79,12 @@ defineProps({ badge: { type: Object, required: true } })
   justify-content: center;
   background: var(--color-neutral-100);
   border-radius: var(--radius-full);
+  transition: transform var(--transition-bounce);
 }
 
 .badge-card.unlocked .badge-icon-wrap {
-  background: var(--color-primary-100);
+  background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+  animation: iconBreathe 3.5s ease-in-out infinite; /* [NOT IN WAD2 CONTENT] */
 }
 
 /* Small checkmark badge overlay — [NOT IN WAD2 CONTENT] (position: absolute overlay) */
