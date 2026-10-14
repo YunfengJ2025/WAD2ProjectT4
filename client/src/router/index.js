@@ -5,8 +5,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // Static imports — covered in WAD2 wk6 (<script setup> component imports)
 import HomeView from '../views/HomeView.vue'
-import DashboardView from '../views/leaderboard/DashboardView.vue'
-import LeaderboardView from '../views/leaderboard/LeaderboardView.vue'
+import DashboardView from '../views/boards/DashboardView.vue'
+import LeaderboardView from '../views/boards/LeaderboardView.vue'
 
 const router = createRouter({
   // createWebHistory uses the HTML5 History API for clean URLs (no #)
