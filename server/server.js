@@ -6,11 +6,12 @@ dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
 const server = express();
-const userRoutes = require("./routes/userRoute")
+const userRoutes = require("./routes/userRoute");
+const tokenTransactionRoutes = require("./routes/plantRoute");
 const session = require("express-session");
 // Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
-server.use(express.json())
+server.use(express.json());
 server.use(
   session({
     secret: process.env.SECRET,
@@ -19,8 +20,8 @@ server.use(
   }),
 );
 //Routes
-server.use("/user",userRoutes)
-
+server.use("/user", userRoutes);
+server.use("/token", tokenTransactionRoutes);
 async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
