@@ -1,15 +1,26 @@
 <template>
+  <!--
+    :class binding with array + object syntax — covered in WAD2 wk4 (Vue Basics I, v-bind)
+    badge.unlocked conditionally applies the 'unlocked' CSS class
+  -->
   <div :class="['badge-card glass-card', { unlocked: badge.unlocked }]">
     <div class="badge-icon-wrap">
+      <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
       <span class="badge-icon">{{ badge.icon }}</span>
+      <!-- v-if — covered in WAD2 wk4 -->
       <span v-if="badge.unlocked" class="check-mark">✓</span>
     </div>
     <div class="badge-info">
       <h4>{{ badge.name }}</h4>
       <p>{{ badge.description }}</p>
+      <!--
+        :style binding — covered in WAD2 wk4 (v-bind:style)
+        Dynamically sets the progress bar width from the badge.progress prop
+      -->
       <div class="progress-bar-container">
         <div class="progress-fill" :style="{ width: badge.progress + '%' }"></div>
       </div>
+      <!-- Ternary expression in template — covered in WAD2 wk4 -->
       <span class="status-text">
         {{ badge.unlocked ? 'Unlocked 🎉' : `${badge.progress}% completed` }}
       </span>
@@ -18,33 +29,40 @@
 </template>
 
 <script setup>
+// defineProps — covered in WAD2 wk6 (Vue Components, <script setup>)
 defineProps({ badge: { type: Object, required: true } })
 </script>
 
 <style scoped>
+/* scoped CSS — part of Vue SFC structure, shown in WAD2 wk6 examples */
+
 .badge-card {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-md); /* [NOT IN WAD2 CONTENT] — CSS custom property */
   padding: var(--space-md);
   border-radius: var(--radius-xl);
+  /* [NOT IN WAD2 CONTENT] — CSS transition property for hover animation */
   transition: transform var(--transition-base), box-shadow var(--transition-base);
   opacity: 0.75;
-  filter: grayscale(0.7);
+  filter: grayscale(0.7); /* [NOT IN WAD2 CONTENT] — CSS filter property */
 }
 
+/* Unlocked state — full colour, green glow */
 .badge-card.unlocked {
   filter: none;
   opacity: 1;
   border-color: rgba(74, 222, 128, 0.5);
+  /* [NOT IN WAD2 CONTENT] — linear-gradient background */
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.9) 100%);
   box-shadow: 0 8px 24px rgba(34, 197, 94, 0.12);
 }
 
 .badge-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px); /* [NOT IN WAD2 CONTENT] — CSS transform on hover */
 }
 
+/* Icon circle wrapper */
 .badge-icon-wrap {
   position: relative;
   font-size: 2rem;
@@ -61,6 +79,7 @@ defineProps({ badge: { type: Object, required: true } })
   background: var(--color-primary-100);
 }
 
+/* Small checkmark badge overlay — [NOT IN WAD2 CONTENT] (position: absolute overlay) */
 .check-mark {
   position: absolute;
   bottom: -2px;
@@ -97,6 +116,7 @@ defineProps({ badge: { type: Object, required: true } })
   line-height: 1.35;
 }
 
+/* Progress bar — [NOT IN WAD2 CONTENT] custom progress bar (WAD2 wk3 teaches Bootstrap .progress) */
 .progress-bar-container {
   width: 100%;
   height: 6px;
@@ -108,6 +128,7 @@ defineProps({ badge: { type: Object, required: true } })
 
 .progress-fill {
   height: 100%;
+  /* [NOT IN WAD2 CONTENT] — linear-gradient + CSS transition for animated fill */
   background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600));
   transition: width 0.6s ease;
 }

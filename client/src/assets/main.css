@@ -1,5 +1,15 @@
 @import './base.css';
+/* ============================================================
+   GOOGLE FONTS
+   [NOT IN WAD2 CONTENT] — Loading custom web fonts via @import url().
+   WAD2 weekly notes use plain browser fonts; this imports Outfit & Inter
+   from Google Fonts for a polished typographic look.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
+/* ============================================================
+   ORIGINAL SCAFFOLD STYLES (from group mate / Vue template)
+   ============================================================ */
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -33,14 +43,14 @@ a,
     padding: 0 2rem;
   }
 }
-/* ============================================================
-   GOOGLE FONTS
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
-@import './base.css';
+
 
 /* ============================================================
-   DESIGN TOKENS 
+   DESIGN TOKENS (CSS Custom Properties)
+   [NOT IN WAD2 CONTENT] — CSS custom properties (variables) using :root
+   are not covered in WAD2 weekly notes. This pattern lets you define
+   a centralised design system (colours, spacing, radius, shadows)
+   and reuse them with var(--name) throughout the stylesheet.
    ============================================================ */
 :root {
   /* Primary — fresh greens */
@@ -79,7 +89,9 @@ a,
   --color-danger:  #ef4444;
   --color-info:    #0ea5e9;
 
-  /* Glass */
+  /* Glass
+     [NOT IN WAD2 CONTENT] — Glassmorphism uses backdrop-filter: blur()
+     to create a frosted-glass card effect. Not covered in WAD2 Bootstrap week. */
   --glass-bg:     rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.45);
   --glass-blur:   16px;
@@ -121,6 +133,7 @@ a,
 
 /* ============================================================
    RESET & BASE
+   Standard CSS reset — basic good practice, not WAD2-specific.
    ============================================================ */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -131,7 +144,7 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-neutral-50);
   color: var(--color-neutral-800);
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased; /* [NOT IN WAD2 CONTENT] — vendor-prefixed font rendering smoothing */
   overflow-x: hidden;
 }
 
@@ -145,7 +158,7 @@ p { margin-top: 0; }
 img { display: block; max-width: 100%; }
 
 /* ============================================================
-   FIX DESKTOP GRID BUG & APP CONTAINER
+   APP CONTAINER — fixes the default Vue scaffolding 2-column grid bug
    ============================================================ */
 #app {
   max-width: 1280px;
@@ -168,6 +181,9 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    ANIMATED BACKGROUND GRADIENT
+   [NOT IN WAD2 CONTENT] — @keyframes CSS animations and background-size
+   with animated background-position are not covered in WAD2 weekly notes.
+   This creates a slow-shifting colour gradient behind all pages.
    ============================================================ */
 .page-bg {
   position: fixed;
@@ -175,10 +191,10 @@ img { display: block; max-width: 100%; }
   z-index: -1;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #e0f2fe 80%, #fef3c7 100%);
   background-size: 400% 400%;
-  animation: bgShift 12s ease infinite;
+  animation: bgShift 12s ease infinite; /* [NOT IN WAD2 CONTENT] — CSS animation property */
 }
 
-@keyframes bgShift {
+@keyframes bgShift { /* [NOT IN WAD2 CONTENT] — @keyframes not in weekly notes */
   0%   { background-position: 0%   50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0%   50%; }
@@ -186,12 +202,15 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    GLASS CARDS
+   [NOT IN WAD2 CONTENT] — Glassmorphism / backdrop-filter not covered
+   in WAD2. WAD2 wk3 teaches Bootstrap .card; this is a custom alternative
+   using CSS backdrop-filter blur for a frosted-glass appearance.
    ============================================================ */
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));        /* [NOT IN WAD2 CONTENT] */
+  -webkit-backdrop-filter: blur(var(--glass-blur)); /* [NOT IN WAD2 CONTENT] — vendor prefix */
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
@@ -203,6 +222,8 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    BUTTONS
+   Custom button system — WAD2 wk3 teaches Bootstrap .btn classes.
+   These are hand-rolled equivalents using CSS custom properties.
    ============================================================ */
 .btn {
   position: relative;
@@ -222,6 +243,7 @@ img { display: block; max-width: 100%; }
   letter-spacing: 0.02em;
 }
 
+/* [NOT IN WAD2 CONTENT] — ::after pseudo-element ripple effect via CSS transform */
 .btn::after {
   content: '';
   position: absolute;
@@ -273,6 +295,8 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    STATUS BADGES & TOKEN PILLS
+   [NOT IN WAD2 CONTENT] — Custom badge/pill components.
+   WAD2 wk3 teaches Bootstrap .badge; these are hand-rolled equivalents.
    ============================================================ */
 .token-pill {
   display: inline-flex;
@@ -307,6 +331,9 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    KEYFRAME ANIMATIONS
+   [NOT IN WAD2 CONTENT] — @keyframes and the animation shorthand property
+   are not covered in WAD2 weekly notes. These utility classes apply
+   entrance animations (slide up, fade in, bounce) to page elements.
    ============================================================ */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(24px); }
@@ -343,6 +370,7 @@ img { display: block; max-width: 100%; }
 .anim-fade-in   { animation: fadeIn 0.4s ease both; }
 .anim-bounce-in { animation: bounce-in 0.5s var(--transition-bounce) both; }
 
+/* animation-delay utility classes — stagger child elements */
 .anim-delay-1 { animation-delay: 0.08s; }
 .anim-delay-2 { animation-delay: 0.16s; }
 .anim-delay-3 { animation-delay: 0.24s; }
@@ -351,6 +379,9 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================
    PAGE TRANSITIONS & SCROLLBAR
+   [NOT IN WAD2 CONTENT] — Vue Router <Transition> CSS hook classes
+   (page-enter-active, page-leave-to etc.) are not in WAD2 weekly notes.
+   They animate between route changes when wrapped in <Transition name="page">.
    ============================================================ */
 .page-enter-active,
 .page-leave-active {
@@ -367,13 +398,14 @@ img { display: block; max-width: 100%; }
   transform: translateY(-8px);
 }
 
+/* Loading spinner — uses the @keyframes spin defined above */
 .spinner {
   width: 40px;
   height: 40px;
   border: 3px solid var(--color-primary-200);
   border-top-color: var(--color-primary-500);
   border-radius: 50%;
-  animation: spin 0.75s linear infinite;
+  animation: spin 0.75s linear infinite; /* [NOT IN WAD2 CONTENT] */
 }
 
 .loading-screen {
@@ -393,6 +425,7 @@ img { display: block; max-width: 100%; }
   font-size: 0.95rem;
 }
 
+/* [NOT IN WAD2 CONTENT] — Custom scrollbar styling via ::-webkit-scrollbar pseudo-elements */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {

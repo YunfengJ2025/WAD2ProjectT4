@@ -1,5 +1,11 @@
 <template>
   <div class="chart-container">
+    <!--
+      [NOT IN WAD2 CONTENT] — <Bar> is a component from the vue-chartjs library
+      (a Vue 3 wrapper around Chart.js). WAD2 weekly notes do not cover
+      third-party charting libraries. Chart.js renders a canvas-based bar chart.
+      v-if / v-else are covered in WAD2 wk4 (Vue Basics I).
+    -->
     <Bar v-if="chartData && chartData.labels" :data="chartData" :options="chartOptions" />
     <div v-else class="loading-chart">
       <div class="spinner"></div>
@@ -9,7 +15,13 @@
 </template>
 
 <script setup>
+// computed is covered in WAD2 wk4/wk5 (Vue Basics)
 import { computed } from 'vue'
+
+// [NOT IN WAD2 CONTENT] — chart.js and vue-chartjs are third-party libraries
+// not taught in WAD2 weekly notes. They must be installed separately:
+// pnpm add chart.js vue-chartjs
+// ChartJS.register() registers the required chart modules (axes, tooltips, etc.)
 import {
   Chart as ChartJS,
   Title,
@@ -23,13 +35,17 @@ import { Bar } from 'vue-chartjs'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
+// defineProps is covered in WAD2 wk6 (Vue Components — <script setup>)
 const props = defineProps({
   chartData: { type: Object, required: true },
 })
 
+// computed is covered in WAD2 wk4/wk5
+// chartOptions configures the Chart.js bar chart appearance
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
+  // [NOT IN WAD2 CONTENT] — Chart.js animation config, not WAD2 content
   animation: { duration: 900, easing: 'easeOutQuart' },
   plugins: {
     legend: {
@@ -65,6 +81,7 @@ const chartOptions = computed(() => ({
 </script>
 
 <style scoped>
+/* scoped styles — covered implicitly in WAD2 wk6 Vue SFC structure */
 .chart-container {
   position: relative;
   height: 270px;
@@ -75,7 +92,7 @@ const chartOptions = computed(() => ({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
+  gap: var(--space-sm); /* uses CSS custom property — [NOT IN WAD2 CONTENT] */
   height: 100%;
   color: var(--color-neutral-500);
   font-size: 0.9rem;
