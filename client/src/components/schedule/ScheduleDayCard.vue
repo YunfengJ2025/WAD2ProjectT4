@@ -1,30 +1,41 @@
 <script setup>
-  import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-  import { Tooltip } from 'bootstrap'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Tooltip } from 'bootstrap'
 
-  const props = defineProps({
+const props = defineProps({
     item: {
         type: Object,
         required: true,
-    }})
+    }
+})
 
-  const ICONS = {'skipped-rain': '🌧️', 'extra-heat': '☀️'}
-  const icon = computed(() => ICONS[props.item.adjustmentType] ?? null)
-  const isMoved = computed(() => props.item.originalDueAt !== props.item.dueAt)
+const ICONS = {'skipped-rain': '🌧️', 'extra-heat': '☀️'}
+const icon = computed(() => ICONS[props.item.adjustmentType] ?? null)
+const isMoved = computed(() => props.item.originalDueAt !== props.item.dueAt)
 
-  function formatDate(iso) {
+const STATUS_CLASS = {
+    upcoming: 'text-bg-secondary',
+    due: 'text-bg-warning',
+    overdue: 'text-bg-danger',
+    done: 'text-bg-success',
+}
+
+const statusClass = computed(() => STATUS_CLASS[props.item.status] ?? 'text-bg-light')
+
+function formatDate(iso) {
     // standardising T00:00:00 keep it in local time so the day does not shift
     return new Date(iso + "T00:00:00").toLocaleDateString('en-SG', {
         weekday: 'short', 
         day: 'numeric',
         month: 'short',
     })
-  }
+}
 
-  const iconEl = ref(null)
-  let tip
-  onMounted(() => { if (iconEl.value) tip = new Tooltip(iconEl.value) })
-  onBeforeUnmount(() => tip?.dispose())
+const iconEl = ref(null)
+let tip
+onMounted(() => { if (iconEl.value) tip = new Tooltip(iconEl.value) })
+onBeforeUnmount(() => tip?.dispose())
+
 </script>
 
 <template>
@@ -51,7 +62,8 @@
                 {{ formatDate(item.dueAt) }}
             </div>
 
-        <!-- PLS ADD: a Bootstrap badge for item.status -->
+            <span class="badge text-capitalize" :class="statusClass">{{ item.status }}</span>
+
         </div>
   </div>
 </template>

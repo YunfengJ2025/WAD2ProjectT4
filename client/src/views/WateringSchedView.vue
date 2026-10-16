@@ -27,7 +27,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="user">
+  <div v-if="user" style="grid-column: 1 / -1">
     <WeatherHeader :user-lat="user.lat" :user-lng="user.lng" />
     <ScheduleCalendar class="d-none d-md-block" :items="schedule" />
     <ScheduleList class="d-md-none" :items="schedule" />
