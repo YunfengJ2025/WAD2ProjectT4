@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from 'vue'
-import { useWeather } from '@/composables/schedule/useWeather'
+import { useWeather } from '../../composables/schedule/useWeather.js'
 
 const props = defineProps({ userLat: Number, userLng: Number })
 const { condition, stationName, loading, fetchForecast } = useWeather(props.userLat, props.userLng)
