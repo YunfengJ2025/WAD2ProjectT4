@@ -81,7 +81,6 @@ async function getAllUsers() {
   return User.find().sort({ userId: 1 });
 }
 
-module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
 async function registerUser(data) {
   const { userName, email, password, postalCode, block, unitNumber, lat, lng } =
     data;
@@ -146,4 +145,4 @@ function toAuthJSON(user) {
   };
 }
 
-module.exports = { User,getAllUsers, registerUser, loginUser, toAuthJSON };
+module.exports = { User,  getAllUsers, registerUser, loginUser, toAuthJSON };

@@ -5,9 +5,14 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
+
 const server = express();
+
 const userRoutes = require("./routes/userRoute")
+const careRequestRoutes = require("./routes/careRequests");
+const careVisitRoutes = require("./routes/careVisits");
 const session = require("express-session");
+
 // Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json())
@@ -19,7 +24,9 @@ server.use(
   }),
 );
 //Routes
-server.use("/user",userRoutes)
+server.use("/api/user", userRoutes);
+server.use("/api/care-requests", careRequestRoutes);
+server.use("/api/care-visits", careVisitRoutes);
 
 async function connectDB() {
   try {

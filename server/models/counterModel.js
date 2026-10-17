@@ -7,7 +7,7 @@ const counterSchema = new mongoose.Schema({
 
 const Counter = mongoose.model("Counter", counterSchema, "Counter");
 
-// Atomically increments the named counter and returns the new value
+
 async function getNextSequence(name) {
   const counter = await Counter.findOneAndUpdate(
     { _id: name },
