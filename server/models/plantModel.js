@@ -14,10 +14,21 @@ const wateringInfoSchema = new mongoose.Schema(
                 message: "Watering frequency must be a whole number of days",
             },
         },
+        // How much water to give each time, in millilitres (e.g. 250).
+        amountMl: {
+            type: Number,
+            required: [true, "Amount of water is required"],
+            min: [10, "Amount must be at least 10 ml"],
+            max: [5000, "Amount cannot be more than 5000 ml"],
+            validate: {
+                validator: Number.isSafeInteger,
+                message: "Amount must be a whole number of ml",
+            },
+        },
         notes: {
             type: String,
             trim: true,
-            maxlength: [200, "Watering notes cannot exceed 200 characters"],
+            maxlength: [500, "Care notes cannot exceed 500 characters"],
             default: "",
         },
     },
@@ -54,22 +65,15 @@ const plantSchema = new mongoose.Schema(
             type: wateringInfoSchema,
             required: [true, "Watering information is required"],
         },
-        sunlight: {
-            type: String,
-            required: [true, "Sunlight needs are required"],
-            enum: {
-                values: ["full", "partial", "shade"],
-                message: "Sunlight must be full, partial or shade",
-            },
-        },
+        // Where in the corridor the plant is, e.g. "Floor pot beside the shoe rack".
         plantLocation: {
             type: String,
-            required: [true, "Plant placement is required"],
-            enum: {
-                values: ["balcony", "corridor"],
-                message: "Plant placement must be balcony or corridor",
-            },
+            required: [true, "Please describe where to find the plant"],
+            trim: true,
+            maxlength: [100, "Location cannot exceed 100 characters"],
         },
+        // true = the pot is in the open and gets rained on; false = sheltered.
+        // Set by the owner in the form; used by the weather-based checklist.
         rainExposed: { type: Boolean, default: false },
         weatherAdjustmentEnabled: { type: Boolean, default: false },
         lastWateredAt: {
@@ -85,41 +89,57 @@ const plantSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
+// Index so "find all plants for this owner" is fast (most queries filter by ownerId).
 plantSchema.index({ ownerId: 1, plantLocation: 1 });
 
+// Runs automatically before every save.
+// For a brand-new plant, give it the next number from the counter collection
+// (1, 2, 3...), so URLs can use /plants/5 instead of Mongo's long _id.
 plantSchema.pre("save", async function () {
     if (this.isNew && this.plantId == null) {
         this.plantId = await getNextSequence("plantId");
     }
 });
 
+// The model we use to read/write plants. The third argument is the collection name.
 const Plant = mongoose.model("Plant", plantSchema, "Plant");
 
+// Makes an Error with an HTTP status attached (e.g. 404).
+// The controller's handleError sends err.status back to the browser.
 const httpError = (status, message) => {
     const err = new Error(message);
     err.status = status;
     return err;
 };
 
+// Copies only the fields a user is allowed to set from the request body.
+// Anything else (ownerId, plantId, photoUrl...) is ignored, so users can't
+// change them by sending extra form fields.
+// The form sends flat names (frequencyDays, amountMl, notes), so they are
+// grouped into the wateringInfo sub-document here.
 function pickPlantFields(body = {}) {
     const data = {};
-    for (const field of ["plantName", "sunlight", "plantLocation"]) {
+    for (const field of ["plantName", "plantLocation", "rainExposed"]) {
         if (field in body) data[field] = body[field];
     }
-    if ("frequencyDays" in body || "notes" in body) {
+    if ("frequencyDays" in body || "amountMl" in body || "notes" in body) {
         data.wateringInfo = {
             frequencyDays: body.frequencyDays,
+            amountMl: body.amountMl,
             notes: body.notes ?? "",
         };
     }
+    // An empty date from the form means "never watered", stored as null.
     if ("lastWateredAt" in body) data.lastWateredAt = body.lastWateredAt || null;
     return data;
 }
 
+// All plants belonging to one user, newest first.
 async function getPlantsByOwner(ownerId) {
     return Plant.find({ ownerId }).sort({ createdAt: -1 });
 }
 
+// One plant, but only if it belongs to this user.
 async function getPlantByOwner(plantId, ownerId) {
     const id = Number(plantId);
     const plant = Number.isSafeInteger(id)
@@ -129,6 +149,13 @@ async function getPlantByOwner(plantId, ownerId) {
     return plant;
 }
 
+// Saves a plant, uploading a new photo to Cloudinary if one was given.
+// Order matters:
+// 1. Validate first, so we don't upload a photo for a plant that will fail.
+// 2. Upload the new photo and save the plant with its new URL.
+// 3. If saving fails, delete the photo we just uploaded (no orphan images).
+// 4. Only after a successful save, delete the old photo (so a failed
+//    update never leaves the plant without a picture).
 async function validateUploadAndSave(plant, file) {
     await plant.validate();
     if (!file) return plant.save();
@@ -147,12 +174,17 @@ async function validateUploadAndSave(plant, file) {
     return plant;
 }
 
+// Creates a new plant for the logged-in user.
+// ownerId comes from the login session (see middleware/requireUser.js),
+// not the form, so it can't be faked.
 async function createPlantForOwner(data, ownerId, file) {
     const plant = new Plant({ ...pickPlantFields(data), ownerId });
     await validateUploadAndSave(plant, file);
     return plant;
 }
 
+// Edits a plant: find it (must be yours), apply the new values, then save.
+// plant.set() only changes the fields that were sent.
 async function updatePlantForOwner(plantId, ownerId, data, file) {
     const plant = await getPlantByOwner(plantId, ownerId);
     plant.set(pickPlantFields(data));
@@ -160,6 +192,8 @@ async function updatePlantForOwner(plantId, ownerId, data, file) {
     return plant;
 }
 
+// Sets "last watered" to right now. 
+// so a finished care visit can update the plant's watering status.
 async function markPlantWatered(plantId, ownerId) {
     const plant = await getPlantByOwner(plantId, ownerId);
     plant.lastWateredAt = new Date();
@@ -167,12 +201,15 @@ async function markPlantWatered(plantId, ownerId) {
     return plant;
 }
 
+// Deletes a plant (must be yours), then removes its photo from Cloudinary.
+// deleteImage does nothing if the plant had no photo.
 async function deletePlantForOwner(plantId, ownerId) {
     const plant = await getPlantByOwner(plantId, ownerId);
     await plant.deleteOne();
     await deleteImage(plant.photoPublicId);
 }
 
+// Used by controllers/plantController.js
 module.exports = {
     Plant,
     getPlantsByOwner,

@@ -1,5 +1,6 @@
 <script setup>
-import { computed, reactive, ref, nextTick } from 'vue'
+// PlantForm: one form used for BOTH adding a new plant and editing an existing one.
+import { computed, ref } from 'vue'
 import { createPlant, updatePlant, photoSrc } from '@/api/plants'
 import { toDateInputValue } from '@/utils/wateringStatus'
 
@@ -10,123 +11,135 @@ const props = defineProps({
 const emit = defineEmits(['saved', 'cancel'])
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PHOTO_BYTES = 2 * 1024 * 1024
-const NOTES_MAX = 200
-const SUNLIGHT_OPTIONS = [
-  { value: 'full', label: 'Full sun' },
-  { value: 'partial', label: 'Partial sun' },
-  { value: 'shade', label: 'Shade' },
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2MB in bytes
+const NOTES_MAX = 500
+// Choices for "Does this spot get rain?" (value is what gets saved as rainExposed)
+const RAIN_OPTIONS = [
+  { value: true, label: 'Exposed to rain' },
+  { value: false, label: 'Sheltered' },
 ]
-const PLACEMENT_OPTIONS = [
-  { value: 'balcony', label: 'Balcony' },
-  { value: 'corridor', label: 'Corridor' },
-]
-// Field order here is the order we scroll to the first error.
-const FIELDS = ['plantName', 'photo', 'frequencyDays', 'sunlight', 'plantLocation', 'notes', 'lastWateredAt']
 
-const isEdit = computed(() => !!props.plant)
+// true when a plant was passed in, i.e. we are editing
+const isEdit = computed(() => props.plant !== null)
 const today = toDateInputValue(new Date())
+// Starting value for "Last watered":
+// - editing a plant that has a date -> that date
+// - editing a plant never watered   -> blank
+// - adding a new plant              -> today
 const initialLastWatered = props.plant
   ? props.plant.lastWateredAt
     ? toDateInputValue(props.plant.lastWateredAt)
     : ''
   : today
 
-const form = reactive({
+const form = ref({
   plantName: props.plant?.plantName ?? '',
-  frequencyDays: props.plant ? String(props.plant.wateringInfo.frequencyDays) : '',
-  sunlight: props.plant?.sunlight ?? '',
   plantLocation: props.plant?.plantLocation ?? '',
+  frequencyDays: props.plant ? String(props.plant.wateringInfo.frequencyDays) : '',
+  amountMl: props.plant?.wateringInfo.amountMl ? String(props.plant.wateringInfo.amountMl) : '',
+  // null = not chosen yet (new plant); editing starts with the saved true/false
+  rainExposed: props.plant ? props.plant.rainExposed : null,
   notes: props.plant?.wateringInfo.notes ?? '',
   lastWateredAt: initialLastWatered,
 })
+
 const photoFile = ref(null)
+// What the preview box shows: the new photo, or the plant's current photo
 const photoPreview = ref(props.plant?.photoUrl ? photoSrc(props.plant.photoUrl) : '')
 const photoInput = ref(null)
 
-const errors = reactive({})
-const touched = reactive({})
-const formError = ref('')
-const saving = ref(false)
+// Error message per field, e.g. { plantName: 'Please enter a plant name' }
+const errors = ref({})
+const formError = ref('') // message shown at the top of the form
+const saving = ref(false) // true while waiting for the server (disables buttons)
 
-const validators = {
-  plantName: () => {
-    const name = form.plantName.trim()
-    if (!name) return 'Please enter a plant name'
-    if (name.length > 100) return 'Plant name cannot exceed 100 characters'
-  },
-  frequencyDays: () => {
-    const raw = String(form.frequencyDays).trim()
-    if (!raw) return 'Please enter how often to water'
-    const days = Number(raw)
-    if (!/^\d+$/.test(raw) || days < 1 || days > 30) {
-      return 'Enter a whole number of days from 1 to 30'
-    }
-  },
-  sunlight: () => (form.sunlight ? undefined : 'Please choose how much sun it needs'),
-  plantLocation: () =>
-    PLACEMENT_OPTIONS.some((option) => option.value === form.plantLocation)
-      ? undefined
-      : 'Please choose Balcony or Corridor',
-  notes: () =>
-    form.notes.length > NOTES_MAX ? `Notes cannot exceed ${NOTES_MAX} characters` : undefined,
-  lastWateredAt: () =>
-    form.lastWateredAt && form.lastWateredAt > today
-      ? 'Last watered date cannot be in the future'
-      : undefined,
-  // The photo is checked when chosen; this keeps any server error until a new file is picked.
-  photo: () => errors.photo,
+// Checks every field on submit and fills in `errors`. Returns true if all are valid.
+function validate() {
+
+  const photoError = errors.value.photo
+  errors.value = {}
+  // Restore the photo error
+  if (photoError) errors.value.photo = photoError
+
+  const name = form.value.plantName.trim()
+  if (!name) {
+    errors.value.plantName = 'Please enter a plant name'
+  } else if (name.length > 100) {
+    errors.value.plantName = 'Plant name cannot exceed 100 characters'
+  }
+
+  // Where to find it: required, max 100 characters
+  const location = form.value.plantLocation.trim()
+  if (!location) {
+    errors.value.plantLocation = 'Please describe where to find the plant'
+  } else if (location.length > 100) {
+    errors.value.plantLocation = 'Location cannot exceed 100 characters'
+  }
+
+  // /^\d+$/ means "digits only", so 2.5, -1 or abc are rejected.
+  const days = String(form.value.frequencyDays).trim()
+  if (!days) {
+    errors.value.frequencyDays = 'Please enter how often to water'
+  } else if (!/^\d+$/.test(days) || Number(days) < 1 || Number(days) > 30) {
+    errors.value.frequencyDays = 'Enter a whole number of days from 1 to 30'
+  }
+
+  // Amount each time: required, whole number of ml from 10 to 5000
+  const amount = String(form.value.amountMl).trim()
+  if (!amount) {
+    errors.value.amountMl = 'Please enter how much water to give'
+  } else if (!/^\d+$/.test(amount) || Number(amount) < 10 || Number(amount) > 5000) {
+    errors.value.amountMl = 'Enter a whole number of ml from 10 to 5000'
+  }
+
+  // Rain: one option must be chosen
+  if (form.value.rainExposed === null) {
+    errors.value.rainExposed = 'Please choose whether this spot gets rain'
+  }
+
+  if (form.value.notes.length > NOTES_MAX) {
+    errors.value.notes = `Notes cannot exceed ${NOTES_MAX} characters`
+  }
+
+  // Last watered: optional, cannot be in the future.
+  if (form.value.lastWateredAt && form.value.lastWateredAt > today) {
+    errors.value.lastWateredAt = 'Last watered date cannot be in the future'
+  }
+
+  // Valid only if no errors were added
+  return Object.keys(errors.value).length === 0
 }
 
-function validate(field) {
-  const message = validators[field]()
-  if (message) errors[field] = message
-  else delete errors[field]
-  return !message
-}
-
-// On blur: mark the field touched and check it.
-function touch(field) {
-  touched[field] = true
-  validate(field)
-}
-
-// While typing, only re-check fields that already showed an error or were left.
-function recheck(field) {
-  if (touched[field]) validate(field)
-}
-
-// Radio groups count as "blurred" once focus leaves the whole group.
-function onGroupFocusOut(field, event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) touch(field)
-}
-
+// Runs when the user picks a file. Checks type and size straight away;
 function onPhotoChange(event) {
   const file = event.target.files[0]
-  delete errors.photo
+  delete errors.value.photo
   if (!file) return
 
   let message = ''
   if (!PHOTO_TYPES.includes(file.type)) message = 'Photo must be a JPG, PNG or WebP image'
   else if (file.size > MAX_PHOTO_BYTES) message = 'Photo must be 2MB or smaller'
 
+  // Bad file: show the error and clear the file input
   if (message) {
-    errors.photo = message
+    errors.value.photo = message
     event.target.value = ''
     return
   }
 
+  // Good file: keep it for submit, then read it so <img> can preview it
   photoFile.value = file
   const reader = new FileReader()
   reader.onload = () => (photoPreview.value = reader.result)
   reader.readAsDataURL(file)
 }
 
+// "Undo" button: drop the new photo and go back to the original one (if any)
 function clearNewPhoto() {
   photoFile.value = null
-  delete errors.photo
+  delete errors.value.photo
   photoPreview.value = props.plant?.photoUrl ? photoSrc(props.plant.photoUrl) : ''
-  if (photoInput.value) photoInput.value.value = ''
+  if (photoInput.value) photoInput.value.value = '' //vue and html
 }
 
 // Date inputs give a calendar day. Today becomes "now"; past days become
@@ -138,34 +151,31 @@ function lastWateredToISO(value) {
   return new Date(y, m - 1, d, 12).toISOString()
 }
 
+
 function buildFormData() {
   const data = new FormData()
-  data.append('plantName', form.plantName.trim())
-  data.append('frequencyDays', String(form.frequencyDays).trim())
-  data.append('sunlight', form.sunlight)
-  data.append('plantLocation', form.plantLocation)
-  data.append('notes', form.notes.trim())
+  data.append('plantName', form.value.plantName.trim())
+  data.append('plantLocation', form.value.plantLocation.trim())
+  data.append('frequencyDays', String(form.value.frequencyDays).trim())
+  data.append('amountMl', String(form.value.amountMl).trim())
+  data.append('rainExposed', String(form.value.rainExposed)) // "true" or "false"
+  data.append('notes', form.value.notes.trim())
   // When editing, only send the date if it changed so the stored time is kept.
-  if (!isEdit.value || form.lastWateredAt !== initialLastWatered) {
-    data.append('lastWateredAt', lastWateredToISO(form.lastWateredAt))
+  if (!isEdit.value || form.value.lastWateredAt !== initialLastWatered) {
+    data.append('lastWateredAt', lastWateredToISO(form.value.lastWateredAt))
   }
+  // Only send a photo if a new one was chosen
   if (photoFile.value) data.append('photo', photoFile.value)
   return data
 }
 
-async function focusFirstError() {
-  await nextTick()
-  const first = FIELDS.find((f) => errors[f])
-  document.querySelector(`[data-field="${first}"]`)?.focus()
-}
-
+// Runs when the form is submitted (Add plant / Save changes button).
+// 1. Validate in the browser. 2. Send to the server. 3. Show any server errors.
 async function onSubmit() {
   formError.value = ''
-  FIELDS.forEach((f) => (touched[f] = true))
-  const allValid = FIELDS.map(validate).every(Boolean)
-  if (!allValid) {
+  if (!validate()) {
     formError.value = 'Please fix the highlighted fields.'
-    return focusFirstError()
+    return
   }
 
   saving.value = true
@@ -174,25 +184,25 @@ async function onSubmit() {
     const saved = isEdit.value
       ? await updatePlant(props.plant.plantId, data)
       : await createPlant(data)
-    emit('saved', saved)
+    emit('saved', saved) // tell the parent page it worked
   } catch (err) {
-    Object.assign(errors, err.errors)
+    // per-field messages, which we show under the fields like ours.
+    Object.assign(errors.value, err.errors)
     formError.value = err.message
-    if (Object.keys(err.errors || {}).length) focusFirstError()
   } finally {
     saving.value = false
   }
 }
-
-const fieldAttrs = (field) => ({
-  'data-field': field,
-  'aria-invalid': errors[field] ? 'true' : 'false',
-  'aria-describedby': errors[field] ? `${field}-error` : undefined,
-})
 </script>
 
 <template>
+  <!--
+    novalidate: turn off the browser's built-in popups; we show our own messages.
+    @submit.prevent: run onSubmit and stop the page from reloading
+    (.prevent = event.preventDefault()).
+  -->
   <form class="plant-form" novalidate @submit.prevent="onSubmit">
+    <!-- Summary message at the top. role="alert" makes screen readers read it out. -->
     <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
 
     <div class="field">
@@ -205,13 +215,35 @@ const fieldAttrs = (field) => ({
         autocomplete="off"
         placeholder="e.g. Monstera"
         required
-        v-bind="fieldAttrs('plantName')"
-        @blur="touch('plantName')"
-        @input="recheck('plantName')"
+        :aria-invalid="!!errors.plantName"
+        :aria-describedby="errors.plantName ? 'plantName-error' : undefined"
       />
+      <!-- v-if: only shown when this field has an error -->
       <p v-if="errors.plantName" id="plantName-error" class="error">{{ errors.plantName }}</p>
     </div>
 
+    <!-- Where to find it: free text so the helper knows exactly which plant -->
+    <div class="field">
+      <label for="plantLocation">
+        Where to find it <span class="req" aria-hidden="true">*</span>
+      </label>
+      <input
+        id="plantLocation"
+        v-model="form.plantLocation"
+        type="text"
+        maxlength="100"
+        autocomplete="off"
+        placeholder="e.g. Floor pot beside the shoe rack"
+        required
+        :aria-invalid="!!errors.plantLocation"
+        :aria-describedby="errors.plantLocation ? 'plantLocation-error' : undefined"
+      />
+      <p v-if="errors.plantLocation" id="plantLocation-error" class="error">
+        {{ errors.plantLocation }}
+      </p>
+    </div>
+
+    <!-- Photo: preview box + choose/undo buttons -->
     <div class="field">
       <span class="label" id="photo-label">Photo</span>
       <div class="photo-row">
@@ -220,6 +252,7 @@ const fieldAttrs = (field) => ({
           <span v-else>No photo</span>
         </div>
         <div class="photo-controls">
+          <!-- The real file input is hidden; this label acts as the button and opens it -->
           <label class="btn" for="photo">{{ photoPreview ? 'Change photo' : 'Choose photo' }}</label>
           <input
             id="photo"
@@ -228,9 +261,11 @@ const fieldAttrs = (field) => ({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             aria-labelledby="photo-label"
-            v-bind="fieldAttrs('photo')"
+            :aria-invalid="!!errors.photo"
+            :aria-describedby="errors.photo ? 'photo-error' : undefined"
             @change="onPhotoChange"
           />
+          <!-- Undo only appears after a new photo is chosen -->
           <button v-if="photoFile" type="button" class="btn" @click="clearNewPhoto">
             Undo
           </button>
@@ -240,6 +275,7 @@ const fieldAttrs = (field) => ({
       <p v-if="errors.photo" id="photo-error" class="error">{{ errors.photo }}</p>
     </div>
 
+    <!-- Watering frequency in days (1-30) -->
     <div class="field narrow">
       <label for="frequencyDays">
         Water every (days) <span class="req" aria-hidden="true">*</span>
@@ -254,60 +290,59 @@ const fieldAttrs = (field) => ({
         step="1"
         placeholder="7"
         required
-        v-bind="fieldAttrs('frequencyDays')"
-        @blur="touch('frequencyDays')"
-        @input="recheck('frequencyDays')"
+        :aria-invalid="!!errors.frequencyDays"
+        :aria-describedby="errors.frequencyDays ? 'frequencyDays-error' : undefined"
       />
       <p v-if="errors.frequencyDays" id="frequencyDays-error" class="error">
         {{ errors.frequencyDays }}
       </p>
     </div>
 
-    <fieldset
-      class="field"
-      :aria-describedby="errors.sunlight ? 'sunlight-error' : undefined"
-      @focusout="onGroupFocusOut('sunlight', $event)"
-    >
-      <legend>Sunlight needs <span class="req" aria-hidden="true">*</span></legend>
-      <div class="segmented" :class="{ invalid: errors.sunlight }">
-        <label v-for="(opt, i) in SUNLIGHT_OPTIONS" :key="opt.value">
-          <input
-            v-model="form.sunlight"
-            type="radio"
-            name="sunlight"
-            :value="opt.value"
-            :data-field="i === 0 ? 'sunlight' : undefined"
-            @change="validate('sunlight')"
-          />
-          <span>{{ opt.label }}</span>
-        </label>
-      </div>
-      <p v-if="errors.sunlight" id="sunlight-error" class="error">{{ errors.sunlight }}</p>
-    </fieldset>
+    <!-- Amount of water each time, in ml (10-5000) -->
+    <div class="field narrow">
+      <label for="amountMl">
+        Amount each time (ml) <span class="req" aria-hidden="true">*</span>
+      </label>
+      <input
+        id="amountMl"
+        v-model="form.amountMl"
+        type="number"
+        inputmode="numeric"
+        min="10"
+        max="5000"
+        step="10"
+        placeholder="250"
+        required
+        :aria-invalid="!!errors.amountMl"
+        :aria-describedby="errors.amountMl ? 'amountMl-error' : undefined"
+      />
+      <p v-if="errors.amountMl" id="amountMl-error" class="error">{{ errors.amountMl }}</p>
+    </div>
 
+    <!-- Rain: fieldset + legend groups the radio buttons under one question -->
     <fieldset
       class="field"
-      :aria-describedby="errors.plantLocation ? 'plantLocation-error' : undefined"
-      @focusout="onGroupFocusOut('plantLocation', $event)"
+      :aria-describedby="errors.rainExposed ? 'rainExposed-error' : undefined"
     >
-      <legend>Placement <span class="req" aria-hidden="true">*</span></legend>
-      <div class="segmented" :class="{ invalid: errors.plantLocation }">
-        <label v-for="(opt, i) in PLACEMENT_OPTIONS" :key="opt.value">
+      <legend>Does this spot get rain? <span class="req" aria-hidden="true">*</span></legend>
+      <div class="segmented" :class="{ invalid: errors.rainExposed }">
+        <!-- v-for makes one radio per option -->
+        <label v-for="opt in RAIN_OPTIONS" :key="String(opt.value)">
           <input
-            v-model="form.plantLocation"
+            v-model="form.rainExposed"
             type="radio"
-            name="plantLocation"
+            name="rainExposed"
             :value="opt.value"
-            :data-field="i === 0 ? 'plantLocation' : undefined"
-            @change="validate('plantLocation')"
           />
           <span>{{ opt.label }}</span>
         </label>
       </div>
-      <p v-if="errors.plantLocation" id="plantLocation-error" class="error">
-        {{ errors.plantLocation }}
+      <p class="hint">Exposed means the pot is in the open, not under the shelter.</p>
+      <p v-if="errors.rainExposed" id="rainExposed-error" class="error">
+        {{ errors.rainExposed }}
       </p>
     </fieldset>
+
 
     <div class="field">
       <label for="notes">Care notes</label>
@@ -317,9 +352,8 @@ const fieldAttrs = (field) => ({
         rows="3"
         :maxlength="NOTES_MAX"
         placeholder="e.g. Let the top soil dry out first"
-        v-bind="fieldAttrs('notes')"
-        @blur="touch('notes')"
-        @input="recheck('notes')"
+        :aria-invalid="!!errors.notes"
+        :aria-describedby="errors.notes ? 'notes-error' : undefined"
       ></textarea>
       <p class="hint counter" :class="{ over: form.notes.length >= NOTES_MAX }">
         {{ form.notes.length }}/{{ NOTES_MAX }}
@@ -334,9 +368,8 @@ const fieldAttrs = (field) => ({
         v-model="form.lastWateredAt"
         type="date"
         :max="today"
-        v-bind="fieldAttrs('lastWateredAt')"
-        @blur="touch('lastWateredAt')"
-        @input="recheck('lastWateredAt')"
+        :aria-invalid="!!errors.lastWateredAt"
+        :aria-describedby="errors.lastWateredAt ? 'lastWateredAt-error' : undefined"
       />
       <p class="hint">Leave blank if it hasn't been watered yet.</p>
       <p v-if="errors.lastWateredAt" id="lastWateredAt-error" class="error">
@@ -344,6 +377,7 @@ const fieldAttrs = (field) => ({
       </p>
     </div>
 
+    <!-- Buttons are disabled while saving so the form can't be sent twice -->
     <div class="form-actions">
       <button type="button" class="btn" :disabled="saving" @click="emit('cancel')">Cancel</button>
       <button type="submit" class="btn btn-primary" :disabled="saving">

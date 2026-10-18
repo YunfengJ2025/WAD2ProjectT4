@@ -30,8 +30,6 @@ export const createPlant = (formData) =>
   request(BASE, { method: 'POST', body: formData }).then((b) => b.plant)
 export const updatePlant = (plantId, formData) =>
   request(`${BASE}/${plantId}`, { method: 'PATCH', body: formData }).then((b) => b.plant)
-export const markWatered = (plantId) =>
-  request(`${BASE}/${plantId}/water`, { method: 'PATCH' }).then((b) => b.plant)
 export const deletePlant = (plantId) => request(`${BASE}/${plantId}`, { method: 'DELETE' })
 
 // photoUrl is a full Cloudinary link, so it can go straight into <img src>.

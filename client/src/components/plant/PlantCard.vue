@@ -1,36 +1,41 @@
 <script setup>
-import { computed } from 'vue'
+// PlantCard: shows one plant in the My Plants grid.
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { photoSrc } from '@/api/plants'
 import { getWateringStatus } from '@/utils/wateringStatus'
 import StatusPill from './StatusPill.vue'
 
+// plant: the plant to show
 const props = defineProps({
   plant: { type: Object, required: true },
-  watering: { type: Boolean, default: false },
 })
-const emit = defineEmits(['water', 'delete'])
+const emit = defineEmits(['delete'])
 
-const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor' }
-const SUNLIGHT = { full: 'Full sun', partial: 'Partial sun', shade: 'Shade' }
+// true if the photo link is broken, so we show the leaf placeholder instead
+const photoFailed = ref(false)
 
+// Overdue / due / upcoming, worked out from last watered date + frequency
 const status = computed(() => getWateringStatus(props.plant))
-// Only plants that need water get the loud button.
-const needsWater = computed(() => status.value.key !== 'upcoming')
+// "250 ml · Every 2 days" (older plants may have no amount saved)
 const frequency = computed(() => {
-  const days = props.plant.wateringInfo.frequencyDays
-  return days === 1 ? 'Daily' : `Every ${days} days`
+  const { frequencyDays: days, amountMl } = props.plant.wateringInfo
+  const often = days === 1 ? 'Daily' : `Every ${days} days`
+  return amountMl ? `${amountMl} ml · ${often}` : often
 })
 </script>
 
 <template>
+  <!-- status.key is added as a class so the card is coloured by watering status -->
   <article class="card" :class="status.key">
+    <!-- Plant photo, or a leaf icon if there is none, with the status pill on top -->
     <div class="photo">
       <img
-        v-if="plant.photoUrl"
+        v-if="plant.photoUrl && !photoFailed"
         :src="photoSrc(plant.photoUrl)"
         :alt="`Photo of ${plant.plantName}`"
         loading="lazy"
+        @error="photoFailed = true"
       />
       <svg v-else class="placeholder" viewBox="0 0 24 24" aria-hidden="true">
         <path
@@ -46,25 +51,22 @@ const frequency = computed(() => {
     </div>
 
     <div class="body">
+      <!-- Name links to the plant's detail page -->
       <h3>
         <RouterLink :to="`/plants/${plant.plantId}`" class="name-link">
           {{ plant.plantName }}
         </RouterLink>
       </h3>
 
+      <!-- Where to find it, and watering amount + frequency -->
       <ul class="meta" aria-label="Plant details">
-        <li>
+        <!-- title shows the full text on hover if it gets cut off -->
+        <li class="where" :title="plant.plantLocation">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" />
+            <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+            <circle cx="12" cy="9.5" r="2.5" />
           </svg>
-          {{ PLACEMENT[plant.plantLocation] }}
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" />
-          </svg>
-          {{ SUNLIGHT[plant.sunlight] }}
+          <span>{{ plant.plantLocation }}</span>
         </li>
         <li>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -74,21 +76,11 @@ const frequency = computed(() => {
         </li>
       </ul>
 
+      <!-- Care notes, only if there are any -->
       <p v-if="plant.wateringInfo.notes" class="notes">{{ plant.wateringInfo.notes }}</p>
 
+      <!-- Edit / Delete -->
       <div class="actions">
-        <button
-          type="button"
-          class="btn water"
-          :class="{ 'btn-primary': needsWater }"
-          :disabled="watering"
-          @click="emit('water', plant)"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
-          </svg>
-          {{ watering ? 'Saving…' : 'Mark as watered' }}
-        </button>
         <RouterLink
           :to="`/plants/${plant.plantId}/edit`"
           class="icon-btn"
@@ -244,9 +236,21 @@ h3 {
   gap: 0.3rem;
 }
 
+.meta li.where {
+  flex-basis: 100%;
+  min-width: 0;
+}
+
+.meta li.where span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .meta svg {
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -269,22 +273,10 @@ h3 {
   z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.25rem;
   margin-top: auto;
   padding-top: 0.6rem;
-}
-
-.water {
-  flex: 1;
-  min-height: 38px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.9rem;
-}
-
-.water svg {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
 }
 
 .icon-btn {

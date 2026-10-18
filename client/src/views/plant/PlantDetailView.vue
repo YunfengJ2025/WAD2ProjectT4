@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusPill from '@/components/plant/StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { getPlant, markWatered, deletePlant, photoSrc } from '@/api/plants'
+import { getPlant, deletePlant, photoSrc } from '@/api/plants'
 import { getWateringStatus, startOfDay } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
@@ -11,19 +11,19 @@ const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
 
-const PLACEMENT = { balcony: 'Balcony', corridor: 'Corridor' }
-const SUNLIGHT = { full: 'Full sun', partial: 'Partial sun', shade: 'Shade' }
 
 const plant = ref(null)
 const loading = ref(true)
 const loadError = ref('')
-const watering = ref(false)
 const confirmingDelete = ref(false)
 const deleting = ref(false)
+// true if the photo link is broken, so we show the leaf placeholder instead
+const photoFailed = ref(false)
 
 async function load() {
   loading.value = true
   loadError.value = ''
+  photoFailed.value = false
   try {
     plant.value = await getPlant(route.params.plantId)
   } catch (err) {
@@ -44,9 +44,11 @@ const fullDate = (date) =>
     year: 'numeric',
   })
 
+// "250 ml, every 2 days" (older plants may have no amount saved)
 const frequency = computed(() => {
-  const days = plant.value.wateringInfo.frequencyDays
-  return days === 1 ? 'Every day' : `Every ${days} days`
+  const { frequencyDays: days, amountMl } = plant.value.wateringInfo
+  const often = days === 1 ? 'every day' : `every ${days} days`
+  return amountMl ? `${amountMl} ml, ${often}` : often[0].toUpperCase() + often.slice(1)
 })
 
 // The next four waterings. Anything already due or overdue counts as today.
@@ -61,21 +63,6 @@ const schedule = computed(() => {
     return { date: d, isToday: d.getTime() === today.getTime() }
   })
 })
-
-async function onWater() {
-  const previous = plant.value.lastWateredAt
-  plant.value.lastWateredAt = new Date().toISOString()
-  watering.value = true
-  try {
-    plant.value = await markWatered(plant.value.plantId)
-    toast(`${plant.value.plantName} marked as watered`)
-  } catch (err) {
-    plant.value.lastWateredAt = previous
-    toast(err.message || 'Could not mark as watered', 'error')
-  } finally {
-    watering.value = false
-  }
-}
 
 async function onDelete() {
   deleting.value = true
@@ -110,7 +97,12 @@ async function onDelete() {
 
     <article v-else class="layout">
       <div class="photo">
-        <img v-if="plant.photoUrl" :src="photoSrc(plant.photoUrl)" :alt="`Photo of ${plant.plantName}`" />
+        <img
+          v-if="plant.photoUrl && !photoFailed"
+          :src="photoSrc(plant.photoUrl)"
+          :alt="`Photo of ${plant.plantName}`"
+          @error="photoFailed = true"
+        />
         <svg v-else class="placeholder" viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="M12 21v-8m0 0c0-4 3-7 8-7 0 4-3 7-8 7Zm0 0C12 9 9 6 4 6c0 4 3 7 8 7Z"
@@ -131,12 +123,12 @@ async function onDelete() {
 
         <dl class="facts">
           <div>
-            <dt>Placement</dt>
-            <dd>{{ PLACEMENT[plant.plantLocation] }}</dd>
+            <dt>Where to find it</dt>
+            <dd>{{ plant.plantLocation }}</dd>
           </div>
           <div>
-            <dt>Sunlight</dt>
-            <dd>{{ SUNLIGHT[plant.sunlight] }}</dd>
+            <dt>Rain</dt>
+            <dd>{{ plant.rainExposed ? 'Exposed to rain' : 'Sheltered' }}</dd>
           </div>
           <div>
             <dt>Watering</dt>
@@ -171,17 +163,6 @@ async function onDelete() {
         </section>
 
         <div class="actions">
-          <button
-            type="button"
-            class="btn btn-primary water"
-            :disabled="watering"
-            @click="onWater"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
-            </svg>
-            {{ watering ? 'Saving…' : 'Mark as watered' }}
-          </button>
           <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn">Edit</RouterLink>
           <button type="button" class="btn delete" @click="confirmingDelete = true">Delete</button>
         </div>
@@ -378,28 +359,11 @@ dd {
   gap: 0.5rem;
 }
 
-.water {
-  flex: 1 1 200px;
-}
-
-.actions > .btn:not(.water) {
-  flex: 0 0 auto;
-}
-
-/* Phones: water button on its own row, Edit and Delete share the next one */
+/* Phones: Edit and Delete share the row */
 @media (max-width: 520px) {
-  .water {
-    flex-basis: 100%;
-  }
-  .actions > .btn:not(.water) {
+  .actions > .btn {
     flex: 1;
   }
-}
-
-.water svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
 }
 
 .delete {

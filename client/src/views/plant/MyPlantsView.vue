@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PlantCard from '@/components/plant/PlantCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { listPlants, markWatered, deletePlant } from '@/api/plants'
+import { listPlants, deletePlant } from '@/api/plants'
 import { getWateringStatus, compareByWateringStatus } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
@@ -14,10 +14,8 @@ const loading = ref(true)
 const loadError = ref('')
 
 const search = ref('')
-const placement = ref('all')
 const statusFilter = ref('all')
 
-const watering = reactive(new Set())
 const pendingDelete = ref(null)
 const deleting = ref(false)
 
@@ -57,38 +55,16 @@ const visible = computed(() => {
   return withStatus.value
     .filter(({ plant, status }) => {
       if (term && !plant.plantName.toLowerCase().includes(term)) return false
-      if (placement.value !== 'all' && plant.plantLocation !== placement.value) return false
       if (statusFilter.value !== 'all' && status.key !== statusFilter.value) return false
       return true
     })
     .sort(compareByWateringStatus)
 })
 
-const hasFilters = computed(
-  () => search.value.trim() !== '' || placement.value !== 'all' || statusFilter.value !== 'all',
-)
-
+// Resets the search box and goes back to the "All" tab
 function clearFilters() {
   search.value = ''
-  placement.value = 'all'
   statusFilter.value = 'all'
-}
-
-// Updates the card straight away, then rolls back if the server says no.
-async function onWater(plant) {
-  if (watering.has(plant.plantId)) return
-  const previous = plant.lastWateredAt
-  plant.lastWateredAt = new Date().toISOString()
-  watering.add(plant.plantId)
-  try {
-    Object.assign(plant, await markWatered(plant.plantId))
-    toast(`${plant.plantName} marked as watered`)
-  } catch (err) {
-    plant.lastWateredAt = previous
-    toast(err.message || 'Could not mark as watered', 'error')
-  } finally {
-    watering.delete(plant.plantId)
-  }
 }
 
 async function confirmDelete() {
@@ -165,14 +141,6 @@ async function confirmDelete() {
             autocomplete="off"
           />
         </div>
-        <div class="placement">
-          <label for="placement-filter">Placement</label>
-          <select id="placement-filter" v-model="placement">
-            <option value="all">All</option>
-            <option value="balcony">Balcony</option>
-            <option value="corridor">Corridor</option>
-          </select>
-        </div>
         <div class="status-tabs" role="group" aria-label="Filter by watering status">
           <button
             v-for="tab in STATUS_TABS"
@@ -194,24 +162,18 @@ async function confirmDelete() {
       <!-- No results for the current filters -->
       <section v-if="visible.length === 0" class="state">
         <h2>No plants match</h2>
-        <p>Try a different name or clear the filters.</p>
-        <button type="button" class="btn" @click="clearFilters">Clear filters</button>
+        <p>Try a different name or another tab.</p>
+        <button type="button" class="btn" @click="clearFilters">Show all plants</button>
       </section>
 
       <TransitionGroup v-else tag="ul" name="card" class="grid">
         <li v-for="{ plant } in visible" :key="plant.plantId">
           <PlantCard
             :plant="plant"
-            :watering="watering.has(plant.plantId)"
-            @water="onWater"
             @delete="pendingDelete = $event"
           />
         </li>
       </TransitionGroup>
-
-      <p v-if="hasFilters && visible.length" class="clear-row">
-        <button type="button" class="link" @click="clearFilters">Clear filters</button>
-      </p>
     </template>
 
     <ConfirmDialog
@@ -256,27 +218,14 @@ h1 {
   margin-bottom: 0.75rem;
 }
 
-@media (min-width: 768px) {
-  .toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .status-tabs {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (min-width: 1024px) {
   .toolbar {
-    grid-template-columns: minmax(220px, 1fr) auto auto;
+    grid-template-columns: minmax(220px, 1fr) auto;
     align-items: center;
-  }
-  .status-tabs {
-    grid-column: auto;
   }
 }
 
-.search input,
-.placement select {
+.search input {
   width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.75rem;
@@ -287,22 +236,8 @@ h1 {
   font: inherit;
 }
 
-.placement {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.placement label {
-  font-weight: 600;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
 .search input:focus-visible,
-.placement select:focus-visible,
-.tab:focus-visible,
-.link:focus-visible {
+.tab:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -443,20 +378,6 @@ h1 {
   max-width: 40ch;
 }
 
-.clear-row {
-  margin-top: 1rem;
-  text-align: center;
-}
-
-.link {
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 .visually-hidden {
   position: absolute;
@@ -467,7 +388,7 @@ h1 {
   white-space: nowrap;
 }
 
-/* Cards slide to their new spot when watering re-sorts the list */
+/* Cards animate in, out and to their new spot when the list changes */
 .card-move,
 .card-enter-active,
 .card-leave-active {

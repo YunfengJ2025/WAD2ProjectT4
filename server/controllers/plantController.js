@@ -10,6 +10,7 @@ const {
 // Schema paths -> form field names, so errors show next to the right input.
 const FIELD_NAMES = {
   "wateringInfo.frequencyDays": "frequencyDays",
+  "wateringInfo.amountMl": "amountMl",
   "wateringInfo.notes": "notes",
   wateringInfo: "frequencyDays",
 };
