@@ -1,3 +1,12 @@
+
+/* ============================================================
+   GOOGLE FONTS
+   [NOT IN WAD2 CONTENT] — Loading custom web fonts via @import url().
+   WAD2 weekly notes use plain browser fonts; this imports Outfit & Inter
+   from Google Fonts for a polished typographic look.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
 @import './base.css';
 
 /* Colour tokens used by the My Plants pages (cards, form, buttons).
@@ -27,14 +36,6 @@
   --radius: 12px;
   --shadow: 0 1px 2px rgba(16, 24, 18, 0.06), 0 4px 14px rgba(16, 24, 18, 0.06);
 }
-/* ============================================================
-   GOOGLE FONTS
-   [NOT IN WAD2 CONTENT] — Loading custom web fonts via @import url().
-   WAD2 weekly notes use plain browser fonts; this imports Outfit & Inter
-   from Google Fonts for a polished typographic look.
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
-
 /* ============================================================
    ORIGINAL SCAFFOLD STYLES (from group mate / Vue template)
    ============================================================ */
