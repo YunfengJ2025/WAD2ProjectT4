@@ -5,6 +5,7 @@
 
 
 
+
     // END OF ADDING YOUR CODE HERE
 
 </script>
@@ -23,7 +24,7 @@
             <div>
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item" v-for="(navItem,idx) of navigationitems" :key="idx">
-                        <a class="nav-link active" href="#">{{ navItem.label }}</a>
+                        <a class="nav-link active" :href="navItem.to">{{ navItem.label }}</a>
                     </li>
         
                 </ul>
