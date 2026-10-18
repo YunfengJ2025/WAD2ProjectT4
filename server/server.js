@@ -5,10 +5,12 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
+const cors = require("cors"); 
 const server = express();
 const userRoutes = require("./routes/userRoute")
 const session = require("express-session");
 // Specify the path to the environment variable file '.env'
+server.use(cors());  
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json())
 server.use(

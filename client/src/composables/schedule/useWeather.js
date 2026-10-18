@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import axios from 'axios'
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -23,24 +24,30 @@ export function useWeather(userLat, userLng) {
   const stationName = ref(null)
   const loading = ref(true)
   const error = ref(null)
+  const forecastText = ref(null)
 
   async function fetchForecast() {
     loading.value = true
     error.value = null
     try {
-      const res = await fetch('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast')
-      if (!res.ok) throw new Error('Weather service unavailable')
-      const json = await res.json()
+      const url = 'https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast'
+      const response = await axios.get(url)
+      const json = response.data
+      console.log(json) // check the field names against what the code below uses
+
       const areas = json.data.area_metadata
       const forecasts = json.data.items[0].forecasts
-
       const nearestArea = findNearestStation(
         areas.map(a => ({ ...a, location: a.label_location })),
         userLat, userLng
       )
+
       const match = forecasts.find(f => f.area === nearestArea.name)
+      console.log(match)
+      forecastText.value = match?.forecast ?? null // i forgot what this does
       stationName.value = nearestArea.name
       condition.value = classifyForecast(match?.forecast ?? '')
+
     } catch (e) {
       error.value = e.message
     } finally {
@@ -55,5 +62,5 @@ export function useWeather(userLat, userLng) {
     return 'sunny'
   }
 
-  return { condition, stationName, loading, error, fetchForecast }
+  return { condition, stationName, forecastText, loading, error, fetchForecast }
 }
