@@ -6,11 +6,11 @@ import CareVisits from '@/components/careVisit/CareVisits.vue'
 import Dashboard from '@/components/dashboard/Dashboard.vue'
 
 const routes = [
-  { path: '/', name: 'Home', component: Home },
+  { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/my-plants', name: 'My Plants', component: MyPlants },
   { path:'/find-nearby', name: 'Find Nearby', component: FindNearby},
   { path:'/care-visits' , name: 'Care Visits', component: CareVisits },
-  { path: '/dashboard', name: 'Dashboard', component: Dashboard }
+  
 ]
 
 const router = createRouter({
