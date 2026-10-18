@@ -1,5 +1,15 @@
 @import './base.css';
+/* ============================================================
+   GOOGLE FONTS
+   [NOT IN WAD2 CONTENT] — Loading custom web fonts via @import url().
+   WAD2 weekly notes use plain browser fonts; this imports Outfit & Inter
+   from Google Fonts for a polished typographic look.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
+/* ============================================================
+   ORIGINAL SCAFFOLD STYLES (from group mate / Vue template)
+   ============================================================ */
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -33,3 +43,420 @@ a,
     padding: 0 2rem;
   }
 }
+
+
+/* ============================================================
+   DESIGN TOKENS (CSS Custom Properties)
+   [NOT IN WAD2 CONTENT] — CSS custom properties (variables) using :root
+   are not covered in WAD2 weekly notes. This pattern lets you define
+   a centralised design system (colours, spacing, radius, shadows)
+   and reuse them with var(--name) throughout the stylesheet.
+   ============================================================ */
+:root {
+  /* Primary — fresh greens */
+  --color-primary-50:  #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-900: #14532d;
+
+  /* Accent — warm amber */
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+
+  /* Sky — cool blue */
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+
+  /* Neutrals */
+  --color-neutral-50:  #fafaf9;
+  --color-neutral-100: #f5f5f4;
+  --color-neutral-200: #e7e5e4;
+  --color-neutral-400: #a8a29e;
+  --color-neutral-500: #78716c;
+  --color-neutral-600: #57534e;
+  --color-neutral-700: #44403c;
+  --color-neutral-800: #292524;
+  --color-neutral-900: #1c1917;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger:  #ef4444;
+  --color-info:    #0ea5e9;
+
+  /* Glass
+     [NOT IN WAD2 CONTENT] — Glassmorphism uses backdrop-filter: blur()
+     to create a frosted-glass card effect. Not covered in WAD2 Bootstrap week. */
+  --glass-bg:     rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-blur:   16px;
+
+  /* Shadows */
+  --shadow-sm:         0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:         0 4px 6px -1px rgba(0,0,0,0.10);
+  --shadow-lg:         0 10px 25px -3px rgba(0,0,0,0.12);
+  --shadow-xl:         0 20px 40px -6px rgba(0,0,0,0.15);
+  --shadow-glow-green: 0 0 24px rgba(34,197,94,0.35);
+  --shadow-glow-blue:  0 0 24px rgba(14,165,233,0.35);
+
+  /* Typography */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body:    'Inter', sans-serif;
+
+  /* Spacing */
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+
+  /* Radius */
+  --radius-sm:   0.375rem;
+  --radius-md:   0.75rem;
+  --radius-lg:   1rem;
+  --radius-xl:   1.5rem;
+  --radius-2xl:  2rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================
+   RESET & BASE
+   Standard CSS reset — basic good practice, not WAD2-specific.
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-800);
+  -webkit-font-smoothing: antialiased; /* [NOT IN WAD2 CONTENT] — vendor-prefixed font rendering smoothing */
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  margin-top: 0;
+  color: var(--color-neutral-900);
+}
+
+p { margin-top: 0; }
+img { display: block; max-width: 100%; }
+
+/* ============================================================
+   APP CONTAINER — fixes the default Vue scaffolding 2-column grid bug
+   ============================================================ */
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-weight: normal;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: block;
+  }
+
+  #app {
+    display: block;
+    padding: 2rem;
+  }
+}
+
+/* ============================================================
+   ANIMATED BACKGROUND GRADIENT
+   [NOT IN WAD2 CONTENT] — @keyframes CSS animations and background-size
+   with animated background-position are not covered in WAD2 weekly notes.
+   This creates a slow-shifting colour gradient behind all pages.
+   ============================================================ */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #e0f2fe 80%, #fef3c7 100%);
+  background-size: 400% 400%;
+  animation: bgShift 12s ease infinite; /* [NOT IN WAD2 CONTENT] — CSS animation property */
+}
+
+@keyframes bgShift { /* [NOT IN WAD2 CONTENT] — @keyframes not in weekly notes */
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ============================================================
+   GLASS CARDS
+   [NOT IN WAD2 CONTENT] — Glassmorphism / backdrop-filter not covered
+   in WAD2. WAD2 wk3 teaches Bootstrap .card; this is a custom alternative
+   using CSS backdrop-filter blur for a frosted-glass appearance.
+   ============================================================ */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));        /* [NOT IN WAD2 CONTENT] */
+  -webkit-backdrop-filter: blur(var(--glass-blur)); /* [NOT IN WAD2 CONTENT] — vendor prefix */
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================================
+   BUTTONS
+   Custom button system — WAD2 wk3 teaches Bootstrap .btn classes.
+   These are hand-rolled equivalents using CSS custom properties.
+   ============================================================ */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+  overflow: hidden;
+  letter-spacing: 0.02em;
+}
+
+/* [NOT IN WAD2 CONTENT] — ::after pseudo-element ripple effect via CSS transform */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.25);
+  border-radius: inherit;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.btn:active::after {
+  transform: scale(2.5);
+  opacity: 0;
+  transition: 0s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  color: white;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.3);
+  color: var(--color-neutral-700);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   STATUS BADGES & TOKEN PILLS
+   [NOT IN WAD2 CONTENT] — Custom badge/pill components.
+   WAD2 wk3 teaches Bootstrap .badge; these are hand-rolled equivalents.
+   ============================================================ */
+.token-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-pending  { background: rgba(251,191,36,0.15);  color: #92400e; border: 1px solid rgba(251,191,36,0.4); }
+.badge-accepted { background: rgba(56,189,248,0.15);  color: #0369a1; border: 1px solid rgba(56,189,248,0.4); }
+.badge-progress { background: rgba(74,222,128,0.15);  color: #15803d; border: 1px solid rgba(74,222,128,0.4); }
+.badge-done     { background: rgba(34,197,94,0.15);   color: #166534; border: 1px solid rgba(34,197,94,0.4);  }
+.badge-danger   { background: rgba(239,68,68,0.1);    color: #dc2626; border: 1px solid rgba(239,68,68,0.3);  }
+
+/* ============================================================
+   KEYFRAME ANIMATIONS
+   [NOT IN WAD2 CONTENT] — @keyframes and the animation shorthand property
+   are not covered in WAD2 weekly notes. These utility classes apply
+   entrance animations (slide up, fade in, bounce) to page elements.
+   ============================================================ */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes countUp {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce-in {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* Bolder animation keyframes — [NOT IN WAD2 CONTENT] */
+@keyframes crownFloat {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-8px) rotate(4deg); }
+}
+
+@keyframes foilShimmer {
+  0%   { transform: translateX(-150%) rotate(25deg); }
+  50%  { transform: translateX(200%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+@keyframes userRowPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4), 0 8px 20px rgba(34, 197, 94, 0.12); }
+  50%      { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.15), 0 12px 28px rgba(34, 197, 94, 0.22); }
+}
+
+@keyframes coinSpin {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes iconBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.45)); }
+}
+
+.anim-slide-up  { animation: slideUp 0.45s ease both; }
+.anim-slide-in  { animation: slideIn 0.45s ease both; }
+.anim-fade-in   { animation: fadeIn 0.4s ease both; }
+.anim-bounce-in { animation: bounce-in 0.5s var(--transition-bounce) both; }
+
+/* animation-delay utility classes — stagger child elements */
+.anim-delay-1 { animation-delay: 0.08s; }
+.anim-delay-2 { animation-delay: 0.16s; }
+.anim-delay-3 { animation-delay: 0.24s; }
+.anim-delay-4 { animation-delay: 0.32s; }
+.anim-delay-5 { animation-delay: 0.40s; }
+
+/* ============================================================
+   PAGE TRANSITIONS & SCROLLBAR
+   [NOT IN WAD2 CONTENT] — Vue Router <Transition> CSS hook classes
+   (page-enter-active, page-leave-to etc.) are not in WAD2 weekly notes.
+   They animate between route changes when wrapped in <Transition name="page">.
+   ============================================================ */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* Loading spinner — uses the @keyframes spin defined above */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-primary-200);
+  border-top-color: var(--color-primary-500);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite; /* [NOT IN WAD2 CONTENT] */
+}
+
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: var(--space-md);
+  color: var(--color-neutral-600);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-neutral-400);
+  font-size: 0.95rem;
+}
+
+/* [NOT IN WAD2 CONTENT] — Custom scrollbar styling via ::-webkit-scrollbar pseudo-elements */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-200);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-neutral-400); }
