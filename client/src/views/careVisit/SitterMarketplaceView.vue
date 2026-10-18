@@ -93,15 +93,18 @@ function openCheckInModal(visitId) {
 
 async function submitPhotoProof(payload) {
   try {
-    await API.post(`/care-visits/${payload.visitId}/check-in`, { photoUrl: payload.photoUrl })
-    alert('Photo proof uploaded! Visit marked as completed.')
-    activeVisitId.value = null
+    await API.post(`/care-visits/${payload.visitId}/check-in`, { photoUrl: payload.photoUrl });
+    alert('Photo proof uploaded! Visit marked as completed.');
+    activeVisitId.value = null;
+
+    // Refresh both the requests list and the selected request's visits
+    await fetchRequests();
     if (selectedRequest.value) {
-      await selectRequest(selectedRequest.value)
+      await selectRequest(selectedRequest.value);
     }
   } catch (err) {
-    console.error('Error submitting proof:', err)
-    alert('Failed to submit photo check-in.')
+    console.error('Error submitting proof:', err);
+    alert('Failed to submit photo check-in.');
   }
 }
 
