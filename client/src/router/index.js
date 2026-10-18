@@ -15,7 +15,7 @@ import Dashboard from '@/components/dashboard/Dashboard.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
-  { path: '/my-plants', name: 'My Plants', component: MyPlants },
+  { path: '/plants', name: 'My Plants', component: MyPlants },
   { path:'/find-nearby', name: 'Find Nearby', component: FindNearby},
   { path:'/care-visits' , name: 'Care Visits', component: CareVisits },
   
@@ -28,10 +28,38 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      redirect: '/signin',
     },
     {
+      path: '/signin',
+      name: 'sign-in',
+      component: () => import('../views/AuthView.vue'),
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/AuthView.vue'),
+      props: { createAccount: true },
+    },
+    {
+      path: '/plants',
+      name: 'my-plants',
+      component: () => import('../views/plant/MyPlantsView.vue'),
+    },
+    {
+      path: '/plants/new',
+      name: 'plant-new',
+      component: () => import('../views/plant/PlantFormView.vue'),
+    },
+    {
+      path: '/plants/:plantId',
+      name: 'plant-detail',
+      component: () => import('../views/plant/PlantDetailView.vue'),
+    },
+    {
+      path: '/plants/:plantId/edit',
+      name: 'plant-edit',
+      component: () => import('../views/plant/PlantFormView.vue'),
       // Lazy-loaded route — [NOT IN WAD2 CONTENT]
       // () => import(...) loads the component only when the route is visited,
       // which improves initial page load performance (code splitting).
