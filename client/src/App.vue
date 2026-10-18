@@ -45,7 +45,7 @@ async function logout() {
     </nav>
   </header>
 
-  <RouterView :key="route.path" />
+  <RouterView:key="route.path" />
   <ToastHost />
   <ConfirmDialog
     v-if="showLogoutConfirm"
