@@ -8,6 +8,19 @@ import HomeView from '../views/HomeView.vue'
 import DashboardView from '../views/boards/DashboardView.vue'
 import LeaderboardView from '../views/boards/LeaderboardView.vue'
 
+import MyPlants from '@/components/plant/MyPlants.vue'
+import FindNearby from '@/components/map/FindNearby.vue'
+import CareVisits from '@/components/careVisit/CareVisits.vue'
+import Dashboard from '@/components/dashboard/Dashboard.vue'
+
+const routes = [
+  { path: '/', name: 'Dashboard', component: Dashboard },
+  { path: '/my-plants', name: 'My Plants', component: MyPlants },
+  { path:'/find-nearby', name: 'Find Nearby', component: FindNearby},
+  { path:'/care-visits' , name: 'Care Visits', component: CareVisits },
+  
+]
+
 const router = createRouter({
   // createWebHistory uses the HTML5 History API for clean URLs (no #)
   // import.meta.env.BASE_URL is a Vite env variable — [NOT IN WAD2 CONTENT]
@@ -39,6 +52,7 @@ const router = createRouter({
       component: LeaderboardView,
     },
   ],
+  routes
 })
 
 export default router
