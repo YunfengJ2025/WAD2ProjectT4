@@ -1,6 +1,9 @@
+
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+
+import NavBar from './components/nav/NavBar.vue'
 import ToastHost from './components/ToastHost.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useToast } from './composables/useToast'
@@ -8,21 +11,33 @@ import { useToast } from './composables/useToast'
 const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
+
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
+const navigationitems = [
+  { label: 'Home', to: '/' },
+  { label: 'My Plants', to: '/plants' },
+  { label: 'Find Nearby', to: '/find-nearby' },
+  { label: 'Care Visits', to: '/care-visits' }
+]
+
 async function logout() {
   if (loggingOut.value) return
+
   loggingOut.value = true
+
   try {
     const response = await fetch('/api/user/logout', {
       method: 'POST',
       credentials: 'same-origin',
     })
+
     if (!response.ok) {
       toast('Could not log out. Please try again.', 'error')
       return
     }
+
     showLogoutConfirm.value = false
     await router.replace('/signin')
   } catch {
@@ -31,22 +46,20 @@ async function logout() {
     loggingOut.value = false
   }
 }
+
 </script>
 
 <template>
-  <header v-if="route.path.startsWith('/plants')" class="topbar">
-    <nav>
-      <RouterLink to="/plants" :class="{ active: route.path.startsWith('/plants') }">
-        My Plants
-      </RouterLink>
-      <button class="btn logout" type="button" :disabled="loggingOut" @click="showLogoutConfirm = true">
-        {{ loggingOut ? 'Logging out...' : 'Log out' }}
-      </button>
-    </nav>
-  </header>
+  <NavBar
+    v-if="!['/signin', '/signup'].includes(route.path)"
+    :navigationitems="navigationitems"
+    @logout="showLogoutConfirm = true"
+  />
+  
+  <RouterView :key="route.path" />
 
-  <RouterView:key="route.path" />
   <ToastHost />
+
   <ConfirmDialog
     v-if="showLogoutConfirm"
     :open="showLogoutConfirm"
@@ -94,3 +107,22 @@ nav a:hover {
   color: var(--accent);
 }
 </style>
+=========
+import NavBar from './components/nav/NavBar.vue'
+
+const navigationitems = [
+    { label: 'Home', to: '/' },
+    { label: 'My Plants', to: '/my-plants' },
+    { label: 'Find Nearby', to:'/find-nearby'},
+    { label: 'Care Visits', to: '/care-visits' }
+]
+</script>
+
+<template>
+  <NavBar :navigationitems="navigationitems" />
+  <br>
+
+  <RouterView/>
+</template>
+ 
+>>>>>>>>> Temporary merge branch 2
