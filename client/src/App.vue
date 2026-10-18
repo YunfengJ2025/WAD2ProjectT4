@@ -72,3 +72,38 @@ async function logout() {
     @cancel="showLogoutConfirm = false"
   />
 </template>
+
+<style scoped>
+.topbar {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.logout {
+  margin-left: auto;
+  min-width: 130px;
+}
+
+nav a {
+  padding: 0.25rem 0;
+  color: var(--color-text);
+}
+
+nav a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+nav a:hover {
+  background-color: transparent;
+  color: var(--accent);
+}
+</style>
