@@ -50,6 +50,8 @@ async function logout() {
 </script>
 
 <template>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
   <NavBar
     v-if="!['/signin', '/signup'].includes(route.path)"
     :navigationitems="navigationitems"
