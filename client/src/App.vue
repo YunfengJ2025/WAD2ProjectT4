@@ -54,8 +54,6 @@ async function logout() {
   <!-- Background gradient container defined in main.css -->
   <div class="page-bg"></div>
 
-  <NavBar :navigationitems="navigationitems" />
-  <br>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
   <NavBar
