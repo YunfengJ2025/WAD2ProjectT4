@@ -9,7 +9,7 @@ import LeaderboardView from '../views/boards/LeaderboardView.vue'
 
 import FindNearby from '@/components/map/FindNearby.vue'
 import CareVisits from '@/components/careVisit/CareVisits.vue'
-import Dashboard from '@/components/dashboard/Dashboard.vue'
+
 
 // One list with every page. (createRouter only takes one `routes` list.)
 const routes = [
