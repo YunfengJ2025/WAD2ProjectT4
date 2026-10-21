@@ -54,6 +54,8 @@ async function logout() {
   <!-- Background gradient container defined in main.css -->
   <div class="page-bg"></div>
 
+  
+  <br>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
   <NavBar
@@ -61,7 +63,7 @@ async function logout() {
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
-  
+
   <RouterView :key="route.path" />
 
   <ToastHost />
