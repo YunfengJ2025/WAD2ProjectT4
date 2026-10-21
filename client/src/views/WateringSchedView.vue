@@ -1,59 +1,46 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import WeatherHeader from '../components/schedule/WeatherHeader.vue'
 import ScheduleCalendar from '../components/schedule/ScheduleCalendar.vue'
 import ScheduleList from '../components/schedule/ScheduleList.vue'
 import ScheduleAlertBanner from '../components/schedule/ScheduleAlertBanner.vue'
+import { buildSchedule } from '../composables/schedule/buildSchedule'
+import { useWeather } from '../composables/schedule/useWeather'
+import { applyWeatherAdjustments } from '../composables/schedule/applyWeatherAdjustments'
 
 const loading = ref(true)
 const errorMessage = ref(null)
 const schedule = ref([])   // array of RequestItem-shaped objects
+const plants = ref([])
 // const user = ref(null)     // logged-in owner, has Lat/Lng
 const user = ref({ lat: 1.3521, lng: 103.8198, userRole: 'user' }) // placeholder test user hardcoded
 
-const USE_MOCK = true // set bacjk to false oncce GET / schedule exists
-// dates relative to today so the demo always falls inside the calendar's 7-day window
-function daysFromToday(n) {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${month}-${day}`
-}
-
-// placeholder remove later
-const MOCK_SCHEDULE = [
-  { requestItemId: 1, plantName: 'Money Plant', status: 'upcoming',
-    originalDueAt: daysFromToday(0), dueAt: daysFromToday(0),
-    adjustmentType: null, adjustmentReason: null },
-  { requestItemId: 2, plantName: 'Chilli', status: 'upcoming',
-    originalDueAt: daysFromToday(1), dueAt: daysFromToday(2), adjustmentType: 'skipped-rain',
-    adjustmentReason: 'Heavy rain recorded nearby, so watering was moved back a day.' },
-  { requestItemId: 3, plantName: 'Hibiscus', status: 'upcoming',
-    originalDueAt: daysFromToday(3), dueAt: daysFromToday(2), adjustmentType: 'extra-heat',
-    adjustmentReason: 'No rain for 3 days and temperatures above 33°C, so an extra watering was added.' },
-]
-
 const isHelper = ref(true) // placeholder
 
+// fetch weather, shared to header and schedule logic
+const {condition, stationName, forecastText, loading: weatherLoading, error: weatherError, fetchForecast} = useWeather(user.value.lat, user.value.lng)
+
+// For testing: set to 'rain' to force a rainy day. Use null for the real forecast.
+const demoCondition = null
+
+// Re-runs automatically when the plants, schedule or forecast change (condition.value)
+const adjustedSchedule = computed(() =>
+  applyWeatherAdjustments(schedule.value, plants.value, {
+    condition: weatherLoading.value ? null : (demoCondition ?? condition.value),
+    stationName: stationName.value,
+  }),
+)
+
 onMounted(async () => {
-  // remove later
-  if (USE_MOCK) {
-    schedule.value = MOCK_SCHEDULE
-    loading.value = false
-    return
-  }
+  // load forecast and plants together
+  fetchForecast()
 
   try {
-    const url = 'http://localhost:8000/schedule'
-    const response = await axios.get(url, { 
-      params: { 
-        ownerId: user.value.userId 
-      } 
-    })
+    const response = await axios.get('/api/plants')
 
-    schedule.value = response.data
+    plants.value = response.data.plants // the response is {count, plants}
+    schedule.value = buildSchedule(plants.value)
     
   } catch (error) {
     errorMessage.value = error.response?.data?.message ?? error.message
@@ -65,9 +52,16 @@ onMounted(async () => {
 
 
 <template>
-  <div v-if="user" style="grid-column: 1 / -1">
+  <div v-if="user">
     <!--force-condition="sunny", "cloudy" or "rain" or <WeatherHeader ... force-night />-->
-    <WeatherHeader :user-lat="user.lat" :user-lng="user.lng" force-condition="sunny"/>
+    <WeatherHeader 
+      :condition="condition"
+      :force-condition="demoCondition"
+      :forecast-text="forecastText"
+      :station-name="stationName"
+      :loading="weatherLoading"
+      :error="weatherError"
+    />
 
     <div v-if="loading" class="text-center my-3">
       <div class="spinner-border" role="status"><span class="visually-hidden">Loading…</span></div>
@@ -77,9 +71,9 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <ScheduleAlertBanner v-if="isHelper" :items="schedule" />
-      <ScheduleCalendar class="d-none d-md-block" :items="schedule" />
-      <ScheduleList class="d-md-none" :items="schedule" />
+      <ScheduleAlertBanner v-if="isHelper" :items="adjustedSchedule" />
+      <ScheduleCalendar class="d-none d-md-block" :items="adjustedSchedule" />
+      <ScheduleList class="d-md-none" :items="adjustedSchedule" />
     </template>
   </div>
 </template>

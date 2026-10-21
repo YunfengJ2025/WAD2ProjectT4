@@ -1,16 +1,15 @@
 <script setup>
-import { onMounted, computed, ref } from 'vue'
-import { useWeather } from '../../composables/schedule/useWeather.js'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
-  userLat: Number,
-  userLng: Number,
+  condition: String,
+  forecastText: String,
+  stationName: String,
+  loading: Boolean,
+  error: String,
   forceCondition: String, // testing/demo override: 'rain' | 'cloudy' | 'sunny'
   forceNight: Boolean, // testing/demo override, because your demo will probably be in daytime
 })
-const { condition, stationName, forecastText, loading, error, fetchForecast } = useWeather(props.userLat, props.userLng)
-
-onMounted(fetchForecast)
 
 function singaporeHour() {
   return Number(
@@ -20,13 +19,13 @@ function singaporeHour() {
   )
 }
 
-                            // remove after testing
-const theme = computed(() => props.forceCondition ?? condition.value ?? 'unknown')
+// remove props.forceCondition after testing
+const theme = computed(() => props.forceCondition ?? props.condition ?? 'unknown')
 
 //const isNight = computed(() => forecastText.value?.includes('Night'))
 const isNight = computed(() => {
   if (props.forceNight) return true
-  const text = forecastText.value ?? ''
+  const text = props.forecastText ?? ''
   if (text.includes('(Night)')) return true
   if (text.includes('(Day)')) return false
   const hour = singaporeHour() // no label (e.g. plain "Cloudy"), so use the clock
@@ -67,12 +66,6 @@ function play() {
   if (theme.value === 'rain') heavyRain.value = !heavyRain.value
 }
 
-// const icon = computed(() => {
-//   const night = forecastText.value?.includes('Night')
-//   if (condition.value === 'rain') return '🌧️'
-//   if (condition.value === 'cloudy') return night ? '☁️' : '⛅'
-//   return night ? '🌙' : '☀️'
-// })
 </script>
 
 <template>
@@ -187,40 +180,3 @@ function play() {
   .drop, .toy { animation: none !important; }
 }
 </style>
-<!-- <template>
-  <div class="weather-header rounded mb-3 p-3 position-relative overflow-hidden" :class="`theme-${theme}`">
-    <div v-if="theme === 'rain'" class="rain" aria-hidden="true"></div>
-    <div class="position-relative">
-      <span v-if="loading">Checking weather…</span>
-      <span v-else-if="error">Weather unavailable right now ({{ error }})</span>
-      <template v-else>
-        <span class="fs-3 me-2" aria-hidden="true">{{ icon }}</span>
-        <strong>{{ forecastText }}</strong>
-        <span class="small ms-2">near {{ stationName }}</span>
-      </template>
-    </div>
-  </div>
-</template>
-
-
-<style scoped>
-.weather-header { color: #212529; }
-.theme-sunny { background: linear-gradient(135deg, #fff3cd, #ffd966); }
-.theme-cloudy { background: linear-gradient(135deg, #e9ecef, #ced4da); }
-.theme-rain { background: linear-gradient(135deg, #b8cde0, #8aa4bd); color: #1d2b3a; }
-.theme-unknown { background: #f8f9fa; }
-
-.rain {
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(105deg, transparent 0 14px, rgba(255, 255, 255, 0.35) 14px 15px);
-  background-size: 40px 40px;
-  animation: fall 0.6s linear infinite;
-}
-@keyframes fall {
-  to { background-position: -10px 40px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rain { animation: none; }
-}
-</style> -->
