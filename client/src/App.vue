@@ -1,85 +1,117 @@
+
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { ref } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+
+import NavBar from './components/nav/NavBar.vue'
+import ToastHost from './components/ToastHost.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
+import { useToast } from './composables/useToast'
+
+const route = useRoute()
+const router = useRouter()
+const { show: toast } = useToast()
+
+const loggingOut = ref(false)
+const showLogoutConfirm = ref(false)
+
+const navigationitems = [
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Leaderboard', to: '/leaderboard' },
+  { label: 'My Plants', to: '/plants' },
+  { label: 'Find Nearby', to: '/find-nearby' },
+  { label: 'Care Visits', to: '/care-visits' }
+]
+
+async function logout() {
+  if (loggingOut.value) return
+
+  loggingOut.value = true
+
+  try {
+    const response = await fetch('/api/user/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+
+    if (!response.ok) {
+      toast('Could not log out. Please try again.', 'error')
+      return
+    }
+
+    showLogoutConfirm.value = false
+    await router.replace('/signin')
+  } catch {
+    toast('Could not reach the server. Please try again.', 'error')
+  } finally {
+    loggingOut.value = false
+  }
+}
+
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <!-- Background gradient container defined in main.css -->
+  <div class="page-bg"></div>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+  
+  <br>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
+  <NavBar
+    v-if="!['/signin', '/signup'].includes(route.path)"
+    :navigationitems="navigationitems"
+    @logout="showLogoutConfirm = true"
+  />
 
-  <RouterView />
+  <RouterView :key="route.path" />
+
+  <ToastHost />
+
+  <ConfirmDialog
+    v-if="showLogoutConfirm"
+    :open="showLogoutConfirm"
+    title="Log out?"
+    message="Are you sure you want to log out?"
+    confirm-label="Log out"
+    :busy="loggingOut"
+    busy-label="Logging out..."
+    @confirm="logout"
+    @cancel="showLogoutConfirm = false"
+  />
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.topbar {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.logout {
+  margin-left: auto;
+  min-width: 130px;
 }
 
 nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+  padding: 0.25rem 0;
+  color: var(--color-text);
 }
 
-nav a:first-of-type {
-  border: 0;
+nav a.active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
+nav a:hover {
+  background-color: transparent;
+  color: var(--accent);
 }
 </style>
