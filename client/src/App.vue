@@ -20,7 +20,7 @@ const navigationitems = [
     { label: 'Leaderboard', to: '/leaderboard' },
     { label: 'My Plants', to: '/my-plants' },
     { label: 'Find Nearby', to: '/find-nearby' },
-    { label: 'Care Visits', to: '/care-visits' }
+    { label: 'Care Visits', to: '/care-visits' },
   { label: 'Home', to: '/' },
   { label: 'My Plants', to: '/plants' },
   { label: 'Find Nearby', to: '/find-nearby' },
@@ -58,7 +58,7 @@ async function logout() {
   <!-- Background gradient container defined in main.css -->
   <div class="page-bg"></div>
 
-  <NavBar :navigationitems="navigationitems" />
+  <!-- <NavBar :navigationitems="navigationitems" /> -->
   <br>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
