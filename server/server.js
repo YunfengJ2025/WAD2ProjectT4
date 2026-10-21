@@ -8,6 +8,7 @@ const fs = require("fs");
 const cors = require("cors"); 
 const server = express();
 const userRoutes = require("./routes/userRoute")
+const plantRoutes = require("./routes/plantRoute");
 const session = require("express-session");
 // Specify the path to the environment variable file '.env'
 server.use(cors());  
@@ -22,6 +23,7 @@ server.use(
 );
 //Routes
 server.use("/user",userRoutes)
+server.use("/plants", plantRoutes);
 
 async function connectDB() {
   try {
