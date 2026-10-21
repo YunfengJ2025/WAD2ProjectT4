@@ -16,12 +16,8 @@ const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
 const navigationitems = [
-    { label: 'Dashboard', to: '/' },
-    { label: 'Leaderboard', to: '/leaderboard' },
-    { label: 'My Plants', to: '/my-plants' },
-    { label: 'Find Nearby', to: '/find-nearby' },
-    { label: 'Care Visits', to: '/care-visits' }
-  { label: 'Home', to: '/' },
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },
   { label: 'Find Nearby', to: '/find-nearby' },
   { label: 'Care Visits', to: '/care-visits' }
