@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const fs = require("fs");
 const server = express();
 const userRoutes = require("./routes/userRoute")
+const plantRoutes = require("./routes/plantRoute");
 const session = require("express-session");
 // Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
@@ -20,6 +21,7 @@ server.use(
 );
 //Routes
 server.use("/user",userRoutes)
+server.use("/plants", plantRoutes);
 
 async function connectDB() {
   try {
