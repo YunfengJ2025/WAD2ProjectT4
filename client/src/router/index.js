@@ -11,6 +11,20 @@ import FindNearby from '@/components/map/FindNearby.vue'
 import CareVisits from '@/components/careVisit/CareVisits.vue'
 import Dashboard from '@/components/dashboard/Dashboard.vue'
 
+// Merged and corrected routes list
+// Path '/' routes to DashboardView so you immediately see the completed dashboard with stats and charts
+const routes = [
+  { path: '/', name: 'Dashboard', component: DashboardView },
+  { path: '/dashboard', name: 'DashboardView', component: DashboardView },
+  { path: '/leaderboard', name: 'Leaderboard', component: LeaderboardView },
+  { path: '/my-plants', name: 'My Plants', component: MyPlants },
+  { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
+  { path: '/care-visits', name: 'Care Visits', component: CareVisits },
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import('../views/AboutView.vue'),
+  },
 // One list with every page. (createRouter only takes one `routes` list.)
 const routes = [
   // Home — the navbar's "Home" link goes here
@@ -53,7 +67,6 @@ const routes = [
 
 const router = createRouter({
   // createWebHistory uses the HTML5 History API for clean URLs (no #)
-  // import.meta.env.BASE_URL is a Vite env variable — [NOT IN WAD2 CONTENT]
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
