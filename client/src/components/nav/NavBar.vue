@@ -12,8 +12,9 @@
 
 <template>
     <!-- ADD YOUR CODE HERE -->
+     
 
-    <nav class="navbar navbar-expand bg-body-tertiary bg-dark text-light">
+    <nav class="navbar navbar-expand bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Leaf it to us</a>
             <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
