@@ -3,7 +3,26 @@ const {
   loginUser,
   toAuthJSON,
   getAllUsers,
+  applyTransactionToBalances,
 } = require("../models/userModel");
+const { createTransaction, TokenTransaction } = require("../models/tokenModel");
+const STARTER_TOKENS = 50;
+
+async function giveStarterTokens(userId) {
+  const txn = await createTransaction({
+    type: "SYSTEM_GIFT",
+    reason: "Beginner starter tokens",
+    receiverId: userId,
+    amount: STARTER_TOKENS,
+  });
+  try {
+    return await applyTransactionToBalances(txn.transactionId);
+  } catch (err) {
+    // balance update failed: don't keep a transaction without matching balances
+    await TokenTransaction.deleteOne({ _id: txn._id });
+    throw err;
+  }
+}
 const handleError = (err, res) => {
   console.log(err);
   if (err.status) {
@@ -47,6 +66,15 @@ exports.register = async (req, res) => {
 
     const user = await registerUser(body);
     req.session.userId = user.userId;
+
+    // Starter pack: a failure here must not undo a successful registration
+    try {
+      const gift = await giveStarterTokens(user.userId);
+      user.tokenBalance = gift.receiverBalance; // so the response shows the new balance
+    } catch (giftErr) {
+      console.log("Starter token gift failed:", giftErr);
+    }
+
     res.status(201).json({ user: toAuthJSON(user) });
   } catch (err) {
     handleError(err, res);
@@ -87,4 +115,14 @@ exports.logout = (req, res) => {
     res.clearCookie("connect.sid", { path: "/" });
     res.status(204).end();
   });
+};
+exports.updateTokenBalance = async (req, res) => {
+  try {
+    const result = await model.applyTransactionToBalances(
+      Number(req.params.transactionId),
+    );
+    res.json(result);
+  } catch (err) {
+    handleError(err, res);
+  }
 };
