@@ -21,6 +21,7 @@ export function findNearestStation(stations, userLat, userLng) {
 
 export function useWeather(userLat, userLng) {
   const condition = ref(null)   // 'rain' | 'sunny' | 'cloudy'
+  const tempHigh = ref(null) // today's forecast high in celcius
   const stationName = ref(null)
   const loading = ref(true)
   const error = ref(null)
@@ -30,10 +31,8 @@ export function useWeather(userLat, userLng) {
     loading.value = true
     error.value = null
     try {
-      const url = 'https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast'
-      const response = await axios.get(url)
+      const response = await axios.get('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast')
       const json = response.data
-      console.log(json) // check the field names against what the code below uses
 
       const areas = json.data.area_metadata
       const forecasts = json.data.items[0].forecasts
@@ -43,7 +42,6 @@ export function useWeather(userLat, userLng) {
       )
 
       const match = forecasts.find(f => f.area === nearestArea.name)
-      console.log(match)
       forecastText.value = match?.forecast ?? null // i forgot what this does
       stationName.value = nearestArea.name
       condition.value = classifyForecast(match?.forecast ?? '')
@@ -55,6 +53,15 @@ export function useWeather(userLat, userLng) {
     }
   }
 
+  async function fetchTemperature() {
+    try {
+      const response = await axios.get('https://api-open.data.gov.sg/v2/real-time/api/twenty-four-hr-forecast') // returns data.records[0].general.temperature.high
+      tempHigh.value = response.data.data.records[0].general.temperature.high
+    } catch (error) {
+      tempHigh.value = null
+    }
+  }
+
   function classifyForecast(text) {
     const t = text.toLowerCase()
     if (t.includes('rain') || t.includes('shower') || t.includes('thundery')) return 'rain'
@@ -62,5 +69,5 @@ export function useWeather(userLat, userLng) {
     return 'sunny'
   }
 
-  return { condition, stationName, forecastText, loading, error, fetchForecast }
+  return { condition, stationName, forecastText, tempHigh, loading, error, fetchForecast, fetchTemperature }
 }

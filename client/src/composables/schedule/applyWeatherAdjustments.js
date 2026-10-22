@@ -2,7 +2,7 @@ import { toDateInputValue } from '../../utils/wateringStatus.js'
 import { addDays } from './buildSchedule.js'
 
 // takes schedule items and returns new list, rain-affected items moved to next day
-export function applyWeatherAdjustments(items, plants, weather, now = new Date()) {
+function skipForRain(items, plants, weather, now = new Date()) {
     // if no rain no change
     if (weather.condition !== 'rain') {
         return items
@@ -36,7 +36,7 @@ export function applyWeatherAdjustments(items, plants, weather, now = new Date()
         if (shouldSkip) {
             const area = weather.stationName ? ` near ${weather.stationName}` : ''
             result.push({
-                requestItemId: item.requestItemId,
+                requestItemId: item.requestItemId, // moves existing item (task for watering)
                 plantId: item.plantId,
                 plantName: item.plantName,
                 status: 'upcoming',
@@ -51,4 +51,69 @@ export function applyWeatherAdjustments(items, plants, weather, now = new Date()
     }
     
     return result
+}
+
+const HEAT_THRESHOLD = 34 // celcius
+
+// add extra watering day for plants that need it in hot weather
+function addExtraForHeat(items, plants, weather, now) {
+    // if rains no change
+    if (weather.condition === 'rain') {
+        return items
+    }
+    // if weather not too hot
+    if (weather.tempHigh === null || weather.tempHigh < HEAT_THRESHOLD) {
+        return items
+    }    
+
+    const todayISO = toDateInputValue(now)
+
+    const result = []
+    for (const item of items) {
+        result.push(item)
+    }
+
+    for (const plant of plants) {
+        let needsExtra = true
+
+        // check if  weatherAdjustment is set to false
+        if (plant.weatherAdjustmentEnabled !== true) {
+            needsExtra = false
+        }
+
+        // check if plant is already on today's schedule
+        for (const item of items) {
+            if (item.plantId === plant.plantId && item.dueAt === todayISO) {
+                needsExtra = false
+            }
+        }
+
+        // check if plant is already watered today
+        if (plant.lastWateredAt) {
+            if (toDateInputValue(plant.lastWateredAt) === todayISO) {
+                needsExtra = false
+            }
+        }
+
+        if (needsExtra) {
+            result.push({
+                requestItemId: `${plant.plantId}-${todayISO}-heat`, // creates new item (task for watering), '-heat' wont clash
+                plantId: plant.plantId,
+                plantName: plant.plantName,
+                status: 'due',
+                originalDueAt: todayISO,
+                dueAt: todayISO,
+                adjustmentType: 'extra-heat',
+                adjustmentReason: `Forecast high of ${weather.tempHigh}°C today, so an extra watering was added.`,
+            })            
+        }
+    }
+
+    return result
+}
+
+// first calls the rain skips then the heat extras
+export function applyWeatherAdjustments(items, plants, weather, now = new Date()) {
+  const afterRain = skipForRain(items, plants, weather, now)
+  return addExtraForHeat(afterRain, plants, weather, now)
 }

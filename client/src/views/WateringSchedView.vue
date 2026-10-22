@@ -16,25 +16,28 @@ const plants = ref([])
 // const user = ref(null)     // logged-in owner, has Lat/Lng
 const user = ref({ lat: 1.3521, lng: 103.8198, userRole: 'user' }) // placeholder test user hardcoded
 
-const isHelper = ref(true) // placeholder
+const isHelper = ref(true) // placeholder, decides when the schedule alert banner shows
 
 // fetch weather, shared to header and schedule logic
-const {condition, stationName, forecastText, loading: weatherLoading, error: weatherError, fetchForecast} = useWeather(user.value.lat, user.value.lng)
+const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(user.value.lat, user.value.lng)
 
-// For testing: set to 'rain' to force a rainy day. Use null for the real forecast.
+// 'rain' to test the rain skip, 'sunny' for heat, null for real
 const demoCondition = null
+const demoTempHigh = null // null for real forecast
 
 // Re-runs automatically when the plants, schedule or forecast change (condition.value)
 const adjustedSchedule = computed(() =>
   applyWeatherAdjustments(schedule.value, plants.value, {
     condition: weatherLoading.value ? null : (demoCondition ?? condition.value),
     stationName: stationName.value,
+    tempHigh: weatherLoading.value ? null : (demoTempHigh ?? tempHigh.value),
   }),
 )
 
 onMounted(async () => {
   // load forecast and plants together
   fetchForecast()
+  fetchTemperature()
 
   try {
     const response = await axios.get('/api/plants')
@@ -49,7 +52,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 
 <template>
   <div v-if="user">
