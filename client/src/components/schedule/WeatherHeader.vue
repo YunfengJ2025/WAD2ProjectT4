@@ -198,8 +198,22 @@ function onPointerLeave() {
 
 // shrink to bar when scrolling page
 const compact = ref(false)
+const COMPACT_HEIGHT = 56   // must match .weather-header.compact min-height in the CSS
+
+// prevent glitching
 function onScroll() {
-  compact.value = window.scrollY > 80
+  const y = window.scrollY
+  if (!compact.value) {
+    // how far the page could still scroll after the header shrinks
+    const shrinkBy = headerEl.value.offsetHeight - COMPACT_HEIGHT
+    const roomAfter = document.documentElement.scrollHeight - window.innerHeight - shrinkBy
+
+    // shrink only if we're well down the page and there is still room to scroll once smaller
+    if (y > 80 && roomAfter > 40) compact.value = true
+  } else if (y < 20) {
+    // grow back only near the very top (a lower number than 80 on purpose)
+    compact.value = false
+  }
 }
 
 onMounted(() => {
