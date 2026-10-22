@@ -1,5 +1,7 @@
 // tokenTransactionController.js
-const model = require("./tokenTransactionModel");
+const model = require("../models/tokenModel");
+const userModel = require("../models/userModel");
+
 const handleError = (err, res) => {
   console.log(err);
   if (err.status) {
@@ -14,10 +16,21 @@ const handleError = (err, res) => {
   }
   res.status(500).json({ message: "Server error" });
 };
+
+
 exports.createTokenTran = async (req, res) => {
   try {
     const txn = await model.createTransaction(req.body);
-    res.status(201).json(txn);
+    try {
+      const result = await userModel.applyTransactionToBalances(
+        txn.transactionId,
+      );
+      res.status(201).json(result);
+    } catch (err) {
+      // balance update failed (e.g. insufficient funds): don't keep the record
+      await model.TokenTransaction.deleteOne({ _id: txn._id });
+      throw err;
+    }
   } catch (err) {
     handleError(err, res);
   }
@@ -26,6 +39,22 @@ exports.createTokenTran = async (req, res) => {
 exports.getTranHistoryByUser = async (req, res) => {
   try {
     res.json(await model.getTransactionsByUser(Number(req.params.userId)));
+  } catch (err) {
+    handleError(err, res);
+  }
+};
+exports.getAllTokenTran = async (req, res) => {
+  try {
+    res.json(await model.getAllTransactions());
+  } catch (err) {
+    handleError(err, res);
+  }
+};
+
+exports.getTranByType = async (req, res) => {
+  try {
+    // uppercase so /type/care and /type/CARE both work
+    res.json(await model.getTransactionsByType(req.params.type.toUpperCase()));
   } catch (err) {
     handleError(err, res);
   }
