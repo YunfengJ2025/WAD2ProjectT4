@@ -22,15 +22,15 @@ const isHelper = ref(true) // placeholder, decides when the schedule alert banne
 const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(user.value.lat, user.value.lng)
 
 // 'rain' to test the rain skip, 'sunny' for heat, null for real
-const demoCondition = null
-const demoTempHigh = null // null for real forecast
+const demoCondition = ref(null)
+const demoTempHigh = ref(null) // null for real forecast
 
 // Re-runs automatically when the plants, schedule or forecast change (condition.value)
 const adjustedSchedule = computed(() =>
   applyWeatherAdjustments(schedule.value, plants.value, {
-    condition: weatherLoading.value ? null : (demoCondition ?? condition.value),
+    condition: weatherLoading.value ? null : (demoCondition.value ?? condition.value),
     stationName: stationName.value,
-    tempHigh: weatherLoading.value ? null : (demoTempHigh ?? tempHigh.value),
+    tempHigh: weatherLoading.value ? null : (demoTempHigh.value ?? tempHigh.value),
   }),
 )
 
@@ -55,6 +55,18 @@ onMounted(async () => {
 
 <template>
   <div v-if="user">
+    <!-- for testing animation-->
+    <div class="d-flex gap-2 mb-2">
+      <button class="btn btn-sm btn-outline-primary" @click="demoCondition = 'rain'">Rain</button>
+      <button class="btn btn-sm btn-outline-primary" @click="demoCondition = 'sunny'">Sunny</button>
+      <button class="btn btn-sm btn-outline-primary" @click="demoTempHigh = 35">Hot (35°C)</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="demoCondition = null; demoTempHigh = null">Real</button>
+    </div>
+    <!--
+      Rain needs a plant with both Rain exposed and Weather adjustment ticked and due today.
+      Hot needs weather adjustment ticked on a plant that isn’t already on today’s schedule.
+    -->
+
     <!--force-condition="sunny", "cloudy" or "rain" or <WeatherHeader ... force-night />-->
     <WeatherHeader 
       :condition="condition"

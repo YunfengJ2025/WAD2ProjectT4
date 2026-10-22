@@ -36,9 +36,7 @@ function skipForRain(items, plants, weather, now = new Date()) {
         if (shouldSkip) {
             const area = weather.stationName ? ` near ${weather.stationName}` : ''
             result.push({
-                requestItemId: item.requestItemId, // moves existing item (task for watering)
-                plantId: item.plantId,
-                plantName: item.plantName,
+                ...item,                               // copies every field, including photoUrl and plantLocation
                 status: 'upcoming',
                 originalDueAt: item.originalDueAt,     // stays today, so the card knows it moved
                 dueAt: tomorrowISO,                    // the new date
@@ -62,7 +60,7 @@ function addExtraForHeat(items, plants, weather, now) {
         return items
     }
     // if weather not too hot
-    if (weather.tempHigh === null || weather.tempHigh < HEAT_THRESHOLD) {
+    if (typeof weather.tempHigh !== 'number' || weather.tempHigh < HEAT_THRESHOLD) {
         return items
     }    
 
@@ -100,6 +98,8 @@ function addExtraForHeat(items, plants, weather, now) {
                 requestItemId: `${plant.plantId}-${todayISO}-heat`, // creates new item (task for watering), '-heat' wont clash
                 plantId: plant.plantId,
                 plantName: plant.plantName,
+                photoUrl: plant.photoUrl || '',
+                plantLocation: plant.plantLocation || '',
                 status: 'due',
                 originalDueAt: todayISO,
                 dueAt: todayISO,

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import ScheduleDayCard from './ScheduleDayCard.vue'
+import ScheduleLegend from './ScheduleLegend.vue'
 
 const props = defineProps({ 
     items: { 
@@ -41,17 +42,56 @@ function formatDate(iso) {
         month: 'short',
     })
 }
-    
 </script>
 
 <template>
-  <div class="overflow-auto" style="max-height: 70vh">
+  <div>
+    <ScheduleLegend />
     <section v-for="[date, dayItems] in grouped" :key="date" class="mb-3">
-      <h6 class="text-muted">{{ formatDate(date) }}</h6>
-      <div class="d-flex flex-column gap-2">
+      <h6 class="date-heading text-muted">{{ formatDate(date) }}</h6>
+      <TransitionGroup name="card" tag="div" appear class="card-list d-flex flex-column gap-2">
         <ScheduleDayCard v-for="item in dayItems" :key="item.requestItemId" :item="item" />
-      </div>
+      </TransitionGroup>
     </section>
-  </div>
 
+    <p v-if="!grouped.length" class="text-center text-muted my-4">🌿 Nothing to water yet.</p>
+  </div>
 </template>
+
+<style scoped>
+.date-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+/* ---------- cards entering / leaving a day (TransitionGroup) ---------- */
+.card-list { position: relative; } /* so a leaving card can be taken out of the flow */
+
+.card-enter-active {
+  /* --i is the column number, so columns ripple in left to right */
+  animation: cardIn 0.5s var(--transition-bounce) backwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.card-leave-active {
+  position: absolute;     /* lets the remaining cards close the gap smoothly */
+  width: 100%;
+  animation: cardOut 0.25s ease forwards;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(-14px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cardOut {
+  to { opacity: 0; transform: translateY(10px) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-enter-active, .card-leave-active { animation: none; }
+}
+</style>

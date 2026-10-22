@@ -29,6 +29,8 @@ export function buildSchedule(plants, now = new Date(), days = 28) {
             requestItemId: `${plant.plantId}-${originalISO}`,
             plantId: plant.plantId,
             plantName: plant.plantName,
+            photoUrl: plant.photoUrl || '',
+            plantLocation: plant.plantLocation || '',
             status,
             originalDueAt: originalISO,
             dueAt: toDateInputValue(due), // formats a local YYYY-MM-DD
