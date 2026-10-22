@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
+import gsap from 'gsap'
 import ScheduleDayCard from './ScheduleDayCard.vue'
 import ScheduleLegend from './ScheduleLegend.vue'
 
@@ -30,27 +31,99 @@ function goToToday() {
   rangeStart.value = new Date(homeStart)
 }
 
-// 7 days starting from rangeStart, each with its matching schedule items
+// 7 days starting from rangeStart with its matching schedule items
 const days = computed(() => {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(rangeStart.value)
     d.setDate(d.getDate() + i)
     const iso = toISO(d)
+    const dayItems = props.items.filter(item => item.dueAt === iso) // filter and reuse
     return {
       iso,
       label: d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' }),
       isToday: iso === toISO(new Date()),
-      items: props.items.filter(item => item.dueAt === iso),
+      items: dayItems,
+      changed: dayItems.some(item => item.adjustmentType), // returns true if rain or heat touched any card this day
+      // some() checks if at least one element in an array passes the condi implemented
     }
   })
 })
 
 function shiftWeek(direction) {
-  slide.value = direction > 0 ? 'next' : 'prev' // set befire the week changes so the right animation plays
+  slide.value = direction > 0 ? 'next' : 'prev' // set before the week changes so the right animation plays
   const d = new Date(rangeStart.value)
   d.setDate(d.getDate() + direction * 7)
   rangeStart.value = d
 }
+
+// leaf button animation when clicked
+// people who ask their device for less motion get no burst
+const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
+
+const activeLeaves = new Set() // every leaf currently flying, so we can clean up if the page closes mid-burst
+
+function removeLeaf(leaf) {
+  leaf.remove()
+  activeLeaves.delete(leaf)
+}
+
+function leafBurst(button, direction) {
+  if (reduceMotion || activeLeaves.size > 12) return // cap it so rapid clicking can't flood the page
+
+  const box = button.getBoundingClientRect()
+  const startX = box.left + box.width / 2
+  const startY = box.top + box.height / 2
+
+  for (let i = 0; i < 3; i++) {
+    const leaf = document.createElement('span')
+    leaf.textContent = '🍃'
+    leaf.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(leaf)
+    activeLeaves.add(leaf)
+
+    // inline styles, because this element is created outside Vue so scoped CSS can't reach it
+    gsap.set(leaf, {
+      position: 'fixed',
+      left: startX,
+      top: startY,
+      xPercent: -50,
+      yPercent: -50,
+      fontSize: gsap.utils.random(14, 24),
+      pointerEvents: 'none',
+      zIndex: 2000,
+      scale: 0.4,
+      rotation: gsap.utils.random(-40, 40),
+    })
+
+    const duration = gsap.utils.random(0.8, 1.2)
+    gsap.timeline({ onComplete: () => removeLeaf(leaf) })
+      .to(leaf, {
+        x: direction * gsap.utils.random(30, 100),  // Next flies right, Previous flies left
+        y: gsap.utils.random(-100, -50),            // always floats up
+        rotation: gsap.utils.random(-200, 200),
+        scale: gsap.utils.random(0.9, 1.3),
+        duration,
+        ease: 'power2.out',
+      }, 0)
+      .to(leaf, { opacity: 0, duration: 0.4, ease: 'none' }, duration - 0.4) // fade out at the end
+  }
+}
+
+// one handler for both buttons: change the week, then burst
+function onNav(direction, event) {
+  shiftWeek(direction)
+  leafBurst(event.currentTarget, direction)
+}
+
+onBeforeUnmount(() => {
+  // leaves live outside Vue, so remove any that are still flying
+  for (const leaf of activeLeaves) {
+    gsap.killTweensOf(leaf)
+    leaf.remove()
+  }
+  activeLeaves.clear()
+})
+
 </script>
 
 <template>
@@ -58,7 +131,7 @@ function shiftWeek(direction) {
     <ScheduleLegend/>
 
     <div class="week-nav">
-      <button class="leaf-btn leaf-prev" @click="shiftWeek(-1)" aria-label="Previous week">
+      <button class="leaf-btn leaf-prev" @click="onNav(-1, $event)" aria-label="Previous week">
         <span class="leaf-arrow">‹</span> Previous
       </button>
 
@@ -67,7 +140,7 @@ function shiftWeek(direction) {
         <button v-if="!isCurrentWeek" class="today-chip" @click="goToToday">Back to today</button>
       </div>
 
-      <button class="leaf-btn leaf-next" @click="shiftWeek(1)" aria-label="Next week">
+      <button class="leaf-btn leaf-next" @click="onNav(1, $event)" aria-label="Next week">
         Next <span class="leaf-arrow">›</span>
       </button>
     </div>
@@ -82,8 +155,13 @@ function shiftWeek(direction) {
           :class="{ today: day.isToday }"
           :style="{ '--i': index }"
         >
-          <div class="day-label small fw-bold mb-2" :class="{ 'text-success': day.isToday }">
-            {{ day.label }}
+          <div class="day-header mb-2">
+            <span class="day-label small fw-bold" :class="{ 'text-success': day.isToday }">
+              {{ day.label }}
+            </span>
+            <span v-if="day.items.length" class="count-badge" :class="{ changed: day.changed }">
+              {{ day.items.length }} 💧
+            </span>
           </div>
 
           <TransitionGroup name="card" tag="div" appear class="card-list d-flex flex-column gap-2">
@@ -128,6 +206,31 @@ function shiftWeek(direction) {
   text-align: center;
 }
 .empty-icon { font-size: 1.4rem; }
+
+/* day header with count */
+.day-header {
+  display: flex;
+  flex-wrap: wrap;               /* the badge shiftd under the date if the column is narrow */
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.25rem, 0.5rem;
+}
+.count-badge {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #166534;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+/* amber when the weather changed something that day, same colour as the adjusted cards */
+.count-badge.changed {
+  color: #92400e;
+  background: rgba(251, 191, 36, 0.32);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
 
 /* week slide (Transition) */
 .week-next-enter-active, .week-next-leave-active,
