@@ -9,6 +9,7 @@ const server = express();
 const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");
 const tokenRoutes = require("./routes/tokenRoute");
+const reviewRoutes = require("./routes/reviewRoute")
 const session = require("express-session");
 // Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
@@ -24,6 +25,7 @@ server.use(
 server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
+server.use("/review", reviewRoutes);
 async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
