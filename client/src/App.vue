@@ -20,7 +20,8 @@ const navigationitems = [
   { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },
   { label: 'Find Nearby', to: '/find-nearby' },
-  { label: 'Care Visits', to: '/care-visits' }
+  { label: 'Care Visits', to: '/care-visits' },
+  { label: 'Reviews', to: '/reviews' }
 ]
 
 async function logout() {

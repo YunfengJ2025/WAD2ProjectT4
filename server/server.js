@@ -29,7 +29,6 @@ server.use("/review", reviewRoutes);
 async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
-    console.log(process.env.DB);
     await mongoose.connect(process.env.DB);
     console.log("MongoDB connected successfully");
   } catch (error) {

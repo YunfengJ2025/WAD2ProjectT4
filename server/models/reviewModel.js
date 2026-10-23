@@ -73,6 +73,9 @@ async function createReview(data) {
     if (parent.type === "REVIEW") {
       throw httpError(400, "Cannot reply to a reply");
     }
+    if (parent.type !== "POST") {
+      throw httpError(400, "Only post comments accept replies");
+    }
     // the receiver is always the parent's creator, never trusted from the client
     receiverId = parent.creatorId;
   }

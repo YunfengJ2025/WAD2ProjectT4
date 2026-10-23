@@ -51,7 +51,6 @@ exports.getUsers = async (req, res) => {
 exports.register = async (req, res) => {
   try {
     const body = req.body || {};
-    console.log(req.body);
     // Check required fields before touching the model
     const requiredFields = ["userName", "email", "password"];
     const missing = requiredFields.filter(
@@ -118,7 +117,7 @@ exports.logout = (req, res) => {
 };
 exports.updateTokenBalance = async (req, res) => {
   try {
-    const result = await model.applyTransactionToBalances(
+    const result = await applyTransactionToBalances(
       Number(req.params.transactionId),
     );
     res.json(result);
