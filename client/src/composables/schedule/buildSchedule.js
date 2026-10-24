@@ -14,10 +14,12 @@ export function buildSchedule(plants, now = new Date(), days = 28) {
     const items = []
 
     // build schedule item from plant data
-    function makeItem(plant, originalDue, due) {
+    function makeItem(plant, originalDue, due, statusOverride) {
         const originalISO = toDateInputValue(originalDue)
         let status = '' // based on originalDue, overdue plants will be moved to today showing 'overdue'
-        if (originalISO < todayISO) {
+        if (statusOverride) {
+            status = statusOverride              // 'done' decided by the owner
+        } else if (originalISO < todayISO) {
             status = 'overdue'
         } else if (originalISO === todayISO) {
             status = 'due'
@@ -48,6 +50,11 @@ export function buildSchedule(plants, now = new Date(), days = 28) {
         if (!plant.lastWateredAt) {
             items.push(makeItem(plant, today, today))
             continue
+        }
+
+        // Watered today: show it as done, then count the next dates from today
+        if (toDateInputValue(startOfDay(plant.lastWateredAt)) === todayISO) {
+            items.push(makeItem(plant, today, today, 'done'))
         }
 
         // First due date = the day it was last watered + frequency

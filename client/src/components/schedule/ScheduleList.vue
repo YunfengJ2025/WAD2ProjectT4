@@ -42,13 +42,38 @@ function formatDate(iso) {
         month: 'short',
     })
 }
+
+// how many of this day's items are already watered
+function doneCount(dayItems) {
+    return dayItems.filter((item) => item.status === 'done').length
+}
+
+// true if any item on this day was moved or added by the weather
+function hasChange(dayItems) {
+    return dayItems.some((item) => item.adjustmentType)
+}
 </script>
 
 <template>
   <div>
     <ScheduleLegend />
-    <section v-for="[date, dayItems] in grouped" :key="date" class="mb-3">
-      <h6 class="date-heading text-muted">{{ formatDate(date) }}</h6>
+    <section 
+      v-for="[date, dayItems] in grouped" 
+      :key="date" 
+      class="mb-3" 
+      :style="{ '--i': Math.min(index, 6) }"
+    > 
+      <h6 class="date-heading text-muted d-flex align-items-center justify-content-between">
+        <span>{{ formatDate(date) }}</span>
+        <span
+          class="count-badge"
+          :class="{ changed: hasChange(dayItems), finished: doneCount(dayItems) === dayItems.length }"
+        >
+          <template v-if="doneCount(dayItems) === dayItems.length">✅ All done</template>
+          <template v-else-if="doneCount(dayItems)">{{ doneCount(dayItems) }}/{{ dayItems.length }} done</template>
+          <template v-else>{{ dayItems.length }} 💧</template>
+        </span>
+      </h6>
       <TransitionGroup name="card" tag="div" appear class="card-list d-flex flex-column gap-2">
         <ScheduleDayCard v-for="item in dayItems" :key="item.requestItemId" :item="item" />
       </TransitionGroup>
@@ -67,6 +92,24 @@ function formatDate(iso) {
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
+}
+
+/* ---------- count badge (same look as the calendar) ---------- */
+.count-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  color: #0c4a6e;
+  background: rgba(14, 165, 233, 0.15);
+}
+.count-badge.changed {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.25);
+}
+.count-badge.finished {      /* must come after .changed so green wins */
+  color: #14532d;
+  background: rgba(22, 163, 74, 0.25);
 }
 
 /* ---------- cards entering / leaving a day (TransitionGroup) ---------- */

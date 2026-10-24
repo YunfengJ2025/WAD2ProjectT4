@@ -57,4 +57,12 @@ describe('buildSchedule', () => {
 
     expect(new Set(ids).size).toBe(ids.length)
   })
+  it('shows a done item today for a plant watered today, then repeats from today', () => {
+    // watered today, every 3 days -> done today, then 25, 28
+    const items = buildSchedule([plant({ lastWateredAt: '2026-10-22T07:00:00' })], NOW, 8)
+
+    expect(items.map((item) => item.dueAt)).toEqual(['2026-10-22', '2026-10-25', '2026-10-28'])
+    expect(items[0].status).toBe('done')
+    expect(items[1].status).toBe('upcoming')
+  })
 })

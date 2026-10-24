@@ -101,7 +101,8 @@ onBeforeUnmount(() => tip?.dispose())
 .is-overdue  { border-left-color: #dc3545; }
 .is-due      { border-left-color: #ffc107; }
 .is-upcoming { border-left-color: #6c757d; }
-.is-done     { border-left-color: #198754; }
+.is-done { border-left-color: #198754; opacity: 0.8; }
+.is-done .plant-photo { filter: grayscale(0.4); }
 
 /* weather-adjusted cards get a soft amber outline */
 .adjusted {
@@ -127,7 +128,7 @@ onBeforeUnmount(() => tip?.dispose())
 .plant-info .small { line-height: 1.3; }
 
 .plant-name { 
-    overflow-wrap: break-word;  /* only breaks a word if it truly can't fit */
+    overflow-wrap: break-word;  /* only breaks a word if it cant fit */
     line-height: 1.2;
     font-size: 0.95rem;
 }
@@ -147,7 +148,7 @@ onBeforeUnmount(() => tip?.dispose())
   border-radius: 4px;
 }
 
-/* sun-glint sweep across extra-heat cards, using the shared foilShimmer keyframe from main.css */
+/* sun-glint sweep across extra-heat cards, using the same  foilShimmer keyframe from main.css */
 .is-extra-heat::after {
   content: '';
   position: absolute;

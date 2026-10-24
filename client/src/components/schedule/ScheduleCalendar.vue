@@ -38,11 +38,13 @@ const days = computed(() => {
     d.setDate(d.getDate() + i)
     const iso = toISO(d)
     const dayItems = props.items.filter(item => item.dueAt === iso) // filter and reuse
+    const doneCount = dayItems.filter(item => item.status === 'done').length
     return {
       iso,
       label: d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' }),
       isToday: iso === toISO(new Date()),
       items: dayItems,
+      doneCount,
       changed: dayItems.some(item => item.adjustmentType), // returns true if rain or heat touched any card this day
       // some() checks if at least one element in an array passes the condi implemented
     }
@@ -159,8 +161,10 @@ onBeforeUnmount(() => {
             <span class="day-label small fw-bold" :class="{ 'text-success': day.isToday }">
               {{ day.label }}
             </span>
-            <span v-if="day.items.length" class="count-badge" :class="{ changed: day.changed }">
-              {{ day.items.length }} 💧
+            <span v-if="day.items.length" class="count-badge" :class="{ changed: day.changed, finished: day.doneCount === day.items.length }">
+              <template v-if="day.doneCount === day.items.length">✅ All done</template>
+              <template v-else-if="day.doneCount">{{ day.doneCount }}/{{ day.items.length }} done</template>
+              <template v-else>{{ day.items.length }} 💧</template>
             </span>
           </div>
 
@@ -213,7 +217,7 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;               /* the badge shiftd under the date if the column is narrow */
   justify-content: space-between;
   align-items: center;
-  gap: 0.25rem, 0.5rem;
+  gap: 0.25rem 0.5rem;
 }
 .count-badge {
   padding: 0.05rem 0.5rem;
@@ -230,6 +234,13 @@ onBeforeUnmount(() => {
   color: #92400e;
   background: rgba(251, 191, 36, 0.32);
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
+
+/* every watering that day is done */
+.count-badge.finished {
+  color: #14532d;
+  background: rgba(22, 163, 74, 0.25);
+  box-shadow: none;
 }
 
 /* week slide (Transition) */
