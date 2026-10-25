@@ -183,6 +183,27 @@ async function updateReview(req, res) {
 }
 
 module.exports = {
+  async getMyReviews(req, res) {
+    try {
+      return res.json({ reviews: await reviewModel.getProfileReviews(req.userId) });
+    } catch (err) {
+      return handleError(res, err);
+    }
+  },
+  async replyAsUser(req, res) {
+    try {
+      const parentReviewId = parseId(req.body.parentReviewId, "parentReviewId");
+      if (typeof req.body.comment !== "string" || !req.body.comment.trim() || req.body.comment.length > 1000) {
+        throw badRequest("Reply must contain between 1 and 1000 characters");
+      }
+      const reply = await reviewModel.createReview({
+        type: "REVIEW", parentReviewId, creatorId: req.userId, comment: req.body.comment.trim(),
+      });
+      return res.status(201).json(reply);
+    } catch (err) {
+      return handleError(res, err);
+    }
+  },
   createReview,
   getAllReviews,
   getReviewsByType,

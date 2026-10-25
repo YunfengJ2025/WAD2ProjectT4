@@ -10,17 +10,11 @@ const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");
 const tokenRoutes = require("./routes/tokenRoute");
 const reviewRoutes = require("./routes/reviewRoute")
-const session = require("express-session");
+const { validateJwtConfig } = require("./config/jwt");
+validateJwtConfig();
 // Specify the path to the environment variable file '.env'
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
-server.use(
-  session({
-    secret: process.env.SECRET,
-    resave: false,
-    saveUninitialized: false,
-  }),
-);
 //Routes
 server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);

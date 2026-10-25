@@ -1,484 +1,306 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useReviewsStore } from '@/stores/reviews'
 import ReviewCard from '@/components/review/ReviewCard.vue'
-import ReviewForm from '@/components/review/ReviewForm.vue'
-import { useToast } from '@/composables/useToast'
+import StarRating from '@/components/review/StarRating.vue'
+import '@/assets/reviews.css'
 
-// Frontend preview fixtures only. No sample data is sent to the review API.
-// Replace these targets with completed visits and actual posts when those modules are ready.
-const targets = [
-  {
-    key: 'visit-101',
-    type: 'VISIT',
-    visitId: 101,
-    receiverId: 2,
-    creatorId: 1,
-    creatorRole: 'Request maker',
-    receiverName: 'Wei Ming',
-    receiverRole: 'Sitter',
-    title: 'Weekend watering · Bishan',
-  },
-  {
-    key: 'visit-102',
-    type: 'VISIT',
-    visitId: 102,
-    receiverId: 3,
-    creatorId: 1,
-    creatorRole: 'Sitter',
-    receiverName: 'Jamie Lim',
-    receiverRole: 'Request maker',
-    title: 'Balcony plant care · Tampines',
-  },
-  { key: 'visit-101-owner', type: 'VISIT', visitId: 101, creatorId: 2, receiverId: 1, creatorRole: 'Sitter', receiverName: 'You', receiverRole: 'Request maker', title: 'Weekend watering · Bishan' },
-  { key: 'post-201', type: 'POST', postId: 201, receiverId: 4, title: 'A new leaf on my monstera' },
-]
-const reviews = ref([
-  {
-    reviewId: 1,
-    type: 'VISIT',
-    visitId: 101,
-    creatorId: 5,
-    creatorName: 'Cheryl Tan',
-    receiverId: 2,
-    creatorRole: 'Request maker',
-    receiverName: 'Wei Ming',
-    receiverRole: 'Sitter',
-    rating: 5,
-    targetTitle: targets[0].title,
-    comment:
-      'My plants were in such good hands while I was away. Loved the photo updates, and my basil looks happier than ever!',
-    createdAt: '2026-10-22T10:00:00+08:00',
-  },
-  {
-    reviewId: 2,
-    type: 'POST',
-    postId: 201,
-    creatorId: 6,
-    creatorName: 'Amir Rahman',
-    receiverId: 4,
-    rating: null,
-    targetTitle: 'A new leaf on my monstera',
-    comment: 'That new leaf is beautiful! How often do you water it in this weather?',
-    createdAt: '2026-10-21T12:00:00+08:00',
-  },
-  {
-    reviewId: 3,
-    type: 'VISIT',
-    visitId: 102,
-    creatorId: 7,
-    creatorName: 'Jamie Lim',
-    receiverId: 3,
-    creatorRole: 'Sitter',
-    receiverName: 'Jamie Lim',
-    receiverRole: 'Request maker',
-    rating: 4,
-    targetTitle: targets[1].title,
-    comment:
-      'Clear care instructions and easy access to the balcony garden. It was a pleasure looking after the plants.',
-    createdAt: '2026-10-20T09:00:00+08:00',
-  },
-  {
-    reviewId: 4,
-    type: 'REVIEW',
-    parentReviewId: 2,
-    creatorId: 2,
-    creatorName: 'Wei Ming',
-    receiverId: 6,
-    comment: 'About once a week, after checking that the soil has dried out.',
-    createdAt: '2026-10-22T11:00:00+08:00',
-  },
-])
+const auth = useAuthStore()
+const store = useReviewsStore()
+const direction = ref('received')
 const filter = ref('ALL')
 const search = ref('')
 const sort = ref('newest')
-const composing = ref(false)
-const previewUserId = ref(1)
-watch(previewUserId, () => { composing.value = false })
-const { show: toast } = useToast()
-const topLevel = computed(() => reviews.value.filter((review) => review.type !== 'REVIEW'))
-const visits = computed(() => topLevel.value.filter((review) => review.type === 'VISIT'))
+const busy = ref(null)
+const replyError = ref('')
+watch(
+  () => auth.user?.userId,
+  (id) => {
+    direction.value = 'received'
+    filter.value = 'ALL'
+    search.value = ''
+    replyError.value = ''
+    if (id) store.fetchReviews()
+  },
+  { immediate: true },
+)
+// Keep summary ratings independent of the active direction, type, and search filters.
+const received = computed(() =>
+  store.reviews.filter((item) => item.receiverId === auth.user?.userId),
+)
+const written = computed(() => store.reviews.filter((item) => item.creatorId === auth.user?.userId))
+const ratings = computed(() =>
+  received.value.filter((item) => item.type === 'VISIT' && Number.isFinite(item.rating)),
+)
 const average = computed(() =>
-  visits.value.length
-    ? (visits.value.reduce((sum, review) => sum + review.rating, 0) / visits.value.length).toFixed(
-        1,
-      )
+  ratings.value.length
+    ? (ratings.value.reduce((sum, item) => sum + item.rating, 0) / ratings.value.length).toFixed(1)
     : '—',
 )
-const availableTargets = computed(() =>
-  targets.filter(
-    (target) =>
-      target.type !== 'VISIT' ||
-      (target.creatorId === previewUserId.value && !reviews.value.some(
-        (review) =>
-          review.type === 'VISIT' && review.creatorId === previewUserId.value && review.visitId === target.visitId,
-      )),
-  ),
+// Counts follow the direction tab, but not the search query, so categories stay discoverable.
+const directionReviews = computed(() =>
+  direction.value === 'received' ? received.value : written.value,
 )
+const typeOptions = computed(() =>
+  [
+    { value: 'ALL', label: 'All', icon: '◉' },
+    { value: 'VISIT', label: 'Care visits', icon: '✦' },
+    { value: 'POST', label: 'Post comments', icon: '☷' },
+    { value: 'REVIEW', label: 'Replies', icon: '↳' },
+  ].map((tab) => ({
+    ...tab,
+    count: directionReviews.value.filter((item) => tab.value === 'ALL' || item.type === tab.value)
+      .length,
+  })),
+)
+const hasFilters = computed(() => !!search.value.trim() || filter.value !== 'ALL')
+function clearFilters() {
+  search.value = ''
+  filter.value = 'ALL'
+}
 const visibleReviews = computed(() =>
-  topLevel.value
+  directionReviews.value
     .filter(
-      (review) =>
-        (filter.value === 'ALL' || review.type === filter.value) &&
-        `${review.creatorName} ${review.targetTitle} ${review.comment}`
+      (item) =>
+        (filter.value === 'ALL' || item.type === filter.value) &&
+        [item.creatorName, item.receiverName, item.comment, item.visitId, item.postId]
+          .join(' ')
           .toLowerCase()
           .includes(search.value.trim().toLowerCase()),
     )
+    .slice()
     .sort((a, b) =>
       sort.value === 'newest'
         ? new Date(b.createdAt) - new Date(a.createdAt)
         : new Date(a.createdAt) - new Date(b.createdAt),
     ),
 )
-
-function shareReview({ target, rating, comment }) {
-  if (!availableTargets.value.includes(target)) return
-  reviews.value.unshift({
-    reviewId: Date.now(),
-    type: target.type,
-    visitId: target.visitId ?? null,
-    postId: target.postId ?? null,
-    receiverId: target.receiverId,
-    creatorId: previewUserId.value,
-    creatorName: previewUserId.value === 1 ? 'You' : 'Wei Ming',
-    creatorRole: target.creatorRole,
-    receiverName: target.receiverName,
-    receiverRole: target.receiverRole,
-    rating,
-    comment,
-    targetTitle: target.title,
-    createdAt: new Date().toISOString(),
-  })
-  composing.value = false
-  filter.value = 'ALL'
-  search.value = ''
-  sort.value = 'newest'
-  toast('Review added to this preview.')
+function displayReview(review) {
+  return {
+    ...review,
+    targetTitle:
+      review.type === 'VISIT'
+        ? 'Care visit #' + review.visitId
+        : review.type === 'POST'
+          ? 'Post #' + review.postId
+          : 'Reply to comment #' + review.parentReviewId,
+  }
 }
-function shareReply(parent, comment) {
-  if (parent.type !== 'POST') return
-  reviews.value.push({
-    reviewId: Date.now(),
-    type: 'REVIEW',
-    parentReviewId: parent.reviewId,
-    creatorId: previewUserId.value,
-    creatorName: previewUserId.value === 1 ? 'You' : 'Wei Ming',
-    receiverId: parent.creatorId,
-    comment,
-    createdAt: new Date().toISOString(),
-  })
-  toast('Reply added to this preview.')
+async function shareReply(review, comment) {
+  if (busy.value !== null) return
+  busy.value = review.reviewId
+  replyError.value = ''
+  try {
+    await store.reply(review, comment)
+  } catch (err) {
+    replyError.value = err.message
+  } finally {
+    busy.value = null
+  }
 }
 </script>
 
 <template>
-  <main class="reviews-page">
-    <div class="preview-note">
-      <span class="preview-tag">Preview</span> Sample community reviews. Changes last until you
-      leave or refresh this page.
-    </div>
-    <div class="preview-note">
-      <label for="preview-reviewer">Preview as</label>
-      <select id="preview-reviewer" v-model.number="previewUserId">
-        <option :value="1">You — request maker for Bishan, sitter for Tampines</option>
-        <option :value="2">Wei Ming — sitter for Bishan</option>
-      </select>
-    </div>
-    <header class="page-heading">
+  <main class="reviews-page container-fluid px-0">
+    <header
+      class="page-heading d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3"
+    >
       <div>
-        <p class="eyebrow">GROWING TOGETHER</p>
-        <h1>A little care. A lot of gratitude.</h1>
-        <p class="subtitle">
-          Kind words, helpful feedback, and conversations from our plant community.
+        <p class="review-eyebrow">YOUR COMMUNITY PROFILE</p>
+        <h1>My reviews &amp; ratings<span class="review-heading-dot">.</span></h1>
+        <p class="review-muted mb-0">
+          A little feedback helps our plant community grow. Here’s yours.
         </p>
       </div>
       <button
         type="button"
-        class="btn btn-primary"
-        :aria-expanded="composing"
-        @click="composing = !composing"
+        class="btn review-outline-button align-self-start"
+        :disabled="store.loading"
+        @click="store.fetchReviews()"
       >
-        {{ composing ? 'Close form' : '+ Write a review' }}
+        <span aria-hidden="true" :class="{ 'review-spin': store.loading }">↻</span>
+        {{ store.loading ? 'Refreshing…' : 'Refresh' }}
       </button>
     </header>
-    <section class="summary" aria-label="Review overview">
-      <div>
-        <strong>{{ average }} <span class="gold" aria-hidden="true">★</span></strong
-        ><span>Average visit rating</span>
-      </div>
-      <div>
-        <strong>{{ visits.length }}</strong
-        ><span>Care visit reviews</span>
-      </div>
-      <div>
-        <strong>{{ topLevel.length - visits.length }}</strong
-        ><span>Post comments</span>
-      </div>
-    </section>
-    <ReviewForm
-      v-if="composing"
-      :targets="availableTargets"
-      @submit="shareReview"
-      @cancel="composing = false"
-    />
-    <section class="community" aria-labelledby="community-title">
-      <h2 id="community-title">Community voices</h2>
-      <div class="toolbar">
-        <div class="filters" role="group" aria-label="Filter reviews">
+    <p v-if="!auth.user">Sign in to see your reviews.</p>
+    <template v-else>
+      <!-- Bootstrap columns stack the rating card on phones and share a row on larger screens. -->
+      <section class="row g-3 mb-4" aria-label="Review overview">
+        <div class="col-12 col-md-6">
+          <div class="review-surface review-rating-summary h-100">
+            <p class="review-eyebrow mb-2">A LITTLE COMMUNITY LOVE</p>
+            <div class="d-flex align-items-center flex-wrap gap-3">
+              <strong class="review-average" data-testid="average-rating">{{
+                store.loading || store.error ? '—' : average
+              }}</strong>
+              <div v-if="!store.loading && !store.error && ratings.length">
+                <StarRating :model-value="Number(average)" readonly />
+                <p class="review-muted small mb-0">
+                  out of 5 · {{ ratings.length }} visit
+                  {{ ratings.length === 1 ? 'review' : 'reviews' }}
+                </p>
+              </div>
+              <p v-else class="review-muted mb-0">
+                {{ store.loading ? 'Loading your rating…' : 'No rating to show yet' }}
+              </p>
+            </div>
+            <p class="review-muted small mt-3 mb-0">Based on care visit reviews you received.</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="review-surface review-stat h-100">
+            <span class="review-stat-icon" aria-hidden="true">✦</span
+            ><strong>{{ store.loading || store.error ? '—' : ratings.length }}</strong
+            ><span class="review-muted small">Visit reviews received</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="review-surface review-stat h-100">
+            <span class="review-stat-icon review-stat-icon-amber" aria-hidden="true">✎</span
+            ><strong>{{ store.loading || store.error ? '—' : written.length }}</strong
+            ><span class="review-muted small">Reviews &amp; replies written</span>
+          </div>
+        </div>
+      </section>
+      <section class="review-surface review-panel" aria-labelledby="reviews-heading">
+        <div
+          class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4"
+        >
+          <div>
+            <p class="review-eyebrow mb-1">THE CONVERSATION</p>
+            <h2 id="reviews-heading" class="mb-0">Your reviews</h2>
+          </div>
+          <div class="review-direction" role="group" aria-label="Review direction">
+            <button
+              type="button"
+              :aria-pressed="direction === 'received'"
+              @click="direction = 'received'"
+            >
+              About me
+            </button>
+            <button
+              type="button"
+              :aria-pressed="direction === 'written'"
+              @click="direction = 'written'"
+            >
+              Written by me
+            </button>
+          </div>
+        </div>
+        <!-- Native buttons retain keyboard activation; aria-pressed announces the selected filter. -->
+        <div class="review-type-bar" role="group" aria-label="Filter reviews">
           <button
-            v-for="tab in [
-              { value: 'ALL', label: 'All' },
-              { value: 'VISIT', label: 'Care visits' },
-              { value: 'POST', label: 'Post comments' },
-            ]"
+            v-for="tab in typeOptions"
             :key="tab.value"
             type="button"
+            class="review-type-button"
             :aria-pressed="filter === tab.value"
+            :aria-label="tab.label"
             @click="filter = tab.value"
           >
-            {{ tab.label }}
+            <span class="review-type-icon" aria-hidden="true">{{ tab.icon }}</span
+            ><span>{{ tab.label }}</span
+            ><span class="review-count" aria-hidden="true">{{
+              store.loading || store.error ? '—' : tab.count
+            }}</span>
           </button>
         </div>
-        <div class="search-sort">
-          <label class="sr-only" for="review-search">Search reviews</label
-          ><input id="review-search" v-model="search" type="search" placeholder="Search reviews…" />
-          <label class="sr-only" for="review-sort">Sort reviews</label
-          ><select id="review-sort" v-model="sort">
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+        <div class="row g-2 align-items-center my-3">
+          <div class="col-12 col-sm-8">
+            <div class="review-search">
+              <span aria-hidden="true">⌕</span
+              ><label class="visually-hidden" for="review-search">Search reviews</label
+              ><input
+                id="review-search"
+                v-model="search"
+                class="form-control"
+                type="search"
+                placeholder="Search names, reviews or posts…"
+              />
+            </div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="visually-hidden" for="review-sort">Sort reviews</label
+            ><select id="review-sort" v-model="sort" class="form-select">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <p class="result-count" role="status">
-        {{ visibleReviews.length }} {{ visibleReviews.length === 1 ? 'review' : 'reviews' }}
-      </p>
-      <div v-if="visibleReviews.length" class="review-list">
-        <ReviewCard
-          v-for="review in visibleReviews"
-          :key="review.reviewId"
-          :review="review"
-          :replies="reviews.filter((reply) => reply.parentReviewId === review.reviewId)"
-          @reply="shareReply(review, $event)"
-        />
-      </div>
-      <div v-else class="empty">
-        <h3>No reviews found</h3>
-        <p>Try another search or filter to find a community conversation.</p>
-        <button
-          type="button"
-          class="btn"
-          @click="
-            search = '',
-            filter = 'ALL'
-          "
-        >
-          Clear filters
-        </button>
-      </div>
-    </section>
+        <p v-if="store.loading" role="status" class="review-state">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading your
+          reviews…
+        </p>
+        <div v-else-if="store.error" role="alert" class="review-state">
+          <h3>Couldn’t load your reviews</h3>
+          <p class="review-muted">{{ store.error }}</p>
+          <button type="button" class="btn review-outline-button" @click="store.fetchReviews()">
+            Try again
+          </button>
+        </div>
+        <template v-else>
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <p class="review-muted small mb-0" role="status">
+              {{ visibleReviews.length }} {{ visibleReviews.length === 1 ? 'review' : 'reviews' }}
+              {{ direction === 'received' ? 'about you' : 'written by you' }}
+            </p>
+            <button
+              v-if="hasFilters"
+              type="button"
+              class="review-text-button"
+              @click="clearFilters"
+            >
+              Clear filters
+            </button>
+          </div>
+          <p v-if="replyError" role="alert" class="alert alert-danger">{{ replyError }}</p>
+          <!-- A keyed list keeps each reply draft attached to its review after sorting/filtering. -->
+          <div v-if="visibleReviews.length" class="review-list">
+            <ReviewCard
+              v-for="review in visibleReviews"
+              :key="review.reviewId"
+              :review="displayReview(review)"
+              :busy="busy !== null"
+              :replies="
+                store.reviews.filter(
+                  (reply) => reply.type === 'REVIEW' && reply.parentReviewId === review.reviewId,
+                )
+              "
+              @reply="shareReply(review, $event)"
+            />
+          </div>
+          <div v-else class="review-state">
+            <span class="review-empty-icon" aria-hidden="true">❧</span>
+            <h3>
+              {{
+                hasFilters
+                  ? 'No matching reviews'
+                  : direction === 'received'
+                    ? 'Your story is still growing'
+                    : 'Your words can make someone’s day'
+              }}
+            </h3>
+            <p class="review-muted">
+              {{
+                hasFilters
+                  ? 'Try a different search or review type.'
+                  : direction === 'received'
+                    ? 'Care visit reviews and comments on your posts will appear here.'
+                    : 'Your care visit reviews, post comments, and replies will appear here.'
+              }}
+            </p>
+            <button
+              v-if="hasFilters"
+              type="button"
+              class="btn review-outline-button"
+              @click="clearFilters"
+            >
+              Clear filters
+            </button>
+          </div>
+        </template>
+      </section>
+    </template>
   </main>
 </template>
-
-<style scoped>
-.reviews-page {
-  max-width: 1000px;
-  margin: 2rem auto 4rem;
-  color: #243b2c;
-  animation: appear 0.4s ease both;
-}
-.preview-note {
-  display: flex;
-  gap: 0.65rem;
-  align-items: center;
-  font-size: 0.82rem;
-  color: #607166;
-  padding-bottom: 1.5rem;
-}
-.preview-tag {
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  background: #eef2df;
-  color: #58612c;
-  font-weight: 700;
-}
-.page-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-.eyebrow {
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  font-weight: 700;
-  color: #527e5c;
-  margin-bottom: 0.6rem;
-}
-h1 {
-  font-size: clamp(1.9rem, 4vw, 2.8rem);
-  letter-spacing: -0.04em;
-  color: #224b31;
-  margin-bottom: 0.7rem;
-}
-.subtitle {
-  color: #607166;
-  max-width: 540px;
-  line-height: 1.7;
-  margin: 0;
-}
-.page-heading .btn {
-  flex-shrink: 0;
-}
-.summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border: 1px solid #dce7dd;
-  border-radius: 20px;
-  background: #f8fbf4;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-.summary > div {
-  display: grid;
-  gap: 0.25rem;
-  padding: 0 1.5rem;
-  border-right: 1px solid #dce7dd;
-}
-.summary > div:last-child {
-  border: 0;
-}
-.summary strong {
-  font-size: 2rem;
-  font-family: var(--font-heading);
-}
-.summary span {
-  color: #607166;
-  font-size: 0.85rem;
-}
-.summary .gold {
-  color: #a96b08;
-  font-size: 1.5rem;
-}
-.community {
-  margin-top: 2.5rem;
-}
-h2 {
-  font-size: 1.4rem;
-  margin-bottom: 1.2rem;
-}
-.toolbar,
-.search-sort {
-  display: flex;
-  gap: 0.6rem;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-.filters {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: #eaf0e7;
-  border-radius: 12px;
-}
-.filters button {
-  background: transparent;
-  border: 0;
-  color: #526658;
-  border-radius: 9px;
-  padding: 0.65rem 0.9rem;
-  font: inherit;
-  font-size: 0.85rem;
-}
-.filters button[aria-pressed='true'] {
-  background: white;
-  color: #245d37;
-  box-shadow: 0 2px 5px #244d3010;
-  font-weight: 600;
-}
-.search-sort input,
-.search-sort select {
-  border: 1px solid #ccd9ce;
-  border-radius: 10px;
-  padding: 0.65rem;
-  background: white;
-  color: #415c49;
-  font: inherit;
-  font-size: 0.85rem;
-  min-width: 0;
-}
-.result-count {
-  margin: 1rem 0;
-  color: #607166;
-  font-size: 0.8rem;
-}
-.review-list {
-  display: grid;
-  gap: 1rem;
-}
-.empty {
-  text-align: center;
-  padding: 3rem 1rem;
-  background: white;
-  border-radius: 20px;
-}
-.empty p {
-  color: #607166;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid #2f7d4a;
-  outline-offset: 3px;
-}
-@keyframes appear {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@media (max-width: 650px) {
-  .page-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .summary {
-    padding: 1rem 0.25rem;
-  }
-  .summary > div {
-    padding: 0 0.7rem;
-  }
-  .summary strong {
-    font-size: 1.5rem;
-  }
-  .summary span {
-    font-size: 0.72rem;
-  }
-  .search-sort {
-    width: 100%;
-  }
-  .search-sort input {
-    flex: 1;
-    width: 130px;
-  }
-  .preview-note {
-    align-items: flex-start;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .reviews-page {
-    animation: none;
-  }
-}
-</style>

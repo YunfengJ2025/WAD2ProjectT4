@@ -3,13 +3,15 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PlantCard from '@/components/plant/PlantCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { listPlants, deletePlant } from '@/api/plants'
+import { storeToRefs } from 'pinia'
+import { usePlantsStore } from '@/stores/plants'
 import { getWateringStatus, compareByWateringStatus } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
 const { show: toast } = useToast()
 
-const plants = ref([])
+const plantsStore = usePlantsStore()
+const { plants } = storeToRefs(plantsStore)
 const loading = ref(true)
 const loadError = ref('')
 
@@ -30,7 +32,7 @@ async function load() {
   loading.value = true
   loadError.value = ''
   try {
-    plants.value = await listPlants()
+    await plantsStore.fetchPlants()
   } catch (err) {
     loadError.value = err.message
   } finally {
@@ -71,8 +73,7 @@ async function confirmDelete() {
   const plant = pendingDelete.value
   deleting.value = true
   try {
-    await deletePlant(plant.plantId)
-    plants.value = plants.value.filter((p) => p.plantId !== plant.plantId)
+    await plantsStore.deletePlant(plant.plantId)
     toast(`${plant.plantName} deleted`)
     pendingDelete.value = null
   } catch (err) {

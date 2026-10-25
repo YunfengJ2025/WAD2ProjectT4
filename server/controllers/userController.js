@@ -7,6 +7,11 @@ const {
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const STARTER_TOKENS = 50;
+const { createAccessToken } = require("../config/jwt");
+
+function authResponse(user) {
+  return { user: toAuthJSON(user), accessToken: createAccessToken(user), tokenType: "Bearer", expiresIn: 3600 };
+}
 
 async function giveStarterTokens(userId) {
   const txn = await createTransaction({
@@ -64,7 +69,6 @@ exports.register = async (req, res) => {
     }
 
     const user = await registerUser(body);
-    req.session.userId = user.userId;
 
     // Starter pack: a failure here must not undo a successful registration
     try {
@@ -74,7 +78,7 @@ exports.register = async (req, res) => {
       console.log("Starter token gift failed:", giftErr);
     }
 
-    res.status(201).json({ user: toAuthJSON(user) });
+    res.status(201).json(authResponse(user));
   } catch (err) {
     handleError(err, res);
   }
@@ -98,23 +102,17 @@ exports.login = async (req, res) => {
 
     const { email, password } = body; // add this line
     const user = await loginUser(email, password);
-    // Remembered for later requests; see middleware/requireUser.js
-    req.session.userId = user.userId;
-    res.json({ user: toAuthJSON(user) });
+    res.json(authResponse(user));
   } catch (err) {
     handleError(err, res);
   }
 };
 
 exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return handleError(err, res);
-    }
-    res.clearCookie("connect.sid", { path: "/" });
-    res.status(204).end();
-  });
+  // Stateless JWT logout: the client must discard its access token.
+  res.status(204).end();
 };
+exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
 exports.updateTokenBalance = async (req, res) => {
   try {
     const result = await applyTransactionToBalances(

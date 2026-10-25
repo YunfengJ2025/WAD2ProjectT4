@@ -1,43 +1,33 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({ createAccount: Boolean })
 const router = useRouter()
 const userName = ref('')
 const email = ref('')
 const password = ref('')
-const error = ref('')
-const submitting = ref(false)
+const auth = useAuthStore()
+const { error, submitting } = storeToRefs(auth)
+const route = useRoute()
+error.value = ''
 
 async function submit() {
   if (submitting.value) return
   error.value = ''
-  submitting.value = true
-
   try {
-    const response = await fetch(`/api/user/${props.createAccount ? 'register' : 'login'}`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...(props.createAccount ? { userName: userName.value.trim() } : {}),
-        email: email.value.trim(),
-        password: password.value,
-      }),
-    })
-    const data = await response.json().catch(() => null)
-
-    if (!response.ok) {
-      error.value = data?.message || 'Something went wrong. Please try again.'
-      return
+    const credentials = {
+      ...(props.createAccount ? { userName: userName.value.trim() } : {}),
+      email: email.value.trim(),
+      password: password.value,
     }
-
-    await router.push('/plants')
+    await (props.createAccount ? auth.register(credentials) : auth.login(credentials))
+    const redirect = route.query.redirect
+    await router.push(typeof redirect === 'string' && redirect.startsWith('/plants') ? redirect : '/plants')
   } catch {
-    error.value = 'Could not reach the server. Please try again.'
-  } finally {
-    submitting.value = false
+    // The store exposes the API error to the form.
   }
 }
 </script>
