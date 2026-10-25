@@ -21,7 +21,28 @@
       </div>
     </div>
 
-    <!-- Generated Daily Visit Dates -->
+    <!-- Visit dates for the selected request -->
+    <div v-if="selectedRequest" class="mt-4 pt-3 border-top">
+      <h4 class="fw-bold text-dark mb-3">All Generated Visit Dates for {{ selectedRequest.requestId }}</h4>
+      <VisitDateSelector
+        :visits="selectedVisits"
+        :isSitter="true"
+        @accept-visit="acceptVisit"
+        @open-checkin="openCheckInModal"
+      />
+    </div>
+
+    <!-- Photo Check-In Modal: now gets the plants of the visit -->
+    <CheckInModal
+      v-if="activeVisitId"
+      :visitId="activeVisitId"
+      :items="activeItems"
+      @close="closeCheckIn"
+      @submit-proof="submitPhotoProof"
+    />
+  </div>
+
+    <!-- Generated Daily Visit Dates
     <div v-if="selectedRequest" class="mt-4 pt-3 border-top">
       <h4 class="fw-bold text-dark mb-3">All Generated Visit Dates for {{ selectedRequest.requestId }}</h4>
       <VisitDateSelector 
@@ -30,16 +51,16 @@
         @accept-visit="acceptVisit"
         @open-checkin="openCheckInModal"
       />
-    </div>
+    </div> -->
 
-    <!-- Photo Check-In Modal -->
+    <!-- Photo Check-In Modal 
     <CheckInModal 
       v-if="activeVisitId" 
       :visitId="activeVisitId" 
       @close="activeVisitId = null" 
       @submit-proof="submitPhotoProof" 
     />
-  </div>
+  </div>-->
 </template>
 
 <script setup>
@@ -53,6 +74,7 @@ const requests = ref([])
 const selectedRequest = ref(null)
 const selectedVisits = ref([])
 const activeVisitId = ref(null)
+const activeItems = ref([])          //  the plants (items) of the visit being checked in
 
 async function fetchRequests() {
   try {
@@ -78,33 +100,64 @@ async function acceptVisit(visitId) {
   try {
     await API.put(`/care-visits/${visitId}/accept`, { sitterId: 2 })
     alert('Visit date accepted successfully!')
+    await fetchRequests()            // the request badge may have changed to Accepted
     if (selectedRequest.value) {
       await selectRequest(selectedRequest.value)
     }
   } catch (err) {
     console.error('Error accepting visit:', err)
-    alert('Failed to accept visit.')
+    alert(err.response?.data?.message || 'Failed to accept visit.')
   }
 }
 
-function openCheckInModal(visitId) {
-  activeVisitId.value = visitId
+// ---------- check-in (CHANGED: one photo per plant) ----------
+
+async function loadItems(visitId) {
+  const res = await API.get(`/care-visits/${visitId}/items`)
+  activeItems.value = res.data
+}
+
+
+async function openCheckInModal(visitId) {
+  try {
+    await loadItems(visitId)         // load the plants first, then show the modal
+    activeVisitId.value = visitId
+  } catch (err) {
+    console.error('Error loading visit plants:', err)
+    alert('Could not load the plants for this visit.')
+  }
+}
+
+function closeCheckIn() {
+  activeVisitId.value = null
+  activeItems.value = []
 }
 
 async function submitPhotoProof(payload) {
   try {
-    await API.post(`/care-visits/${payload.visitId}/check-in`, { photoUrl: payload.photoUrl });
-    alert('Photo proof uploaded! Visit marked as completed.');
-    activeVisitId.value = null;
+    await API.post(
+      `/care-visits/${payload.visitId}/items/${payload.requestItemId}/check-in`,
+      { photoUrl: payload.photoUrl }
+    )
 
-    // Refresh both the requests list and the selected request's visits
-    await fetchRequests();
-    if (selectedRequest.value) {
-      await selectRequest(selectedRequest.value);
+    await loadItems(payload.visitId)  // reload so the finished plant shows as Done
+
+    // last plant done -> close the modal
+    if (activeItems.value.every((item) => item.status === 'Completed')) {
+      alert('All plants checked in! Visit marked as completed.')
+      closeCheckIn()
     }
+
+    // refresh the badges behind the modal
+    await fetchRequests()
+    if (selectedRequest.value) {
+      await selectRequest(selectedRequest.value)
+    }
+
   } catch (err) {
     console.error('Error submitting proof:', err);
-    alert('Failed to submit photo check-in.');
+    alert(err.response?.data?.message || 'Failed to submit photo check-in.')
+    await loadItems(payload.visitId)   // resets the button and shows the true state
   }
 }
 
