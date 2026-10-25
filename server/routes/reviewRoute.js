@@ -2,6 +2,10 @@ const express = require("express");
 const reviewController = require("../controllers/reviewController");
 
 const router = express.Router();
+const requireUser = require("../middleware/requireUser");
+
+router.get("/me", requireUser, reviewController.getMyReviews);
+router.post("/me/replies", requireUser, reviewController.replyAsUser);
 
 router.post("/", reviewController.createReview);
 router.get("/", reviewController.getAllReviews);

@@ -54,6 +54,7 @@ reviewSchema.index({ visitId: 1 });
 reviewSchema.index({ postId: 1 });
 reviewSchema.index({ parentReviewId: 1 });
 reviewSchema.index({ receiverId: 1 });
+reviewSchema.index({ creatorId: 1 });
 
 const Review = mongoose.model("Review", reviewSchema);
 
@@ -72,6 +73,9 @@ async function createReview(data) {
     }
     if (parent.type === "REVIEW") {
       throw httpError(400, "Cannot reply to a reply");
+    }
+    if (parent.type !== "POST") {
+      throw httpError(400, "Only post comments accept replies");
     }
     // the receiver is always the parent's creator, never trusted from the client
     receiverId = parent.creatorId;
@@ -109,6 +113,31 @@ async function createReview(data) {
 
 async function getAllReviews() {
   return Review.find({ reviewId: { $ne: null } }).sort({ createdAt: -1 });
+}
+
+// Include thread context, while the client only lists records written by or
+// addressed to this user. Replies themselves cannot have replies.
+async function getProfileReviews(userId) {
+  const own = await Review.find({
+    reviewId: { $ne: null },
+    $or: [{ creatorId: userId }, { receiverId: userId }],
+  }).lean();
+  const postComments = own.filter((review) => review.type === "POST").map((review) => review.reviewId);
+  const parents = own.filter((review) => review.type === "REVIEW").map((review) => review.parentReviewId);
+  const context = await Review.find({
+    reviewId: { $ne: null },
+    $or: [{ parentReviewId: { $in: postComments } }, { reviewId: { $in: parents } }],
+  }).lean();
+  const reviews = [...new Map([...own, ...context].map((review) => [review.reviewId, review])).values()];
+  const ids = [...new Set(reviews.flatMap((review) => [review.creatorId, review.receiverId]))];
+  const { User } = require("./userModel");
+  const users = await User.find({ userId: { $in: ids } }).select("userId userName -_id").lean();
+  const names = new Map(users.map((user) => [user.userId, user.userName]));
+  return reviews.map((review) => ({
+    ...review,
+    creatorName: names.get(review.creatorId) || `User #${review.creatorId}`,
+    receiverName: names.get(review.receiverId) || `User #${review.receiverId}`,
+  }));
 }
 
 async function getReviewsByType(type) {
@@ -158,6 +187,7 @@ module.exports = {
   Review,
   createReview,
   getAllReviews,
+  getProfileReviews,
   getReviewsByType,
   getReviewsByReceiver,
   getReviewsByParentReview,

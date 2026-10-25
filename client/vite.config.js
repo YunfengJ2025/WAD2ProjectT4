@@ -10,8 +10,7 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
-  // /api/plants -> http://localhost:8000/plants. Same origin, so the
-  // session cookie from login is sent along automatically.
+  // /api/plants -> http://localhost:8000/plants; stores send JWT Bearer headers.
   server: {
     proxy: {
       '/api': {

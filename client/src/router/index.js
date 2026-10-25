@@ -2,6 +2,7 @@
 // createRouter and createWebHistory are the standard way to set up
 // client-side routing in a Vue 3 app.
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // Static imports — covered in WAD2 wk6 (<script setup> component imports)
 import DashboardView from '../views/boards/DashboardView.vue'
@@ -44,6 +45,7 @@ const routes = [
 
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
   { path: '/care-visits', name: 'Care Visits', component: CareVisits },
+  { path: '/reviews', name: 'reviews', meta: { requiresAuth: true }, component: () => import('../views/review/ReviewsView.vue') },
 
   // Dashboard route — registered as part of Step 2.1
   { path: '/dashboard', name: 'dashboard', component: DashboardView },
@@ -55,6 +57,27 @@ const router = createRouter({
   // createWebHistory uses the HTML5 History API for clean URLs (no #)
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+for (const route of router.getRoutes()) {
+  if (route.path.startsWith('/plants')) route.meta.requiresAuth = true
+}
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  if (auth.accessToken && !auth.user) {
+    try {
+      await auth.restoreSession()
+    } catch (err) {
+      auth.error = err.message
+    }
+  }
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'sign-in', query: { redirect: to.fullPath } }
+  }
+  if (['sign-in', 'register'].includes(to.name) && auth.isAuthenticated) {
+    return { name: 'my-plants' }
+  }
 })
 
 export default router
