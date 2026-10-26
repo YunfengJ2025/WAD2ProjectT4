@@ -2,6 +2,7 @@
 import {ref,computed} from 'vue'
 import RequestMap from '../map/RequestMap.vue'
 import db from '@/data/mockDb.json'
+import plantPlaceholder from '@/assets/plant.png' // shown when a plant's photoUrl fails to load
 
 const myLocation = { lat: 1.3496, lng: 103.7195 } //to change to dynamic one later
 const pinSelected = ref(null)
@@ -15,26 +16,42 @@ const openVisits = computed(() =>
     .map((v) => {
       const request = db.careRequests.find((r) => r._id === v.requestId)
       const owner = db.users.find((u) => u._id === request.ownerId)
+      const firstPlant = db.plants.find((p) => p._id === request.plantIds[0]) // photo for the card
       return {
         _id: v._id,
         date: v.date,
         tokenReward: v.tokenReward,
         plantCount: request.plantIds.length,
+        plantName: firstPlant?.name,
+        photoUrl: firstPlant?.photoUrl,
         notes: request.notes,
         block: owner.block,
+        address: `Blk ${owner.block}, Singapore ${owner.postalCode}`, // card title, block-level only
         lat: owner.location.lat,
         lng: owner.location.lng,
-        // no unitNumber, email or passwordHash: the map must never see those
+        // still no unitNumber, email or passwordHash
       }
     })
 )
 
 const filteredRequests = computed(() =>
-  openVisits.value.filter((r) => {
-    if (selectedDate.value && r.date !== selectedDate.value) return false
-    return haversine(myLocation.lat, myLocation.lng, r.lat, r.lng) <= radiusKm.value
-  })
+  openVisits.value
+    // attach each request's distance from the sitter
+    .map((r) => ({
+      ...r,
+      distanceKm: haversine(myLocation.lat, myLocation.lng, r.lat, r.lng),
+    }))
+    // keep only those matching the date (if chosen) and inside the radius
+    .filter((r) => (!selectedDate.value || r.date === selectedDate.value) && r.distanceKm <= radiusKm.value)
+    // nearest first
+    .sort((a, b) => a.distanceKm - b.distanceKm)
 )
+
+// 0.45 km shows as "450 m", 1.2 km as "1.2 km"
+function formatDistance(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+}
+
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -66,15 +83,17 @@ function haversine(lat1, lng1, lat2, lng2) {
     </div>
     <div class="pageContent">
         <!-- this will be the map section, taking up about 70% of the page  -->
-        <div>
-            <RequestMap 
+        
+        <RequestMap 
             class="mapArea"
             :center="myLocation" 
             :radius-km="radiusKm" 
             :requests="filteredRequests"
+            :selected="pinSelected"
             @select="pinSelected = $event">
-            </RequestMap>
-        </div>
+        </RequestMap>
+    
+        
 
         <!-- class="mapArea": applies the grid-area and height from the CSS below -->
         <!-- :center  : the colon means "pass a JS value", not plain text; gives the map its starting point -->
@@ -85,26 +104,38 @@ function haversine(lat1, lng1, lat2, lng2) {
 
         <!-- this will be the request section (dynamic, and changes)  -->
         <div class="requests">
-            <!-- this will be the display if no pin is selected  -->
+            <!-- no pin selected: scrollable list, nearest first -->
             <div v-if="!pinSelected">
-                <p>Select a pin to see the care request</p>
+                <p v-if="filteredRequests.length === 0">No requests within {{ radiusKm }} km. Try widening the distance
+                    or changing the date.</p>
 
+                <ul v-else class="requestList">
+                    <li v-for="r in filteredRequests" :key="r._id" class="requestCard" @click="pinSelected = r">
+                        <img :src="r.photoUrl" :alt="r.plantName" class="plantPhoto"
+                            @error="$event.target.src = plantPlaceholder" />
+                        <div class="cardText">
+                            <h3>{{ r.address }}</h3>
+                            <p>{{ formatDistance(r.distanceKm) }} away · {{ r.date }}</p>
+                            <p>{{ r.plantCount }} plant(s) · {{ r.tokenReward }} tokens</p>
+                        </div>
+                    </li>
+                </ul>
             </div>
 
-            <!-- this will be the display if a pin is selected, it would be the care request. To make accurate to care request part later  -->
+            <!-- pin selected: details -->
             <div v-else>
-                <h2>Care request</h2>
-                <p><strong>Where:</strong> Blk {{ pinSelected.block }}</p> <!-- block only, never the unit -->
+                <button @click="pinSelected = null">← Back to list</button>
+                <img :src="pinSelected.photoUrl" :alt="pinSelected.plantName" class="plantPhoto big"
+                    @error="$event.target.src = plantPlaceholder" />
+                <h2>{{ pinSelected.address }}</h2>
+                <p><strong>Distance:</strong> {{ formatDistance(pinSelected.distanceKm) }}</p>
                 <p><strong>Date:</strong> {{ pinSelected.date }}</p>
                 <p><strong>Plants:</strong> {{ pinSelected.plantCount }}</p>
                 <p><strong>Reward:</strong> {{ pinSelected.tokenReward }} tokens</p>
                 <p><strong>Notes:</strong> {{ pinSelected.notes }}</p>
-                <button @click="pinSelected = null">Back</button> <!-- resets to null so the placeholder returns -->
-
-
             </div>
-
         </div>
+
 
     </div>
     
@@ -133,6 +164,50 @@ function haversine(lat1, lng1, lat2, lng2) {
         padding: 1rem;
         overflow-y: auto;
         max-height: 70vh;
+    }
+    .requestList {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .requestCard {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .requestCard:hover {
+        background: #f3f8f3;
+    }
+
+    .plantPhoto {
+        width: 64px;
+        height: 64px;
+        object-fit: cover; /* crop to fill the square instead of squashing */
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    .plantPhoto.big {
+        width: 100%;
+        height: 160px;
+    }
+
+    .cardText h3 {
+        margin: 0 0 0.25rem;
+        font-size: 1rem;
+    }
+
+    .cardText p {
+        margin: 0;
+        font-size: 0.85rem;
     }
 
     @media (max-width: 768px) {
