@@ -18,7 +18,7 @@ const auth = useAuthStore()
       </ul>
       <div class="d-flex align-items-center gap-2">
         <template v-if="auth.isAuthenticated">
-          <span>{{ auth.user.userName }}</span>
+          <RouterLink class="nav-link" active-class="active" to="/profile">{{ auth.user.userName }}</RouterLink>
           <button type="button" class="btn btn-outline-secondary" @click="$emit('logout')">Log out</button>
         </template>
         <template v-else>

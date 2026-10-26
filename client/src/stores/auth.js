@@ -61,6 +61,15 @@ export const useAuthStore = defineStore('auth', () => {
     return restoring
   }
 
+  async function updateProfile(details) {
+    const data = await authorizedRequest('/user/me', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(details),
+    })
+    user.value = data.user
+    return data.user
+  }
+
   async function logout() {
     try {
       if (accessToken.value) await authorizedRequest('/user/logout', { method: 'POST' })
@@ -72,7 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     accessToken, user, submitting, error, isAuthenticated, clearSession,
-    authorizedRequest, restoreSession, logout,
+    authorizedRequest, restoreSession, updateProfile, logout,
     login: (credentials) => authenticate('login', credentials),
     register: (credentials) => authenticate('register', credentials),
   }
