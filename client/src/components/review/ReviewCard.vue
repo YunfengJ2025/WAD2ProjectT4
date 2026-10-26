@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import StarRating from './StarRating.vue'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 import '@/assets/reviews.css'
 const props = defineProps({
   review: { type: Object, required: true },
@@ -36,7 +37,11 @@ function dateLabel(value) {
 <template>
   <article class="review-card">
     <header>
-      <span class="avatar" aria-hidden="true">{{ review.creatorName.slice(0, 1) }}</span>
+      <!-- Match the profile/navbar avatar, including its missing-image fallback. -->
+      <UserAvatar
+        :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl }"
+        :size="42"
+      />
       <div class="identity">
         <h3>{{ review.creatorName }}</h3>
         <time :datetime="review.createdAt">{{ dateLabel(review.createdAt) }}</time>
@@ -63,7 +68,13 @@ function dateLabel(value) {
     </button>
     <div v-if="review.type === 'POST' && replies.length" class="replies">
       <div v-for="reply in replies" :key="reply.reviewId" class="reply">
-        <strong>{{ reply.creatorName }}</strong>
+        <div class="d-flex align-items-center gap-2">
+          <UserAvatar
+            :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl }"
+            :size="28"
+          />
+          <strong>{{ reply.creatorName }}</strong>
+        </div>
         <p>{{ reply.comment }}</p>
       </div>
     </div>

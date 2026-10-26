@@ -17,10 +17,32 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
   URL.createObjectURL = vi.fn(() => 'blob:preview')
   URL.revokeObjectURL = vi.fn()
-  wrapper = mount(ProfileView, { global: { plugins: [pinia], stubs: { ProfileReviews: true } } })
+  wrapper = mount(ProfileView, { global: { plugins: [pinia], stubs: {
+    ProfileReviews: { template: '<section id="profile-reviews">Reviews</section>' },
+  } } })
 })
 afterEach(() => { wrapper.unmount(); vi.unstubAllGlobals() })
 const reply = (user) => ({ ok: true, status: 200, json: async () => ({ user }) })
+
+it('includes reviews navigation and highlights only the section reached by scrolling', async () => {
+  const positions = { 'about-me': -500, 'personal-details': 20, address: 300, 'profile-reviews': 600 }
+  for (const id of Object.keys(positions)) {
+    wrapper.get(`#${id}`).element.getBoundingClientRect = () => ({ top: positions[id] })
+  }
+  window.dispatchEvent(new Event('scroll'))
+  await vi.waitFor(() => {
+    expect(wrapper.get('.profile-sidebar .selected').attributes('href')).toBe('#personal-details')
+  })
+  positions['personal-details'] = -400
+  positions.address = -200
+  positions['profile-reviews'] = 20
+  window.dispatchEvent(new Event('scroll'))
+  await vi.waitFor(() => {
+    expect(wrapper.get('.profile-sidebar .selected').attributes('href')).toBe('#profile-reviews')
+  })
+  expect(wrapper.findAll('.profile-sidebar .selected')).toHaveLength(1)
+  expect(wrapper.get('.profile-sidebar [aria-current="location"]').text()).toContain('My reviews')
+})
 async function pick(file) {
   Object.defineProperty(wrapper.get('#profile-photo').element, 'files', { configurable: true, value: [file] })
   await wrapper.get('#profile-photo').trigger('change')

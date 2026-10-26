@@ -131,11 +131,14 @@ async function getProfileReviews(userId) {
   const reviews = [...new Map([...own, ...context].map((review) => [review.reviewId, review])).values()];
   const ids = [...new Set(reviews.flatMap((review) => [review.creatorId, review.receiverId]))];
   const { User } = require("./userModel");
-  const users = await User.find({ userId: { $in: ids } }).select("userId userName -_id").lean();
+  // Read public profile fields only; photos belong to the author, not the receiver.
+  const users = await User.find({ userId: { $in: ids } }).select("userId userName photoUrl -_id").lean();
   const names = new Map(users.map((user) => [user.userId, user.userName]));
+  const photos = new Map(users.map((user) => [user.userId, user.photoUrl || ""]));
   return reviews.map((review) => ({
     ...review,
     creatorName: names.get(review.creatorId) || `User #${review.creatorId}`,
+    creatorPhotoUrl: photos.get(review.creatorId) || "",
     receiverName: names.get(review.receiverId) || `User #${review.receiverId}`,
   }));
 }

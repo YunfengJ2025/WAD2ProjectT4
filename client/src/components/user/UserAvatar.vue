@@ -12,7 +12,7 @@ const initial = computed(() => (props.user?.userName?.trim()?.[0] || 'U').toUppe
 
 <template>
   <span class="user-avatar" :style="{ width: `${size}px`, height: `${size}px`, fontSize: `${size * 0.38}px` }">
-    <img v-if="user?.photoUrl && !failed" :src="user.photoUrl" :alt="`${user.userName}'s profile photo`" @error="failed = true" />
+    <img v-if="user?.photoUrl && !failed" :src="user.photoUrl" :alt="`${user.userName}'s profile photo`" draggable="false" @error="failed = true" />
     <span v-else aria-hidden="true">{{ initial }}</span>
   </span>
 </template>

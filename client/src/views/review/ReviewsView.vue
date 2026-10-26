@@ -79,6 +79,9 @@ const visibleReviews = computed(() =>
 function displayReview(review) {
   return {
     ...review,
+    // Use the live Pinia profile for our own entries after a profile-photo change.
+    creatorPhotoUrl:
+      review.creatorId === auth.user?.userId ? auth.user.photoUrl || '' : review.creatorPhotoUrl,
     targetTitle:
       review.type === 'VISIT'
         ? 'Care visit #' + review.visitId
@@ -263,9 +266,11 @@ async function shareReply(review, comment) {
               :review="displayReview(review)"
               :busy="busy !== null"
               :replies="
-                store.reviews.filter(
-                  (reply) => reply.type === 'REVIEW' && reply.parentReviewId === review.reviewId,
-                )
+                store.reviews
+                  .filter(
+                    (reply) => reply.type === 'REVIEW' && reply.parentReviewId === review.reviewId,
+                  )
+                  .map(displayReview)
               "
               @reply="shareReply(review, $event)"
             />

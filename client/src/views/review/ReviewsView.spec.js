@@ -84,6 +84,26 @@ async function press(text) {
 }
 
 describe('profile reviews', () => {
+  it('shows the author photo, falls back on image errors, and uses live profile photos for our entries', async () => {
+    auth.authorizedRequest.mockResolvedValueOnce({
+      reviews: records.map((item) => ({
+        ...item,
+        creatorPhotoUrl: 'https://images.example/author.png',
+      })),
+    })
+    await open()
+    const card = wrapper.findAllComponents(ReviewCard)[0]
+    expect(card.get('header img').attributes('src')).toBe('https://images.example/author.png')
+    expect(card.get('header img').attributes('alt')).toBe("Alice's profile photo")
+    await card.get('header img').trigger('error')
+    expect(card.find('header img').exists()).toBe(false)
+    expect(card.get('.user-avatar').text()).toBe('A')
+    auth.user.photoUrl = 'https://images.example/my-new-photo.png'
+    await press('Written by me')
+    expect(wrapper.get('.review-card header img').attributes('src')).toBe(
+      'https://images.example/my-new-photo.png',
+    )
+  })
   it('shows a half-star average and updates category counts for each direction', async () => {
     auth.authorizedRequest.mockResolvedValueOnce({
       reviews: [...records, { ...records[0], reviewId: 6, rating: 5 }],

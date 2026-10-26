@@ -53,6 +53,24 @@ it('shows loading, error and empty states and allows retry', async () => {
   expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/reviews')
 })
 
+it('uses each review author photo and falls back to their initial for missing or broken photos', async () => {
+  fetch.mockResolvedValueOnce(response([
+    { ...reviews[7], creatorPhotoUrl: 'https://images.example/author.png' },
+    { ...reviews[6], creatorPhotoUrl: '' },
+  ]))
+  mountSection()
+  await flushPromises()
+  const cards = wrapper.findAll('.review-preview')
+  expect(cards[0].get('img').attributes('src')).toBe('https://images.example/author.png')
+  expect(cards[0].get('img').attributes('alt')).toBe("Neighbour 8's profile photo")
+  expect(cards[0].get('img').attributes('draggable')).toBe('false')
+  expect(cards[1].find('img').exists()).toBe(false)
+  expect(cards[1].get('.user-avatar').text()).toBe('N')
+  await cards[0].get('img').trigger('error')
+  expect(cards[0].find('img').exists()).toBe(false)
+  expect(cards[0].get('.user-avatar').text()).toBe('N')
+})
+
 it('scrolls with mouse dragging and keyboard or arrow controls', async () => {
   fetch.mockResolvedValueOnce(response(reviews))
   mountSection()
