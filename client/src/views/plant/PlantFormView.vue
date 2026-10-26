@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import PlantForm from '@/components/plant/PlantForm.vue'
-import { getPlant } from '@/api/plants'
+import { usePlantsStore } from '@/stores/plants'
 import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
@@ -14,17 +14,18 @@ const isEdit = computed(() => !!plantId.value)
 // Editing returns to the plant's own page; adding returns to the list.
 const backTo = computed(() => (isEdit.value ? `/plants/${plantId.value}` : '/plants'))
 
-const plant = ref(null)
+const plantsStore = usePlantsStore()
+const plant = computed(() => isEdit.value ? plantsStore.findPlant(plantId.value) ?? null : null)
 const loading = ref(false)
 const loadError = ref('')
 
 async function load() {
-  plant.value = null
+  loading.value = false
   loadError.value = ''
   if (!isEdit.value) return
   loading.value = true
   try {
-    plant.value = await getPlant(plantId.value)
+    await plantsStore.fetchPlant(plantId.value)
   } catch (err) {
     loadError.value = err.message
   } finally {

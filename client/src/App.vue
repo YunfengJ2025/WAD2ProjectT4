@@ -1,6 +1,7 @@
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import NavBar from './components/nav/NavBar.vue'
@@ -8,6 +9,7 @@ import ToastHost from './components/ToastHost.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useToast } from './composables/useToast'
 
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
@@ -16,10 +18,12 @@ const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
 const navigationitems = [
-  { label: 'Home', to: '/' },
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },
   { label: 'Find Nearby', to: '/find-nearby' },
-  { label: 'Care Visits', to: '/care-visits' }
+  { label: 'Care Visits', to: '/care-visits' },
+  { label: 'Reviews', to: '/reviews' }
 ]
 
 async function logout() {
@@ -28,34 +32,37 @@ async function logout() {
   loggingOut.value = true
 
   try {
-    const response = await fetch('/api/user/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-    })
-
-    if (!response.ok) {
-      toast('Could not log out. Please try again.', 'error')
-      return
-    }
-
-    showLogoutConfirm.value = false
-    await router.replace('/signin')
+    await auth.logout()
   } catch {
-    toast('Could not reach the server. Please try again.', 'error')
+    toast('Signed out on this device. Could not reach the server.', 'info')
   } finally {
+    showLogoutConfirm.value = false
     loggingOut.value = false
+    await router.replace('/signin')
   }
 }
 
+watch(() => auth.accessToken, (token) => {
+  if (!token && route.meta.requiresAuth) {
+    router.replace({ name: 'sign-in', query: { redirect: route.fullPath } })
+  }
+})
 </script>
 
 <template>
+  <!-- Background gradient container defined in main.css -->
+  <div class="page-bg"></div>
+
+  
+  <br>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
   <NavBar
-    v-if="!['/signin', '/signup'].includes(route.path)"
+    v-if="!['sign-in', 'register'].includes(route.name)"
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
-  
+
   <RouterView :key="route.path" />
 
   <ToastHost />

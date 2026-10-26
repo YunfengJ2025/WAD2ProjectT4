@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema(
 );
 
 const User = mongoose.model("User", userSchema, "User");
-
+const { TokenTransaction } = require("./tokenModel");
 const httpError = (status, message) => {
   const err = new Error(message);
   err.status = status;
@@ -81,7 +81,8 @@ async function getAllUsers() {
   return User.find().sort({ userId: 1 });
 }
 
-module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
+// module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
+
 async function registerUser(data) {
   const { userName, email, password, postalCode, block, unitNumber, lat, lng } =
     data;
@@ -134,6 +135,77 @@ async function loginUser(email, password) {
   return user;
 }
 
+async function applyTransactionToBalances(transactionId) {
+  // Claim the transaction so the same one can never be applied twice
+  const txn = await TokenTransaction.findOneAndUpdate(
+    { transactionId, balanceApplied: { $ne: true } },
+    { balanceApplied: true },
+    { new: true },
+  );
+  if (!txn) {
+    throw httpError(404, "Transaction not found or balance already updated");
+  }
+
+  const { senderId, receiverId, amount } = txn;
+  let debited = false;
+
+  try {
+    // Debit sender (skipped for SYSTEM_GIFT). The $gte filter makes the
+    // balance check and the deduction a single atomic operation.
+    if (senderId) {
+      const res = await User.updateOne(
+        { userId: senderId, tokenBalance: { $gte: amount } },
+        { $inc: { tokenBalance: -amount } },
+      );
+      if (res.modifiedCount === 0) {
+        throw httpError(400, "Insufficient token balance or sender not found");
+      }
+      debited = true;
+    }
+
+    // Credit receiver (skipped for SHOP_PURCHASE)
+    if (receiverId) {
+      const res = await User.updateOne(
+        { userId: receiverId },
+        { $inc: { tokenBalance: amount } },
+      );
+      if (res.matchedCount === 0) {
+        throw httpError(404, "Receiver not found");
+      }
+    }
+  } catch (err) {
+    // Undo whatever already happened so balances stay consistent
+    if (debited) {
+      await User.updateOne(
+        { userId: senderId },
+        { $inc: { tokenBalance: amount } },
+      );
+    }
+    await TokenTransaction.updateOne(
+      { _id: txn._id },
+      { balanceApplied: false },
+    );
+    throw err;
+  }
+
+  const [sender, receiver] = await Promise.all([
+    senderId
+      ? User.findOne({ userId: senderId }).select("userId tokenBalance")
+      : null,
+    receiverId
+      ? User.findOne({ userId: receiverId }).select("userId tokenBalance")
+      : null,
+  ]);
+
+  return {
+    transaction: txn,
+    senderBalance: sender ? sender.tokenBalance : null,
+    receiverBalance: receiver ? receiver.tokenBalance : null,
+  };
+}
+
+// add to module.exports:
+// applyTransactionToBalances,
 // Shape of the user object that is safe to send to the client
 function toAuthJSON(user) {
   return {
@@ -146,4 +218,11 @@ function toAuthJSON(user) {
   };
 }
 
-module.exports = { User,getAllUsers, registerUser, loginUser, toAuthJSON };
+module.exports = {
+  User,
+  getAllUsers,
+  registerUser,
+  loginUser,
+  toAuthJSON,
+  applyTransactionToBalances,
+};
