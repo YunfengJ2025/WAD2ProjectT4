@@ -57,7 +57,14 @@ exports.register = async (req, res) => {
   try {
     const body = req.body || {};
     // Check required fields before touching the model
-    const requiredFields = ["userName", "email", "password"];
+    const requiredFields = [
+      "userName",
+      "email",
+      "password",
+      "postalCode",
+      "block",
+      "unitNumber",
+    ];
     const missing = requiredFields.filter(
       (field) => typeof body[field] !== "string" || body[field].trim() === "",
     );

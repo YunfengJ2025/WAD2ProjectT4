@@ -31,17 +31,17 @@ const userSchema = new mongoose.Schema(
     },
     postalCode: {
       type: String,
-      // required: [true, "A user must have a postal code"],
+      required: [true, "A user must have a postal code"],
       match: [/^\d{6}$/, "Postal code must be 6 digits"],
     },
     block: {
       type: String,
-      // required: [true, "A user must have a block"],
+      required: [true, "A user must have a block"],
       trim: true,
     },
     unitNumber: {
       type: String,
-      // required: [true, "A user must have a unit number"],
+      required: [true, "A user must have a unit number"],
       trim: true,
     },
     lat: { type: Number, min: -90, max: 90 },
