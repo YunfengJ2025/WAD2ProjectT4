@@ -5,10 +5,13 @@ const {
   updateProfile,
   getAllUsers,
   applyTransactionToBalances,
+  getPublicProfile,
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const STARTER_TOKENS = 50;
 const { createAccessToken } = require("../config/jwt");
+
+
 
 function authResponse(user) {
   return { user: toAuthJSON(user), accessToken: createAccessToken(user), tokenType: "Bearer", expiresIn: 3600 };
@@ -43,6 +46,23 @@ const handleError = (err, res) => {
     return res.status(400).json({ message: "Please fix the highlighted fields", errors });
   }
   res.status(500).json({ message: "Server error" });
+};
+
+// Get /:userId/profile
+exports.getPublicProfile = async (req, res) => {
+  if (
+    !/^[1-9]\d*$/.test(req.params.userId) ||
+    !Number.isSafeInteger(Number(req.params.userId))
+  ) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+  try {
+    const profile = await getPublicProfile(Number(req.params.userId));
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    res.json(profile);
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 // GET /user

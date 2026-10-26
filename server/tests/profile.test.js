@@ -100,6 +100,17 @@ test("profile details and avatar uploads", async (t) => {
   await t.test("rejects non-text profile values", async () => {
     assert.equal((await patch({ userName: { $set: "unexpected" } })).status, 400);
   });
+  await t.test("bio is optional, editable, clearable and limited to 500 characters", async () => {
+    let response = await patch({ bio: "  Growing herbs  " });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).user.bio, "Growing herbs");
+    response = await patch({ bio: "" });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).user.bio, "");
+    response = await patch({ bio: "x".repeat(501) });
+    assert.equal(response.status, 400);
+    assert.ok((await response.json()).errors.bio);
+  });
   await t.test("authentication responses expose the photo but exclude its management id", () => {
     const safe = toAuthJSON(current);
     assert.equal(safe.photoUrl, current.photoUrl);

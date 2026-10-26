@@ -5,6 +5,7 @@ const {
   login,
   logout,
   getMe,
+  getPublicProfile,
   updateMe,
   updateTokenBalance
 } = require("../controllers/userController");
@@ -20,6 +21,7 @@ const requireAdmin = (req, res, next) => {
 };
 router.get("/", requireUser, requireAdmin, getUsers);
 router.get("/me", requireUser, getMe);
+router.get("/:userId/profile", getPublicProfile);
 router.patch("/me", requireUser, uploadPhoto, updateMe);
 router.post("/register", register);
 router.post("/login", login);

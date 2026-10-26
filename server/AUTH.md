@@ -16,8 +16,15 @@ shows the new authentication setting; never commit your real secret.
   tokenType: "Bearer", expiresIn: 3600 }`.
 - `POST /user/login`: accepts `email` and `password`, returning the same shape.
 - `GET /user/me`: returns `{ user }` for a valid access token.
+- `GET /user/:userId/profile`: public profile, available without a token.
+  Returns `{ user, reviews, reviewCount, averageRating }`. The public user
+  contains only `userId`, `userName`, `photoUrl`, `bio` and `createdAt`.
+  Reviews are received `VISIT` reviews only; the average is `null` when there
+  are no ratings. Email, address, balance and Cloudinary management ids are
+  excluded. The client displays this at `/profile/:userId`.
 - `PATCH /user/me`: updates the authenticated user's `userName`, `email`,
-  `postalCode`, `block`, and `unitNumber`. Accepts JSON for details or
+  `postalCode`, `block`, `unitNumber`, and optional `bio` (up to 500 characters;
+  send an empty string to clear it). Accepts JSON for details or
   multipart form data with an optional `photo` file (JPG, PNG or WebP, up to
   2MB). Returns `{ user }`, including `photoUrl` and `createdAt`; Cloudinary
   management ids are excluded. Configure the existing `CLOUDINARY_CLOUD_NAME`,

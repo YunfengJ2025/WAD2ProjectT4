@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { getNextSequence } = require("./counterModel");
 const { uploadImage, deleteImage, FOLDERS } = require("../config/cloudinary");
+const { Review } = require("./reviewModel");
 const userSchema = new mongoose.Schema(
   {
     userId: {
@@ -10,6 +11,7 @@ const userSchema = new mongoose.Schema(
       sparse: true, // lets multiple documents exist without a userId
     },
     photoUrl: { type: String, default: "" },
+    bio: { type: String, trim: true, maxlength: [500, "Bio cannot exceed 500 characters"], default: "" },
     photoPublicId: { type: String, default: "", select: false },
     userName: {
       type: String,
@@ -140,7 +142,7 @@ async function loginUser(email, password) {
 
 // Updates the logged-in user's own details. Only these fields can be changed,
 // so callers can't edit userRole, tokenBalance, etc.
-const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber"];
+const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber", "bio"];
 
 async function updateProfile(user, data, file) {
   for (const field of EDITABLE_FIELDS) {
@@ -241,8 +243,57 @@ async function applyTransactionToBalances(transactionId) {
   };
 }
 
+async function getPublicProfile(userId) {
+  const user = await User.findOne({ userId })
+    .select("userId userName photoUrl bio createdAt -_id")
+    .lean();
+  if (!user) return null;
+  // Public feedback contains only completed, received care-visit reviews.
+  const reviews = await Review.find({
+    receiverId: userId,
+    type: "VISIT",
+    reviewId: { $ne: null },
+  })
+    .sort({ createdAt: -1 })
+    .select("reviewId creatorId rating comment createdAt -_id")
+    .lean();
+  const authors = await User.find({
+    userId: { $in: [...new Set(reviews.map((item) => item.creatorId))] },
+  })
+    .select("userId userName photoUrl -_id")
+    .lean();
+  const byId = new Map(authors.map((author) => [author.userId, author]));
+  const ratings = reviews
+    .map((review) => review.rating)
+    .filter((rating) => Number.isFinite(rating) && rating >= 1 && rating <= 5);
+  return {
+    user: {
+      userId: user.userId,
+      userName: user.userName,
+      photoUrl: user.photoUrl || "",
+      bio: user.bio || "",
+      createdAt: user.createdAt,
+    },
+    reviewCount: reviews.length,
+    averageRating: ratings.length
+      ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+      : null,
+    reviews: reviews.map((review) => ({
+      reviewId: review.reviewId,
+      creatorId: review.creatorId,
+      type: "VISIT",
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.createdAt,
+      creatorName: byId.get(review.creatorId)?.userName || "Former neighbour",
+      creatorPhotoUrl: byId.get(review.creatorId)?.photoUrl || "",
+      receiverName: user.userName,
+    })),
+  };
+}
+
+
 // add to module.exports:
-// applyTransactionToBalances,
 // Shape of the user object that is safe to send to the client
 function toAuthJSON(user) {
   return {
@@ -256,6 +307,7 @@ function toAuthJSON(user) {
     block: user.block,
     unitNumber: user.unitNumber,
     photoUrl: user.photoUrl || "",
+    bio: user.bio || "",
     createdAt: user.createdAt,
   };
 }
@@ -268,4 +320,5 @@ module.exports = {
   toAuthJSON,
   updateProfile,
   applyTransactionToBalances,
+  getPublicProfile,
 };

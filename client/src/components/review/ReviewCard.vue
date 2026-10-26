@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import StarRating from './StarRating.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import '@/assets/reviews.css'
@@ -38,7 +39,18 @@ function dateLabel(value) {
   <article class="review-card">
     <header>
       <!-- Match the profile/navbar avatar, including its missing-image fallback. -->
+      <RouterLink
+        v-if="review.creatorId"
+        :to="`/profile/${review.creatorId}`"
+        :aria-label="`View ${review.creatorName}'s profile`"
+      >
+        <UserAvatar
+          :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl }"
+          :size="42"
+        />
+      </RouterLink>
       <UserAvatar
+        v-else
         :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl }"
         :size="42"
       />
@@ -69,7 +81,18 @@ function dateLabel(value) {
     <div v-if="review.type === 'POST' && replies.length" class="replies">
       <div v-for="reply in replies" :key="reply.reviewId" class="reply">
         <div class="d-flex align-items-center gap-2">
+          <RouterLink
+            v-if="reply.creatorId"
+            :to="`/profile/${reply.creatorId}`"
+            :aria-label="`View ${reply.creatorName}'s profile`"
+          >
+            <UserAvatar
+              :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl }"
+              :size="28"
+            />
+          </RouterLink>
           <UserAvatar
+            v-else
             :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl }"
             :size="28"
           />

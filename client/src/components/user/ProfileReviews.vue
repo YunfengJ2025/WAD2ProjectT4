@@ -39,6 +39,7 @@ function dateLabel(value) {
 function startDrag(event) {
   // Touch screens use native scrolling; add click-and-drag for a mouse.
   if (event.pointerType !== 'mouse' || event.button !== 0) return
+  if (event.target.closest('a')) return
   drag = { id: event.pointerId, x: event.clientX, scroll: track.value.scrollLeft }
   track.value.setPointerCapture(event.pointerId)
 }
@@ -106,8 +107,25 @@ function scroll(direction) {
       >
         <li v-for="review in recent" :key="review.reviewId" class="review-preview">
           <header>
+            <RouterLink
+              v-if="review.creatorId"
+              :to="`/profile/${review.creatorId}`"
+              :aria-label="`View ${review.creatorName || 'neighbour'}'s profile`"
+            >
+              <UserAvatar
+                :user="{
+                  userName: review.creatorName || 'Neighbour',
+                  photoUrl: review.creatorPhotoUrl,
+                }"
+                :size="40"
+              />
+            </RouterLink>
             <UserAvatar
-              :user="{ userName: review.creatorName || 'Neighbour', photoUrl: review.creatorPhotoUrl }"
+              v-else
+              :user="{
+                userName: review.creatorName || 'Neighbour',
+                photoUrl: review.creatorPhotoUrl,
+              }"
               :size="40"
             />
             <div>

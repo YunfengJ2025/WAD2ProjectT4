@@ -1,4 +1,4 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import ReviewsView from './ReviewsView.vue'
@@ -72,7 +72,7 @@ afterEach(() => {
 })
 
 async function open() {
-  wrapper = mount(ReviewsView)
+  wrapper = mount(ReviewsView, { global: { stubs: { RouterLink: RouterLinkStub } } })
   await flushPromises()
 }
 async function press(text) {
@@ -189,7 +189,7 @@ describe('profile reviews', () => {
           resolve = done
         }),
     )
-    wrapper = mount(ReviewsView)
+    wrapper = mount(ReviewsView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     auth.clearSession()
     resolve({ reviews: records })
     await flushPromises()

@@ -1,4 +1,4 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import ProfileView from './ProfileView.vue'
@@ -18,11 +18,29 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:preview')
   URL.revokeObjectURL = vi.fn()
   wrapper = mount(ProfileView, { global: { plugins: [pinia], stubs: {
+    RouterLink: RouterLinkStub,
     ProfileReviews: { template: '<section id="profile-reviews">Reviews</section>' },
   } } })
 })
 afterEach(() => { wrapper.unmount(); vi.unstubAllGlobals() })
 const reply = (user) => ({ ok: true, status: 200, json: async () => ({ user }) })
+
+it('saves an optional bio below the user icon and allows it to be cleared', async () => {
+  const edit = () => wrapper.findAll('button').find((button) => ['Add a bio', 'Edit bio'].includes(button.text()))
+  await edit().trigger('click')
+  await wrapper.get('#profile-bio').setValue('I love growing herbs.')
+  fetch.mockResolvedValueOnce(reply({ ...auth.user, bio: 'I love growing herbs.' }))
+  await wrapper.get('.bio-editor').trigger('submit')
+  await flushPromises()
+  expect(wrapper.get('.profile-bio').text()).toContain('I love growing herbs.')
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ bio: 'I love growing herbs.' })
+  await edit().trigger('click')
+  await wrapper.get('#profile-bio').setValue('')
+  fetch.mockResolvedValueOnce(reply({ ...auth.user, bio: '' }))
+  await wrapper.get('.bio-editor').trigger('submit')
+  await flushPromises()
+  expect(auth.user.bio).toBe('')
+})
 
 it('includes reviews navigation and highlights only the section reached by scrolling', async () => {
   const positions = { 'about-me': -500, 'personal-details': 20, address: 300, 'profile-reviews': 600 }

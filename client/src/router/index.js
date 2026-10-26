@@ -44,6 +44,7 @@ const routes = [
   },
 
   { path: '/profile', name: 'profile', meta: { requiresAuth: true }, component: () => import('../views/user/ProfileView.vue') },
+  { path: '/profile/:userId', name: 'public-profile', component: () => import('../views/user/PublicProfileView.vue') },
 
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
   { path: '/care-visits', name: 'Care Visits', component: CareVisits },

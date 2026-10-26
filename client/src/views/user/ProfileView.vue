@@ -1,9 +1,11 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ProfileReviews from '@/components/user/ProfileReviews.vue'
+import '@/assets/profile.css'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
@@ -56,6 +58,9 @@ onBeforeUnmount(() => {
 const editing = ref(false)
 const saving = ref(false)
 const uploading = ref(false)
+const editingBio = ref(false)
+const savingBio = ref(false)
+const bioDraft = ref('')
 const error = ref('')
 const errors = ref({})
 const success = ref('')
@@ -63,7 +68,28 @@ const form = ref({})
 const photo = ref(null)
 const preview = ref('')
 const photoInput = ref(null)
-const busy = computed(() => saving.value || uploading.value)
+const busy = computed(() => saving.value || uploading.value || savingBio.value)
+function editBio() {
+  bioDraft.value = user.value.bio || ''
+  editingBio.value = true
+  error.value = ''
+  success.value = ''
+}
+async function saveBio() {
+  if (busy.value) return
+  error.value = ''
+  if (bioDraft.value.trim().length > 500) { error.value = 'Bio cannot exceed 500 characters.'; return }
+  savingBio.value = true
+  try {
+    await auth.updateProfile({ bio: bioDraft.value.trim() })
+    editingBio.value = false
+    success.value = 'Your bio has been saved.'
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    savingBio.value = false
+  }
+}
 const avatarUser = computed(() => ({
   ...user.value,
   photoUrl: preview.value || user.value?.photoUrl,
@@ -176,7 +202,7 @@ async function save() {
 </script>
 
 <template>
-  <main v-if="user" ref="profilePage" class="profile-page" :style="{ '--profile-scroll-offset': `${scrollOffset}px` }">
+  <main v-if="user" ref="profilePage" class="profile-page profile-shell" :style="{ '--profile-scroll-offset': `${scrollOffset}px` }">
     <aside ref="sidebar" class="profile-sidebar">
       <p class="eyebrow">YOUR LITTLE GREEN CORNER</p>
       <h1>Profile</h1>
@@ -211,10 +237,24 @@ async function save() {
         <p class="eyebrow">NICE TO SEE YOU HERE</p>
         <h2>About me</h2>
         <div class="about-layout">
-          <div class="identity-card">
+          <div class="identity-card profile-identity-card">
             <div class="avatar-wrap"><UserAvatar :user="avatarUser" :size="116" /></div>
-            <h3>{{ user.userName }}</h3>
+            <h3 class="profile-name">{{ user.userName }}</h3>
             <p class="member-label">Plant-loving neighbour</p>
+            <form v-if="editingBio" class="bio-editor" @submit.prevent="saveBio">
+              <label for="profile-bio">Bio <span>(optional)</span></label>
+              <textarea id="profile-bio" v-model="bioDraft" rows="4" maxlength="500" :disabled="busy" placeholder="Tell your neighbours a little about yourself…" />
+              <p class="photo-hint">{{ bioDraft.length }}/500 characters · Shown on your public profile</p>
+              <div class="photo-actions">
+                <button type="submit" class="btn btn-primary" :disabled="busy">{{ savingBio ? 'Saving…' : 'Save bio' }}</button>
+                <button type="button" class="text-button" :disabled="busy" @click="editingBio = false">Cancel</button>
+              </div>
+            </form>
+            <div v-else class="profile-bio">
+              <p v-if="user.bio" class="profile-bio-text">{{ user.bio }}</p>
+              <p v-else class="photo-hint">Tell your neighbours a little about yourself.</p>
+              <button type="button" class="text-button" :disabled="busy" @click="editBio">{{ user.bio ? 'Edit bio' : 'Add a bio' }}</button>
+            </div>
             <label class="photo-picker" for="profile-photo" :aria-disabled="busy">
               <svg
                 viewBox="0 0 24 24"
@@ -241,6 +281,7 @@ async function save() {
               @change="choosePhoto"
             />
             <p id="photo-hint" class="photo-hint">JPG, PNG or WebP · Up to 2MB</p>
+            <RouterLink class="public-profile-link" :to="`/profile/${user.userId}`">View public profile ↗</RouterLink>
             <p v-if="errors.photo" id="photo-error" class="field-error" role="alert">
               {{ errors.photo }}
             </p>
@@ -259,7 +300,7 @@ async function save() {
             <p>
               Keep your profile up to date so your neighbours know who is caring for their plants.
             </p>
-            <dl class="account-summary">
+            <dl class="account-summary profile-meta">
               <div>
                 <dt>Community tokens</dt>
                 <dd>{{ user.tokenBalance ?? 0 }} <span>tokens</span></dd>
@@ -367,12 +408,18 @@ async function save() {
 </template>
 
 <style scoped>
+.profile-bio { margin: 1rem 0; }
+.profile-bio > p { font-size: .85rem; line-height: 1.7; }
+.bio-editor { margin: 1rem 0; text-align: left; }
+.bio-editor label { font-size: .8rem; display: block; margin-bottom: .5rem; }
+.bio-editor label span { color: var(--muted); }
+.bio-editor textarea { width: 100%; border: 1px solid var(--color-border-hover); border-radius: 8px; padding: .65rem; font: inherit; font-size: .85rem; resize: vertical; }
+.public-profile-link { display: block; margin-top: 1rem; font-size: .75rem; color: var(--accent); }
 .profile-page {
   display: grid;
   grid-template-columns: 235px minmax(0, 1fr);
   margin: 2.5rem auto 5rem;
   max-width: 1160px;
-  color: var(--color-text);
 }
 .profile-sidebar {
   position: sticky;
@@ -388,9 +435,7 @@ async function save() {
 }
 .eyebrow {
   font-size: 0.64rem;
-  font-weight: 700;
   letter-spacing: 0.15em;
-  color: var(--muted);
   margin-bottom: 0.75rem;
 }
 h1 {
@@ -464,10 +509,6 @@ h2 {
   align-items: center;
 }
 .identity-card {
-  text-align: center;
-  border: 1px solid var(--color-border);
-  border-radius: 22px;
-  background: var(--surface);
   box-shadow: 0 7px 28px rgba(20, 83, 45, 0.08);
   padding: 2rem 1.25rem 1.5rem;
   min-width: 0;
@@ -475,13 +516,10 @@ h2 {
 .identity-card h3 {
   font-size: 1.65rem;
   font-weight: 650;
-  color: var(--color-heading);
   margin: 1rem 0 0.25rem;
-  overflow-wrap: anywhere;
 }
 .member-label {
   font-size: 0.82rem;
-  color: var(--muted);
   margin: 0 0 1rem;
 }
 .photo-picker {
@@ -553,13 +591,9 @@ h2 {
 }
 .account-summary dt {
   font-size: 0.7rem;
-  color: var(--muted);
-  font-weight: 400;
 }
 .account-summary dd {
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-heading);
   margin: 0.3rem 0 0;
 }
 .account-summary dd span {
@@ -635,9 +669,6 @@ h2 {
 .field input[aria-invalid='true'] {
   border-color: var(--danger);
 }
-input:focus-visible,
-button:focus-visible,
-a:focus-visible,
 .photo-picker:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

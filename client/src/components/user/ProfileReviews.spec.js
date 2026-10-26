@@ -34,7 +34,7 @@ it('shows the six newest received reviews in one row and links to the reviews pa
   expect(cards[0].text()).toContain('Review 8')
   expect(cards[5].text()).toContain('Review 3')
   expect(wrapper.text()).toContain('Showing 6 of 8')
-  expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/reviews')
+  expect(wrapper.findAllComponents(RouterLinkStub).at(-1).props('to')).toBe('/reviews')
   expect(fetch.mock.calls[0][0]).toBe('/api/review/me')
 })
 
@@ -50,7 +50,7 @@ it('shows loading, error and empty states and allows retry', async () => {
   await wrapper.get('.retry-button').trigger('click')
   await flushPromises()
   expect(wrapper.text()).toContain('No reviews received yet')
-  expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/reviews')
+  expect(wrapper.findAllComponents(RouterLinkStub).at(-1).props('to')).toBe('/reviews')
 })
 
 it('uses each review author photo and falls back to their initial for missing or broken photos', async () => {
