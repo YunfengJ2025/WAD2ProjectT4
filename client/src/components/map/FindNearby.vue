@@ -133,6 +133,8 @@ function haversine(lat1, lng1, lat2, lng2) {
                 <p><strong>Plants:</strong> {{ pinSelected.plantCount }}</p>
                 <p><strong>Reward:</strong> {{ pinSelected.tokenReward }} tokens</p>
                 <p><strong>Notes:</strong> {{ pinSelected.notes }}</p>
+
+                <button>Accept Request</button>
             </div>
         </div>
 
