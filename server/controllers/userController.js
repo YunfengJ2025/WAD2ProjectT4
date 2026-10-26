@@ -2,6 +2,7 @@ const {
   registerUser,
   loginUser,
   toAuthJSON,
+  updateProfile,
   getAllUsers,
   applyTransactionToBalances,
 } = require("../models/userModel");
@@ -57,7 +58,14 @@ exports.register = async (req, res) => {
   try {
     const body = req.body || {};
     // Check required fields before touching the model
-    const requiredFields = ["userName", "email", "password"];
+    const requiredFields = [
+      "userName",
+      "email",
+      "password",
+      "postalCode",
+      "block",
+      "unitNumber",
+    ];
     const missing = requiredFields.filter(
       (field) => typeof body[field] !== "string" || body[field].trim() === "",
     );
@@ -113,6 +121,16 @@ exports.logout = (req, res) => {
   res.status(204).end();
 };
 exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
+
+// PATCH /user/me
+exports.updateMe = async (req, res) => {
+  try {
+    const user = await updateProfile(req.user, req.body || {});
+    res.json({ user: toAuthJSON(user) });
+  } catch (err) {
+    handleError(err, res);
+  }
+};
 exports.updateTokenBalance = async (req, res) => {
   try {
     const result = await applyTransactionToBalances(

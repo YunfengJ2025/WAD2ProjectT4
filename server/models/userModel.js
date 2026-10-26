@@ -31,17 +31,17 @@ const userSchema = new mongoose.Schema(
     },
     postalCode: {
       type: String,
-      // required: [true, "A user must have a postal code"],
+      required: [true, "A user must have a postal code"],
       match: [/^\d{6}$/, "Postal code must be 6 digits"],
     },
     block: {
       type: String,
-      // required: [true, "A user must have a block"],
+      required: [true, "A user must have a block"],
       trim: true,
     },
     unitNumber: {
       type: String,
-      // required: [true, "A user must have a unit number"],
+      required: [true, "A user must have a unit number"],
       trim: true,
     },
     lat: { type: Number, min: -90, max: 90 },
@@ -135,6 +135,20 @@ async function loginUser(email, password) {
   return user;
 }
 
+// Updates the logged-in user's own details. Only these fields can be changed,
+// so callers can't edit userRole, tokenBalance, etc.
+const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber"];
+
+async function updateProfile(user, data) {
+  for (const field of EDITABLE_FIELDS) {
+    if (data[field] !== undefined) {
+      user[field] = typeof data[field] === "string" ? data[field].trim() : data[field];
+    }
+  }
+  // save() runs the schema checks (required fields, 6-digit postal code, ...)
+  return user.save();
+}
+
 async function applyTransactionToBalances(transactionId) {
   // Claim the transaction so the same one can never be applied twice
   const txn = await TokenTransaction.findOneAndUpdate(
@@ -215,6 +229,9 @@ function toAuthJSON(user) {
     email: user.email,
     userRole: user.userRole,
     tokenBalance: user.tokenBalance,
+    postalCode: user.postalCode,
+    block: user.block,
+    unitNumber: user.unitNumber,
   };
 }
 
@@ -224,5 +241,6 @@ module.exports = {
   registerUser,
   loginUser,
   toAuthJSON,
+  updateProfile,
   applyTransactionToBalances,
 };

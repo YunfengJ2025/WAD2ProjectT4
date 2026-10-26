@@ -240,7 +240,7 @@ img { display: block; max-width: 100%; }
 #app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0 1.5rem 1.5rem;
   font-weight: normal;
   width: 100%;
 }
@@ -252,7 +252,7 @@ img { display: block; max-width: 100%; }
 
   #app {
     display: block;
-    padding: 2rem;
+    padding: 0 2rem 2rem;
   }
 }
 
