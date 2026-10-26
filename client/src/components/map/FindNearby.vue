@@ -88,6 +88,7 @@ function haversine(lat1, lng1, lat2, lng2) {
             <!-- this will be the display if no pin is selected  -->
             <div v-if="!pinSelected">
                 <p>Select a pin to see the care request</p>
+
             </div>
 
             <!-- this will be the display if a pin is selected, it would be the care request. To make accurate to care request part later  -->
