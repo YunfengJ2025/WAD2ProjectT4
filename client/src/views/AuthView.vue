@@ -33,7 +33,9 @@ async function submit() {
     }
     await (props.createAccount ? auth.register(credentials) : auth.login(credentials))
     const redirect = route.query.redirect
-    await router.push(typeof redirect === 'string' && redirect.startsWith('/plants') ? redirect : '/plants')
+    const destination = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+      && router.resolve(redirect).meta.requiresAuth ? redirect : '/plants'
+    await router.push(destination)
   } catch {
     // The store exposes the API error to the form.
   }

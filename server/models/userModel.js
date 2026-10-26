@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { getNextSequence } = require("./counterModel");
+const { uploadImage, deleteImage, FOLDERS } = require("../config/cloudinary");
 const userSchema = new mongoose.Schema(
   {
     userId: {
@@ -8,6 +9,8 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true, // lets multiple documents exist without a userId
     },
+    photoUrl: { type: String, default: "" },
+    photoPublicId: { type: String, default: "", select: false },
     userName: {
       type: String,
       required: [true, "A user must have a username"],
@@ -139,14 +142,34 @@ async function loginUser(email, password) {
 // so callers can't edit userRole, tokenBalance, etc.
 const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber"];
 
-async function updateProfile(user, data) {
+async function updateProfile(user, data, file) {
   for (const field of EDITABLE_FIELDS) {
     if (data[field] !== undefined) {
-      user[field] = typeof data[field] === "string" ? data[field].trim() : data[field];
+      if (typeof data[field] !== "string") throw httpError(400, `${field} must be text`);
+      user[field] = data[field].trim();
     }
   }
-  // save() runs the schema checks (required fields, 6-digit postal code, ...)
-  return user.save();
+  if (user.isModified("postalCode") || user.isModified("block")) {
+    // Coordinates from the old address must not be reused for nearby searches.
+    user.lat = undefined;
+    user.lng = undefined;
+  }
+  await user.validate();
+  if (!file) return user.save();
+
+  // The public id is excluded from normal reads and all client responses.
+  const previous = await User.findById(user._id).select("+photoPublicId");
+  const photo = await uploadImage(file.buffer, FOLDERS.userIcon);
+  user.photoUrl = photo.url;
+  user.photoPublicId = photo.publicId;
+  try {
+    await user.save();
+  } catch (err) {
+    await deleteImage(photo.publicId);
+    throw err;
+  }
+  await deleteImage(previous?.photoPublicId);
+  return user;
 }
 
 async function applyTransactionToBalances(transactionId) {
@@ -232,6 +255,8 @@ function toAuthJSON(user) {
     postalCode: user.postalCode,
     block: user.block,
     unitNumber: user.unitNumber,
+    photoUrl: user.photoUrl || "",
+    createdAt: user.createdAt,
   };
 }
 

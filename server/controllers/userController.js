@@ -39,7 +39,8 @@ const handleError = (err, res) => {
     return res.status(409).json({ message: `That ${field} is already taken` });
   }
   if (err.name === "ValidationError") {
-    return res.status(400).json({ message: err.message });
+    const errors = Object.fromEntries(Object.entries(err.errors).map(([field, detail]) => [field, detail.message]));
+    return res.status(400).json({ message: "Please fix the highlighted fields", errors });
   }
   res.status(500).json({ message: "Server error" });
 };
@@ -125,7 +126,7 @@ exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
 // PATCH /user/me
 exports.updateMe = async (req, res) => {
   try {
-    const user = await updateProfile(req.user, req.body || {});
+    const user = await updateProfile(req.user, req.body || {}, req.file);
     res.json({ user: toAuthJSON(user) });
   } catch (err) {
     handleError(err, res);
