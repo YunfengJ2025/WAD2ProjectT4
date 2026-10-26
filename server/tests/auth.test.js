@@ -39,7 +39,7 @@ test("JWT user endpoints", async (t) => {
 
   await t.test("login and registration return a safe user and expiring JWT", async () => {
     for (const path of ["login", "register"]) {
-      const response = await request(`/user/${path}`, null, "POST", { userName: user.userName, email: user.email, password: "password123" });
+      const response = await request(`/user/${path}`, null, "POST", { userName: user.userName, email: user.email, password: "password123", postalCode: "123456", block: "123A", unitNumber: "#05-12" });
       assert.equal(response.status, path === "register" ? 201 : 200);
       const body = await response.json();
       assert.equal(body.tokenType, "Bearer");
