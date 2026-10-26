@@ -5,6 +5,7 @@ const {
   login,
   logout,
   getMe,
+  updateMe,
   updateTokenBalance
 } = require("../controllers/userController");
 
@@ -18,6 +19,7 @@ const requireAdmin = (req, res, next) => {
 };
 router.get("/", requireUser, requireAdmin, getUsers);
 router.get("/me", requireUser, getMe);
+router.patch("/me", requireUser, updateMe);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);

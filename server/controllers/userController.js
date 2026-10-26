@@ -2,6 +2,7 @@ const {
   registerUser,
   loginUser,
   toAuthJSON,
+  updateProfile,
   getAllUsers,
   applyTransactionToBalances,
 } = require("../models/userModel");
@@ -120,6 +121,16 @@ exports.logout = (req, res) => {
   res.status(204).end();
 };
 exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
+
+// PATCH /user/me
+exports.updateMe = async (req, res) => {
+  try {
+    const user = await updateProfile(req.user, req.body || {});
+    res.json({ user: toAuthJSON(user) });
+  } catch (err) {
+    handleError(err, res);
+  }
+};
 exports.updateTokenBalance = async (req, res) => {
   try {
     const result = await applyTransactionToBalances(
