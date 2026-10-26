@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusPill from '@/components/plant/StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { getPlant, deletePlant, photoSrc } from '@/api/plants'
+import { photoSrc } from '@/api/plants'
+import { usePlantsStore } from '@/stores/plants'
 import { getWateringStatus, startOfDay } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
@@ -12,11 +13,26 @@ const router = useRouter()
 const { show: toast } = useToast()
 
 
-const plant = ref(null)
+const plantsStore = usePlantsStore()
+const plant = computed(() => plantsStore.findPlant(route.params.plantId))
 const loading = ref(true)
 const loadError = ref('')
 const confirmingDelete = ref(false)
 const deleting = ref(false)
+const watering = ref(false)
+
+async function markWatered() {
+  if (watering.value) return
+  watering.value = true
+  try {
+    await plantsStore.markWatered(route.params.plantId)
+    toast('Watering recorded')
+  } catch (err) {
+    toast(err.message, 'error')
+  } finally {
+    watering.value = false
+  }
+}
 // true if the photo link is broken, so we show the leaf placeholder instead
 const photoFailed = ref(false)
 
@@ -25,7 +41,7 @@ async function load() {
   loadError.value = ''
   photoFailed.value = false
   try {
-    plant.value = await getPlant(route.params.plantId)
+    await plantsStore.fetchPlant(route.params.plantId)
   } catch (err) {
     loadError.value = err.message
   } finally {
@@ -67,8 +83,9 @@ const schedule = computed(() => {
 async function onDelete() {
   deleting.value = true
   try {
-    await deletePlant(plant.value.plantId)
-    toast(`${plant.value.plantName} deleted`)
+    const { plantId, plantName } = plant.value
+    await plantsStore.deletePlant(plantId)
+    toast(`${plantName} deleted`)
     router.push('/plants')
   } catch (err) {
     toast(err.message || 'Could not delete plant', 'error')
@@ -95,7 +112,7 @@ async function onDelete() {
       <RouterLink to="/plants" class="btn">Back to My Plants</RouterLink>
     </div>
 
-    <article v-else class="layout">
+    <article v-else-if="plant" class="layout">
       <div class="photo">
         <img
           v-if="plant.photoUrl && !photoFailed"
@@ -163,6 +180,9 @@ async function onDelete() {
         </section>
 
         <div class="actions">
+          <button type="button" class="btn btn-primary" :disabled="watering" @click="markWatered">
+            {{ watering ? 'Saving…' : 'Mark watered' }}
+          </button>
           <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn">Edit</RouterLink>
           <button type="button" class="btn delete" @click="confirmingDelete = true">Delete</button>
         </div>

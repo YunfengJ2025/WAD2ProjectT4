@@ -1,64 +1,31 @@
 <script setup>
-    import { RouterLink } from 'vue-router'
-    // ADD YOUR CODE HERE
-    const props = defineProps(['navigationitems'])
+import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-
-
-
-    // END OF ADDING YOUR CODE HERE
-
+defineProps({ navigationitems: { type: Array, default: () => [] } })
+defineEmits(['logout'])
+const auth = useAuthStore()
 </script>
 
 <template>
-    <!-- ADD YOUR CODE HERE -->
-     
-
-    <nav class="navbar navbar-expand bg-body-tertiary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Leaf it to us</a>
-            <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
-                aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button> -->
-            <div>
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item" v-for="(navItem,idx) of navigationitems" :key="idx">
-                        <a class="nav-link active" :href="navItem.to">{{ navItem.label }}</a>
-                    </li>
-        
-                </ul>
-                <!-- <form class="d-flex" role="search">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-                    <button class="btn btn-outline-success" type="submit">Search</button>
-                </form> -->
-            </div>
-        </div>
-    </nav>
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <!-- END OF ADDING YOUR CODE HERE -->
+  <nav class="navbar navbar-expand bg-body-tertiary" aria-label="Main navigation">
+    <div class="container-fluid flex-wrap gap-2">
+      <RouterLink class="navbar-brand" to="/">Leaf it to us</RouterLink>
+      <ul class="navbar-nav flex-wrap me-auto mb-2 mb-lg-0">
+        <li v-for="item in navigationitems" :key="item.to" class="nav-item">
+          <RouterLink class="nav-link" active-class="active" :to="item.to">{{ item.label }}</RouterLink>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-2">
+        <template v-if="auth.isAuthenticated">
+          <span>{{ auth.user.userName }}</span>
+          <button type="button" class="btn btn-outline-secondary" @click="$emit('logout')">Log out</button>
+        </template>
+        <template v-else>
+          <RouterLink class="btn btn-outline-secondary" to="/signin">Sign in</RouterLink>
+          <RouterLink class="btn btn-primary" to="/register">Create account</RouterLink>
+        </template>
+      </div>
+    </div>
+  </nav>
 </template>
-
-<style scoped>
-/* Scoped styles for this component (optional) */
-</style>

@@ -1,6 +1,6 @@
 <script setup>
 // PlantCard: shows one plant in the My Plants grid.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { photoSrc } from '@/api/plants'
 import { getWateringStatus } from '@/utils/wateringStatus'
@@ -14,6 +14,12 @@ const emit = defineEmits(['delete'])
 
 // true if the photo link is broken, so we show the leaf placeholder instead
 const photoFailed = ref(false)
+watch(
+  () => props.plant.photoUrl,
+  () => {
+    photoFailed.value = false
+  },
+)
 
 // Overdue / due / upcoming, worked out from last watered date + frequency
 const status = computed(() => getWateringStatus(props.plant))
