@@ -118,48 +118,34 @@ import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.
 import BadgeCard from '../../components/dashboard/BadgeCard.vue'
 
 // ref() reactive state — covered in WAD2 wk4/wk5
-// Preview data allows frontend development before backend is ready
+// Initial empty state before fetching live data from MongoDB via backend API.
+// Setting default object properties prevents Vue runtime errors (e.g. Cannot read property of null)
+// while waiting for axios.get() to respond.
 const userData = ref({
-  name: "Tan Jun Jie (Demo User)",
-  // [NOT IN WAD2 CONTENT] — DiceBear avatar API URL (external service)
-  avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=junjie",
-  neighbourhood: "Bishan",
-  availableTokens: 145,
-  tokensEarnedTotal: 180,
-  tokensSpentTotal: 35,
-  ratingAverage: 4.9,
-  ratingCount: 14,
+  name: "",
+  avatarUrl: "",
+  neighbourhood: "",
+  availableTokens: 0,
+  tokensEarnedTotal: 0,
+  tokensSpentTotal: 0,
+  ratingAverage: 5.0,
+  ratingCount: 0,
 })
 
 const stats = ref({
-  totalPlantsOwned: 3,
-  careRequestsPosted: 2,
-  visitsCompleted: 3,
-  plantsCaredFor: 10,
+  totalPlantsOwned: 0,
+  careRequestsPosted: 0,
+  visitsCompleted: 0,
+  plantsCaredFor: 0,
 })
 
-const badges = ref([
-  { id: "first_sit", name: "First Sit", description: "Completed your first plant sitting visit!", unlocked: true, progress: 100, icon: "🌱" },
-  { id: "ten_plants_saved", name: "10 Plants Saved", description: "Successfully watered and cared for 10 plants.", unlocked: true, progress: 100, icon: "🌿" },
-  { id: "rainy_day_hero", name: "Rainy Day Hero", description: "Cared for corridor plants during an active weather alert.", unlocked: true, progress: 100, icon: "🌧️" },
-])
+// Empty badges list populated dynamically from GET /api/dashboard/stats/:userId
+const badges = ref([])
 
-// Chart data shape expected by vue-chartjs Bar component [NOT IN WAD2 CONTENT]
-const activityChartData = ref({
-  labels: ["May", "Jun", "Jul", "Aug", "Sep", "Oct"],
-  datasets: [
-    { label: "Visits Completed (Helper)", backgroundColor: "#0ea5e9", borderRadius: 6, data: [1, 2, 4, 5, 3, 2] },
-    { label: "Requests Posted (Owner)", backgroundColor: "#8b5cf6", borderRadius: 6, data: [2, 1, 3, 2, 1, 2] },
-  ],
-})
-
-const tokenChartData = ref({
-  labels: ["May", "Jun", "Jul", "Aug", "Sep", "Oct"],
-  datasets: [
-    { label: "Tokens Earned", backgroundColor: "#22c55e", borderRadius: 6, data: [20, 30, 45, 50, 35, 25] },
-    { label: "Tokens Spent", backgroundColor: "#f59e0b", borderRadius: 6, data: [15, 20, 10, 15, 10, 5] },
-  ],
-})
+// Chart data starts as null so <InteractiveBarChart> displays its clean loading spinner
+// until live data arrives from GET /api/dashboard/charts/:userId
+const activityChartData = ref(null)
+const tokenChartData = ref(null)
 
 // computed() — covered in WAD2 wk4/wk5
 const timeOfDay = computed(() => {
@@ -170,24 +156,27 @@ const timeOfDay = computed(() => {
 })
 
 // async/await + axios.get() — covered in WAD2 wk5 (Express + Axios)
+// Fetches live user statistics, badges, and chart metrics from the backend API
 async function fetchDashboard() {
   try {
     const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
     if (leadRes.data.leaderboard && leadRes.data.leaderboard.length > 0) {
+      // Pick the primary demo user ID from the leaderboard response
       const demoUserId = leadRes.data.leaderboard[0].id
 
+      // Fetch user profile metrics and milestone badges
       const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${demoUserId}`)
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
+      // Fetch monthly visualisations data for Chart.js
       const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${demoUserId}`)
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
     }
   } catch (err) {
-    // Backend not running yet — keep rich preview data shown above
-    console.info('Backend not active yet; showing frontend preview data.')
+    console.error('Failed to fetch dashboard data from server:', err)
   }
 }
 

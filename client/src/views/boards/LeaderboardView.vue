@@ -160,18 +160,11 @@ const areas = ['All', 'Bishan', 'Tampines', 'Punggol', 'Jurong West', 'Ang Mo Ki
 // ref() reactive state — covered in WAD2 wk4/wk5
 const selectedArea = ref('All')
 const isOptedOut = ref(false)
-const CURRENT_USER_ID = ref('demo-user-1')
+const CURRENT_USER_ID = ref(null)
 
-// Preview data — allows immediate frontend development without the backend running
-const initialLeaderboard = [
-  // [NOT IN WAD2 CONTENT] — DiceBear avatar API for placeholder profile images
-  { id: 'demo-user-2', rank: 1, name: 'Chloe Lim', neighbourhood: 'Bishan', availableTokens: 210, ratingAverage: 5.0, avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=chloe' },
-  { id: 'demo-user-3', rank: 2, name: 'Marcus Wong', neighbourhood: 'Tampines', availableTokens: 175, ratingAverage: 4.8, avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=marcus' },
-  { id: 'demo-user-1', rank: 3, name: 'Tan Jun Jie (Demo User)', neighbourhood: 'Bishan', availableTokens: 145, ratingAverage: 4.9, avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=junjie' },
-  { id: 'demo-user-4', rank: 4, name: 'Priya Sharma', neighbourhood: 'Punggol', availableTokens: 130, ratingAverage: 4.7, avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=priya' },
-]
-
-const leaderboard = ref([...initialLeaderboard])
+// Initial empty leaderboard array.
+// Will be dynamically populated via fetchLeaderboard() from GET /api/leaderboard
+const leaderboard = ref([])
 
 // computed() with .filter() and .map() — covered in WAD2 wk4/wk5 (Vue + JS arrays)
 const filteredLeaderboard = computed(() => {
@@ -200,8 +193,7 @@ async function fetchLeaderboard() {
       CURRENT_USER_ID.value = leaderboard.value[0].id
     }
   } catch (err) {
-    // Backend not running yet — keep rich preview data
-    console.info('Backend not active yet; showing frontend preview data.')
+    console.error('Failed to fetch leaderboard from server:', err)
   }
 }
 
