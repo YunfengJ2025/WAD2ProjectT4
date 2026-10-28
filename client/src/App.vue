@@ -1,6 +1,7 @@
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import NavBar from './components/nav/NavBar.vue'
@@ -8,6 +9,7 @@ import ToastHost from './components/ToastHost.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useToast } from './composables/useToast'
 
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
@@ -22,6 +24,7 @@ const navigationitems = [
   { label: 'Find Nearby', to: '/find-nearby' },
   { label: 'Care Visits', to: '/care-visits' },
   { label: 'Schedule', to: '/schedule' }
+  { label: 'Reviews', to: '/reviews' }
 ]
 
 async function logout() {
@@ -30,37 +33,32 @@ async function logout() {
   loggingOut.value = true
 
   try {
-    const response = await fetch('/api/user/logout', {
-      method: 'POST',
-      credentials: 'same-origin',
-    })
-
-    if (!response.ok) {
-      toast('Could not log out. Please try again.', 'error')
-      return
-    }
-
-    showLogoutConfirm.value = false
-    await router.replace('/signin')
+    await auth.logout()
   } catch {
-    toast('Could not reach the server. Please try again.', 'error')
+    toast('Signed out on this device. Could not reach the server.', 'info')
   } finally {
+    showLogoutConfirm.value = false
     loggingOut.value = false
+    await router.replace('/signin')
   }
 }
 
+watch(() => auth.accessToken, (token) => {
+  if (!token && route.meta.requiresAuth) {
+    router.replace({ name: 'sign-in', query: { redirect: route.fullPath } })
+  }
+})
 </script>
 
 <template>
   <!-- Background gradient container defined in main.css -->
   <div class="page-bg"></div>
 
-  
-  <br>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
   <NavBar
-    v-if="!['/signin', '/signup'].includes(route.path)"
+    class="mb-4 full-width"
+    v-if="!['sign-in', 'register'].includes(route.name)"
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
@@ -83,6 +81,14 @@ async function logout() {
 </template>
 
 <style scoped>
+/* The page is max 1280px wide and centred. This makes only the navbar
+   span the whole screen: 100vw wide, then shifted left to the screen edge.
+   (body has overflow-x: hidden in main.css, so no sideways scrollbar.) */
+.full-width {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
 .topbar {
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;

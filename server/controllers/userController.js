@@ -2,8 +2,33 @@ const {
   registerUser,
   loginUser,
   toAuthJSON,
+  updateProfile,
   getAllUsers,
+  applyTransactionToBalances,
 } = require("../models/userModel");
+const { createTransaction, TokenTransaction } = require("../models/tokenModel");
+const STARTER_TOKENS = 50;
+const { createAccessToken } = require("../config/jwt");
+
+function authResponse(user) {
+  return { user: toAuthJSON(user), accessToken: createAccessToken(user), tokenType: "Bearer", expiresIn: 3600 };
+}
+
+async function giveStarterTokens(userId) {
+  const txn = await createTransaction({
+    type: "SYSTEM_GIFT",
+    reason: "Beginner starter tokens",
+    receiverId: userId,
+    amount: STARTER_TOKENS,
+  });
+  try {
+    return await applyTransactionToBalances(txn.transactionId);
+  } catch (err) {
+    // balance update failed: don't keep a transaction without matching balances
+    await TokenTransaction.deleteOne({ _id: txn._id });
+    throw err;
+  }
+}
 const handleError = (err, res) => {
   console.log(err);
   if (err.status) {
@@ -32,9 +57,15 @@ exports.getUsers = async (req, res) => {
 exports.register = async (req, res) => {
   try {
     const body = req.body || {};
-    console.log(req.body);
     // Check required fields before touching the model
-    const requiredFields = ["userName", "email", "password"];
+    const requiredFields = [
+      "userName",
+      "email",
+      "password",
+      "postalCode",
+      "block",
+      "unitNumber",
+    ];
     const missing = requiredFields.filter(
       (field) => typeof body[field] !== "string" || body[field].trim() === "",
     );
@@ -46,8 +77,16 @@ exports.register = async (req, res) => {
     }
 
     const user = await registerUser(body);
-    req.session.userId = user.userId;
-    res.status(201).json({ user: toAuthJSON(user) });
+
+    // Starter pack: a failure here must not undo a successful registration
+    try {
+      const gift = await giveStarterTokens(user.userId);
+      user.tokenBalance = gift.receiverBalance; // so the response shows the new balance
+    } catch (giftErr) {
+      console.log("Starter token gift failed:", giftErr);
+    }
+
+    res.status(201).json(authResponse(user));
   } catch (err) {
     handleError(err, res);
   }
@@ -71,20 +110,34 @@ exports.login = async (req, res) => {
 
     const { email, password } = body; // add this line
     const user = await loginUser(email, password);
-    // Remembered for later requests; see middleware/requireUser.js
-    req.session.userId = user.userId;
-    res.json({ user: toAuthJSON(user) });
+    res.json(authResponse(user));
   } catch (err) {
     handleError(err, res);
   }
 };
 
 exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return handleError(err, res);
-    }
-    res.clearCookie("connect.sid", { path: "/" });
-    res.status(204).end();
-  });
+  // Stateless JWT logout: the client must discard its access token.
+  res.status(204).end();
+};
+exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
+
+// PATCH /user/me
+exports.updateMe = async (req, res) => {
+  try {
+    const user = await updateProfile(req.user, req.body || {});
+    res.json({ user: toAuthJSON(user) });
+  } catch (err) {
+    handleError(err, res);
+  }
+};
+exports.updateTokenBalance = async (req, res) => {
+  try {
+    const result = await applyTransactionToBalances(
+      Number(req.params.transactionId),
+    );
+    res.json(result);
+  } catch (err) {
+    handleError(err, res);
+  }
 };

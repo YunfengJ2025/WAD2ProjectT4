@@ -1,43 +1,41 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({ createAccount: Boolean })
 const router = useRouter()
 const userName = ref('')
 const email = ref('')
 const password = ref('')
-const error = ref('')
-const submitting = ref(false)
+const postalCode = ref('')
+const block = ref('')
+const unitNumber = ref('')
+const auth = useAuthStore()
+const { error, submitting } = storeToRefs(auth)
+const route = useRoute()
+error.value = ''
 
 async function submit() {
   if (submitting.value) return
   error.value = ''
-  submitting.value = true
-
   try {
-    const response = await fetch(`/api/user/${props.createAccount ? 'register' : 'login'}`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...(props.createAccount ? { userName: userName.value.trim() } : {}),
-        email: email.value.trim(),
-        password: password.value,
-      }),
-    })
-    const data = await response.json().catch(() => null)
-
-    if (!response.ok) {
-      error.value = data?.message || 'Something went wrong. Please try again.'
-      return
+    const credentials = {
+      ...(props.createAccount ? {
+        userName: userName.value.trim(),
+        postalCode: postalCode.value.trim(),
+        block: block.value.trim(),
+        unitNumber: unitNumber.value.trim(),
+      } : {}),
+      email: email.value.trim(),
+      password: password.value,
     }
-
-    await router.push('/plants')
+    await (props.createAccount ? auth.register(credentials) : auth.login(credentials))
+    const redirect = route.query.redirect
+    await router.push(typeof redirect === 'string' && redirect.startsWith('/plants') ? redirect : '/plants')
   } catch {
-    error.value = 'Could not reach the server. Please try again.'
-  } finally {
-    submitting.value = false
+    // The store exposes the API error to the form.
   }
 }
 </script>
@@ -65,6 +63,23 @@ async function submit() {
             :autocomplete="createAccount ? 'new-password' : 'current-password'"
             :minlength="createAccount ? 8 : undefined" required />
         </div>
+        <template v-if="createAccount">
+          <div class="field">
+            <label for="postal-code">Postal code</label>
+            <input id="postal-code" v-model="postalCode" name="postal-code" autocomplete="postal-code"
+              inputmode="numeric" pattern="\d{6}" maxlength="6" title="6-digit postal code" required />
+          </div>
+          <div class="address-row">
+            <div class="field">
+              <label for="block">Block</label>
+              <input id="block" v-model="block" name="block" placeholder="e.g. 123A" required />
+            </div>
+            <div class="field">
+              <label for="unit-number">Unit number</label>
+              <input id="unit-number" v-model="unitNumber" name="unit-number" placeholder="e.g. #05-12" required />
+            </div>
+          </div>
+        </template>
         <button type="submit" class="btn btn-primary" :disabled="submitting">
           {{ submitting ? (createAccount ? 'Creating account...' : 'Signing in...') :
             (createAccount ? 'Create account' : 'Sign in') }}
@@ -105,6 +120,12 @@ fieldset {
 .field {
   display: grid;
   gap: 0.4rem;
+}
+
+.address-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 label {

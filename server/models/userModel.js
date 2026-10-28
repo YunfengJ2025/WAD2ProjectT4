@@ -31,17 +31,17 @@ const userSchema = new mongoose.Schema(
     },
     postalCode: {
       type: String,
-      // required: [true, "A user must have a postal code"],
+      required: [true, "A user must have a postal code"],
       match: [/^\d{6}$/, "Postal code must be 6 digits"],
     },
     block: {
       type: String,
-      // required: [true, "A user must have a block"],
+      required: [true, "A user must have a block"],
       trim: true,
     },
     unitNumber: {
       type: String,
-      // required: [true, "A user must have a unit number"],
+      required: [true, "A user must have a unit number"],
       trim: true,
     },
     lat: { type: Number, min: -90, max: 90 },
@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema(
 );
 
 const User = mongoose.model("User", userSchema, "User");
-
+const { TokenTransaction } = require("./tokenModel");
 const httpError = (status, message) => {
   const err = new Error(message);
   err.status = status;
@@ -81,7 +81,8 @@ async function getAllUsers() {
   return User.find().sort({ userId: 1 });
 }
 
-module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
+// module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
+
 async function registerUser(data) {
   const { userName, email, password, postalCode, block, unitNumber, lat, lng } =
     data;
@@ -134,6 +135,91 @@ async function loginUser(email, password) {
   return user;
 }
 
+// Updates the logged-in user's own details. Only these fields can be changed,
+// so callers can't edit userRole, tokenBalance, etc.
+const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber"];
+
+async function updateProfile(user, data) {
+  for (const field of EDITABLE_FIELDS) {
+    if (data[field] !== undefined) {
+      user[field] = typeof data[field] === "string" ? data[field].trim() : data[field];
+    }
+  }
+  // save() runs the schema checks (required fields, 6-digit postal code, ...)
+  return user.save();
+}
+
+async function applyTransactionToBalances(transactionId) {
+  // Claim the transaction so the same one can never be applied twice
+  const txn = await TokenTransaction.findOneAndUpdate(
+    { transactionId, balanceApplied: { $ne: true } },
+    { balanceApplied: true },
+    { new: true },
+  );
+  if (!txn) {
+    throw httpError(404, "Transaction not found or balance already updated");
+  }
+
+  const { senderId, receiverId, amount } = txn;
+  let debited = false;
+
+  try {
+    // Debit sender (skipped for SYSTEM_GIFT). The $gte filter makes the
+    // balance check and the deduction a single atomic operation.
+    if (senderId) {
+      const res = await User.updateOne(
+        { userId: senderId, tokenBalance: { $gte: amount } },
+        { $inc: { tokenBalance: -amount } },
+      );
+      if (res.modifiedCount === 0) {
+        throw httpError(400, "Insufficient token balance or sender not found");
+      }
+      debited = true;
+    }
+
+    // Credit receiver (skipped for SHOP_PURCHASE)
+    if (receiverId) {
+      const res = await User.updateOne(
+        { userId: receiverId },
+        { $inc: { tokenBalance: amount } },
+      );
+      if (res.matchedCount === 0) {
+        throw httpError(404, "Receiver not found");
+      }
+    }
+  } catch (err) {
+    // Undo whatever already happened so balances stay consistent
+    if (debited) {
+      await User.updateOne(
+        { userId: senderId },
+        { $inc: { tokenBalance: amount } },
+      );
+    }
+    await TokenTransaction.updateOne(
+      { _id: txn._id },
+      { balanceApplied: false },
+    );
+    throw err;
+  }
+
+  const [sender, receiver] = await Promise.all([
+    senderId
+      ? User.findOne({ userId: senderId }).select("userId tokenBalance")
+      : null,
+    receiverId
+      ? User.findOne({ userId: receiverId }).select("userId tokenBalance")
+      : null,
+  ]);
+
+  return {
+    transaction: txn,
+    senderBalance: sender ? sender.tokenBalance : null,
+    receiverBalance: receiver ? receiver.tokenBalance : null,
+  };
+}
+
+// add to module.exports:
+// applyTransactionToBalances,
 // Shape of the user object that is safe to send to the client
 function toAuthJSON(user) {
   return {
@@ -143,7 +229,18 @@ function toAuthJSON(user) {
     email: user.email,
     userRole: user.userRole,
     tokenBalance: user.tokenBalance,
+    postalCode: user.postalCode,
+    block: user.block,
+    unitNumber: user.unitNumber,
   };
 }
 
-module.exports = { User,getAllUsers, registerUser, loginUser, toAuthJSON };
+module.exports = {
+  User,
+  getAllUsers,
+  registerUser,
+  loginUser,
+  toAuthJSON,
+  updateProfile,
+  applyTransactionToBalances,
+};

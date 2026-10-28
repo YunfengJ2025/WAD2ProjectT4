@@ -1,7 +1,8 @@
 <script setup>
 // PlantForm: one form used for BOTH adding a new plant and editing an existing one.
 import { computed, ref } from 'vue'
-import { createPlant, updatePlant, photoSrc } from '@/api/plants'
+import { photoSrc } from '@/api/plants'
+import { usePlantsStore } from '@/stores/plants'
 import { toDateInputValue } from '@/utils/wateringStatus'
 
 // Pass an existing plant to edit it; leave it out to add a new one.
@@ -9,6 +10,7 @@ const props = defineProps({
   plant: { type: Object, default: null },
 })
 const emit = defineEmits(['saved', 'cancel'])
+const plantsStore = usePlantsStore()
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2MB in bytes
@@ -55,7 +57,6 @@ const saving = ref(false) // true while waiting for the server (disables buttons
 
 // Checks every field on submit and fills in `errors`. Returns true if all are valid.
 function validate() {
-
   const photoError = errors.value.photo
   errors.value = {}
   // Restore the photo error
@@ -151,7 +152,6 @@ function lastWateredToISO(value) {
   return new Date(y, m - 1, d, 12).toISOString()
 }
 
-
 function buildFormData() {
   const data = new FormData()
   data.append('plantName', form.value.plantName.trim())
@@ -172,6 +172,7 @@ function buildFormData() {
 // Runs when the form is submitted (Add plant / Save changes button).
 // 1. Validate in the browser. 2. Send to the server. 3. Show any server errors.
 async function onSubmit() {
+  if (saving.value) return
   formError.value = ''
   if (!validate()) {
     formError.value = 'Please fix the highlighted fields.'
@@ -181,9 +182,7 @@ async function onSubmit() {
   saving.value = true
   try {
     const data = buildFormData()
-    const saved = isEdit.value
-      ? await updatePlant(props.plant.plantId, data)
-      : await createPlant(data)
+    const saved = await plantsStore.savePlant(data, isEdit.value ? props.plant.plantId : undefined)
     emit('saved', saved) // tell the parent page it worked
   } catch (err) {
     // per-field messages, which we show under the fields like ours.
@@ -253,7 +252,9 @@ async function onSubmit() {
         </div>
         <div class="photo-controls">
           <!-- The real file input is hidden; this label acts as the button and opens it -->
-          <label class="btn" for="photo">{{ photoPreview ? 'Change photo' : 'Choose photo' }}</label>
+          <label class="btn" for="photo">{{
+            photoPreview ? 'Change photo' : 'Choose photo'
+          }}</label>
           <input
             id="photo"
             ref="photoInput"
@@ -266,9 +267,7 @@ async function onSubmit() {
             @change="onPhotoChange"
           />
           <!-- Undo only appears after a new photo is chosen -->
-          <button v-if="photoFile" type="button" class="btn" @click="clearNewPhoto">
-            Undo
-          </button>
+          <button v-if="photoFile" type="button" class="btn" @click="clearNewPhoto">Undo</button>
           <p class="hint">JPG, PNG or WebP, up to 2MB.</p>
         </div>
       </div>
@@ -328,12 +327,7 @@ async function onSubmit() {
       <div class="segmented" :class="{ invalid: errors.rainExposed }">
         <!-- v-for makes one radio per option -->
         <label v-for="opt in RAIN_OPTIONS" :key="String(opt.value)">
-          <input
-            v-model="form.rainExposed"
-            type="radio"
-            name="rainExposed"
-            :value="opt.value"
-          />
+          <input v-model="form.rainExposed" type="radio" name="rainExposed" :value="opt.value" />
           <span>{{ opt.label }}</span>
         </label>
       </div>
@@ -342,7 +336,6 @@ async function onSubmit() {
         {{ errors.rainExposed }}
       </p>
     </fieldset>
-
 
     <div class="field">
       <label for="notes">Care notes</label>
