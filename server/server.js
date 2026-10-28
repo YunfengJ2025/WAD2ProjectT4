@@ -1,6 +1,7 @@
 const dns = require("node:dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const express = require("express");
+const session = require("express-session");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
@@ -18,13 +19,13 @@ validateJwtConfig();
 server.use(cors());
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
-server.use(
-  session({
-    secret: process.env.SECRET || "wad2_secret_key",
-    resave: false,
-    saveUninitialized: false,
-  }),
-);
+// server.use(
+//   session({
+//     secret: process.env.SECRET || "wad2_secret_key",
+//     resave: false,
+//     saveUninitialized: false,
+//   }),
+// );
 //Routes
 server.use("/user",  userRoutes);;
 server.use("/plants", plantRoutes);
