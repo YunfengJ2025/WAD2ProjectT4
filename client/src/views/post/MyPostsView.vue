@@ -1,12 +1,18 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/post/PostCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import '@/assets/community.css'
 const store = usePostsStore()
+const router = useRouter()
+// Use app navigation history; direct visits fall back to the relevant listing.
+function goBack() {
+  if (router.options.history.state.back) router.back()
+  else router.replace('/profile#profile-posts')
+}
 const auth = useAuthStore()
 const selected = ref(null)
 const deleting = ref(false)
@@ -29,7 +35,7 @@ async function remove() {
 </script>
 <template>
   <main class="community-page my-posts-page">
-    <RouterLink to="/profile#profile-posts" class="community-back">← Back to profile</RouterLink>
+    <button type="button" class="community-back community-back-button" @click="goBack">← Back</button>
     <header class="community-heading">
       <div>
         <p class="community-eyebrow">YOUR COMMUNITY UPDATES</p>
@@ -48,7 +54,7 @@ async function remove() {
       <button class="btn" @click="store.fetchPosts">Try again</button>
     </div>
     <p v-else-if="!store.posts.length" class="community-panel community-state">
-      You haven’t shared any posts yet.
+      You haven't shared any posts yet.
     </p>
     <div v-else class="community-posts">
       <div v-for="post in store.posts" :key="post.postId" class="managed-post">
@@ -58,7 +64,8 @@ async function remove() {
             :to="`/community/${post.postId}/edit`"
             class="btn post-action post-action-edit"
             ><span aria-hidden="true">✎</span> Edit post</RouterLink
-          ><button
+          >
+          <button
             class="btn post-action post-action-remove"
             :aria-label="`Remove post: ${post.title}`"
             :disabled="deleting"
@@ -104,13 +111,19 @@ async function remove() {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.8);
+  justify-content: center;           /* Centers the columns inside the container */
+  align-items: center;               /* Vertically aligns the buttons */
 }
+
 /* Give both actions a generous target and matching height for mouse and touch users. */
 .post-action {
   min-height: 44px;
   border-radius: 10px;
   font-size: 0.85rem;
   gap: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition:
     background-color 160ms ease,
     border-color 160ms ease;

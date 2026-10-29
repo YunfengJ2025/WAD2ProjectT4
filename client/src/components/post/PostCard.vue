@@ -3,6 +3,7 @@
 import '@/assets/card.css'
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import LikeButton from './LikeButton.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 // post provides the title, photos and like count; author provides the displayed identity.
 // The cover opens the post detail page, while the avatar opens the author's profile.
@@ -37,7 +38,7 @@ const imageFailed = ref(false)
       <RouterLink :to="`/profile/${post.creatorId}`" class="post-card-author"
         ><UserAvatar :user="author" :size="30" /><span>{{ author.userName }}</span></RouterLink
       >
-      <span class="post-card-likes">♡ {{ post.likedCount ?? 0 }}</span>
+      <LikeButton :post="post" />
     </footer>
   </article>
 </template>

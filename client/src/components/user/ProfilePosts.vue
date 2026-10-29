@@ -1,10 +1,13 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/post/PostCard.vue'
 import '@/assets/community.css'
+import { useDragScroll } from '@/composables/useDragScroll'
+const track = ref(null)
+const { dragging, startDrag, moveDrag, stopDrag, captureClick } = useDragScroll(track)
 const store = usePostsStore()
 const auth = useAuthStore()
 const recent = computed(() => store.posts.slice(0, 6))
@@ -31,7 +34,9 @@ onMounted(() => store.fetchPosts())
       ><p class="community-muted">
         Swipe to explore · Showing {{ recent.length }} of {{ store.posts.length }}
       </p>
-      <div class="profile-post-track" tabindex="0" aria-label="Recent posts">
+      <div ref="track" class="profile-post-track" :class="{ dragging }" tabindex="0" aria-label="Recent posts"
+        @pointerdown="startDrag" @pointermove="moveDrag" @pointerup="stopDrag" @pointercancel="stopDrag" @lostpointercapture="stopDrag" @click.capture="captureClick" @dragstart.prevent
+        @keydown.left.prevent="track.scrollBy({ left: -track.clientWidth * .85, behavior: 'smooth' })" @keydown.right.prevent="track.scrollBy({ left: track.clientWidth * .85, behavior: 'smooth' })">
         <PostCard v-for="post in recent" :key="post.postId" :post="post" :author="auth.user" /></div
     ></template>
     <RouterLink to="/my-posts" class="btn">View all posts ↗</RouterLink>
@@ -74,10 +79,14 @@ p {
   padding: 0.5rem 0 1rem;
   margin-bottom: 1rem;
   scroll-snap-type: x proximity;
+  cursor: grab;
+  user-select: none;
 }
 /* Support horizontal browsing and visible scroll controls for profile reviews. */
 .profile-post-track > * {
   flex: 0 0 min(300px, 85%);
   scroll-snap-align: start;
 }
+/* Disable snapping during mouse dragging for direct movement. */
+.profile-post-track.dragging { cursor: grabbing; scroll-snap-type: none; }
 </style>

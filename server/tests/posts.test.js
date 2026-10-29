@@ -175,3 +175,17 @@ test('deleting uses owner filter and removes reviews, replies and likes in the s
   });
   await posts.deletePost(5, 2);
 });
+
+test('liked history uses the current creator and preserves newest-like order', async (t) => {
+  t.mock.method(likes.Like, 'find', filter => {
+    assert.deepEqual(filter, { creatorId: 2 });
+    return { sort: order => {
+      assert.deepEqual(order, { likedAt: -1, _id: -1 });
+      return { lean: async () => [{ postId: 2, likedAt: '2026-10-30' }, { postId: 1, likedAt: '2026-10-29' }, { postId: 99 }] };
+    } };
+  });
+  t.mock.method(posts.Post, 'find', () => ({ lean: async () => [{ postId: 1 }, { postId: 2 }] }));
+  const result = await likes.getLikedPosts(2);
+  assert.deepEqual(result.map(post => post.postId), [2, 1]);
+  assert.equal(result[0].liked, true);
+});

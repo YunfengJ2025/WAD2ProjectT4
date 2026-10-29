@@ -115,4 +115,11 @@ async function deletePost(req, res) {
     return res.status(204).end();
   } catch (err) { return handleError(res, err); }
 }
-module.exports = { getMyPosts, updatePost, deletePost, createPostReview, createPost, getAllPosts, getPost, parseId, handleError };
+// The owner ID comes from the access token, never from query parameters.
+async function getLikedPosts(req, res) {
+  try {
+    const likes = require('../models/likeModel');
+    return res.json(await withAuthors(await likes.getLikedPosts(req.userId)));
+  } catch (err) { return handleError(res, err); }
+}
+module.exports = { getLikedPosts, getMyPosts, updatePost, deletePost, createPostReview, createPost, getAllPosts, getPost, parseId, handleError };

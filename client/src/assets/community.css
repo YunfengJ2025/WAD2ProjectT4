@@ -824,3 +824,29 @@
 .community-page a:focus {
   text-decoration: none;
 }
+
+/* Back navigation uses a button because it follows history rather than a fixed URL. */
+.community-back-button {
+  border: 0;
+  background: transparent;
+  padding: 3px;
+  font: inherit;
+  cursor: pointer;
+}
+/* Keep the history action discoverable by pointer and keyboard. */
+.community-back-button:hover { color: var(--accent); }
+.community-back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Horizontal swipes change photos while vertical gestures still scroll the page. */
+.community-gallery-stage { touch-action: pan-y; cursor: grab; user-select: none; overflow: hidden; }
+.community-gallery-stage.photo-dragging { cursor: grabbing; }
+/* Snap the photo back gently after a short drag, without cropping the full image. */
+.post-gallery-photo { transition: transform 220ms ease; }
+.photo-dragging .post-gallery-photo { transition: none; }
+/* Keyed photos fade out and in rather than abruptly swapping their source. */
+.post-photo-enter-active, .post-photo-leave-active { transition: opacity 160ms ease; }
+.post-photo-enter-from, .post-photo-leave-to { opacity: 0; }
+/* Keep navigation immediate for users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .post-gallery-photo, .post-photo-enter-active, .post-photo-leave-active { transition: none; }
+}

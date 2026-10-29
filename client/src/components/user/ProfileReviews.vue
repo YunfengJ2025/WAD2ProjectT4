@@ -5,11 +5,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
 import ReviewCard from '@/components/review/ReviewCard.vue'
 
+import { useDragScroll } from '@/composables/useDragScroll'
 const auth = useAuthStore()
 const store = useReviewsStore()
 const track = ref(null)
-const dragging = ref(false)
-let drag = null
+const { dragging, startDrag, moveDrag, stopDrag, captureClick } = useDragScroll(track)
 
 watch(
   () => auth.user?.userId,
@@ -27,22 +27,6 @@ const received = computed(() =>
 )
 const recent = computed(() => received.value.slice(0, 6))
 
-function startDrag(event) {
-  // Touch screens use native scrolling; add click-and-drag for a mouse.
-  if (event.pointerType !== 'mouse' || event.button !== 0) return
-  if (event.target.closest('a')) return
-  drag = { id: event.pointerId, x: event.clientX, scroll: track.value.scrollLeft }
-  track.value.setPointerCapture(event.pointerId)
-}
-function moveDrag(event) {
-  if (!drag || drag.id !== event.pointerId) return
-  if (Math.abs(event.clientX - drag.x) > 4) dragging.value = true
-  if (dragging.value) track.value.scrollLeft = drag.scroll - (event.clientX - drag.x)
-}
-function stopDrag() {
-  drag = null
-  dragging.value = false
-}
 function scroll(direction) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   track.value?.scrollBy({
@@ -88,6 +72,8 @@ function scroll(direction) {
         tabindex="0"
         aria-label="Recent reviews"
         aria-describedby="reviews-scroll-hint"
+        @click.capture="captureClick"
+        @dragstart.prevent
         @pointerdown="startDrag"
         @pointermove="moveDrag"
         @pointerup="stopDrag"
