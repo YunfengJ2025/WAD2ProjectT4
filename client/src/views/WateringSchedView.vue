@@ -60,13 +60,13 @@ onMounted(async () => {
 
 <template>
   <div v-if="user">
-    <!-- for testing animation-->
+    <!-- for testing animation
     <div class="d-flex gap-2 mb-2">
       <button class="btn btn-sm btn-outline-primary" @click="demoCondition = 'rain'">Rain</button>
       <button class="btn btn-sm btn-outline-primary" @click="demoCondition = 'sunny'">Sunny</button>
       <button class="btn btn-sm btn-outline-primary" @click="demoTempHigh = 35">Hot (35°C)</button>
       <button class="btn btn-sm btn-outline-secondary" @click="demoCondition = null; demoTempHigh = null">Real</button>
-    </div>
+    </div>-->
     <!--
       Rain needs a plant with both Rain exposed and Weather adjustment ticked and due today.
       Hot needs weather adjustment ticked on a plant that isn’t already on today’s schedule.
