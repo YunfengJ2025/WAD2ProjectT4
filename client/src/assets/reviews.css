@@ -1,8 +1,12 @@
 /* Shared review styles. Prefixes keep these rules away from teammates' pages.
    Import this file in review components so they also work inside a profile page. */
+/* Constrain the section width and separate it from surrounding content. */
 .reviews-page,
+/* Style the shared review content, author identity and discussion controls. */
 .review-card,
+/* Present ratings and their selected or empty star states. */
 .review-stars,
+/* Present ratings and their selected or empty star states. */
 .review-rating-input {
   --review-green: #286042;
   --review-muted: #68786e;
@@ -10,15 +14,21 @@
   --review-gold: #ad7518;
 }
 
+/* Constrain the section width and separate it from surrounding content. */
+
 .reviews-page {
   max-width: 1080px;
   margin: 2.5rem auto 4rem;
   color: #263e2f;
 }
 
+/* Style page headings and supporting text using the app palette. */
+
 .reviews-page .page-heading {
   margin-bottom: 2rem;
 }
+
+/* Constrain the section width and separate it from surrounding content. */
 
 .reviews-page h1 {
   font-size: clamp(1.85rem, 4vw, 2.6rem);
@@ -27,14 +37,20 @@
   color: #224b31;
 }
 
+/* Constrain the section width and separate it from surrounding content. */
+
 .reviews-page h2 {
   font-size: 1.4rem;
   letter-spacing: -0.025em;
 }
 
+/* Style page headings and supporting text using the app palette. */
+
 .review-heading-dot {
   color: #83a96e;
 }
+
+/* Style page headings and supporting text using the app palette. */
 
 .review-eyebrow {
   font-size: 0.66rem;
@@ -44,10 +60,14 @@
   margin-bottom: 0.65rem;
 }
 
+/* Use subdued text for secondary information and field guidance. */
+
 .review-muted {
   color: var(--review-muted, #68786e);
   line-height: 1.65;
 }
+
+/* Define the panel surface, border and spacing. */
 
 .review-surface {
   border: 1px solid var(--review-border, #dfe8df);
@@ -56,10 +76,14 @@
   box-shadow: 0 5px 22px #294a3210;
 }
 
+/* Present ratings and their selected or empty star states. */
+
 .review-rating-summary {
   padding: 1.65rem;
   background: linear-gradient(120deg, #eff5e9, #fcfdf8);
 }
+
+/* Set typography, spacing and alignment for this component element. */
 
 .review-average {
   font-size: 3.6rem;
@@ -67,6 +91,8 @@
   line-height: 1.05;
   letter-spacing: -0.06em;
 }
+
+/* Align summary statistics and their supporting labels. */
 
 .review-stat {
   display: flex;
@@ -76,11 +102,15 @@
   padding: 1.4rem;
 }
 
+/* Align summary statistics and their supporting labels. */
+
 .review-stat strong {
   font-size: 2rem;
   line-height: 1;
   font-family: var(--font-heading, sans-serif);
 }
+
+/* Align summary statistics and their supporting labels. */
 
 .review-stat-icon {
   display: grid;
@@ -93,10 +123,14 @@
   font-size: 1.25rem;
 }
 
+/* Align summary statistics and their supporting labels. */
+
 .review-stat-icon-amber {
   background: #faf1de;
   color: #946824;
 }
+
+/* Define the panel surface, border and spacing. */
 
 .review-panel {
   padding: clamp(1rem, 3vw, 2rem);
@@ -104,6 +138,7 @@
 
 /* Segmented direction control and category buttons share selection feedback.
    CSS transitions animate mouse, keyboard, and touch activation without JS timers. */
+/* Style review filters, search controls and their selected states. */
 .review-direction {
   display: inline-flex;
   padding: 4px;
@@ -111,6 +146,8 @@
   border-radius: 12px;
   gap: 3px;
 }
+
+/* Style review filters, search controls and their selected states. */
 
 .review-direction button {
   border: 0;
@@ -126,12 +163,16 @@
     color 0.2s;
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .review-direction button[aria-pressed='true'] {
   background: white;
   color: #245a37;
   box-shadow: 0 2px 7px #254b3020;
   font-weight: 600;
 }
+
+/* Style review filters, search controls and their selected states. */
 
 .review-type-bar {
   display: grid;
@@ -142,6 +183,8 @@
   background: #f7f9f4;
   border-radius: 16px;
 }
+
+/* Style review filters, search controls and their selected states. */
 
 .review-type-button {
   position: relative;
@@ -163,15 +206,21 @@
     transform 0.18s;
 }
 
+/* Highlight the control under the pointer without changing its layout. */
+
 .review-type-button:hover {
   background: #eaf0e4;
   color: #285b3d;
   transform: translateY(-1px);
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .review-type-button:active {
   transform: translateY(0);
 }
+
+/* Style review filters, search controls and their selected states. */
 
 .review-type-button[aria-pressed='true'] {
   background: #286042;
@@ -179,9 +228,13 @@
   box-shadow: 0 3px 9px #28604226;
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .review-type-icon {
   font-size: 1.05rem;
 }
+
+/* Style review filters, search controls and their selected states. */
 
 .review-count {
   display: inline-grid;
@@ -195,16 +248,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .review-type-button[aria-pressed='true'] .review-count {
   background: #ffffff26;
   color: white;
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .review-search {
   position: relative;
 }
 
-.review-search>span {
+/* Style review filters, search controls and their selected states. */
+
+.review-search > span {
   position: absolute;
   left: 0.85rem;
   top: 50%;
@@ -214,11 +273,16 @@
   pointer-events: none;
 }
 
+/* Style review filters, search controls and their selected states. */
+
 .reviews-page .review-search .form-control {
   padding-left: 2.5rem;
 }
 
+/* Constrain the section width and separate it from surrounding content. */
+
 .reviews-page .form-control,
+/* Constrain the section width and separate it from surrounding content. */
 .reviews-page .form-select {
   min-height: 45px;
   border: 1px solid #dfe6dc;
@@ -228,11 +292,16 @@
   font-size: 0.85rem;
 }
 
+/* Keep keyboard focus visible for accessible navigation. */
+
 .reviews-page .form-control:focus,
+/* Keep keyboard focus visible for accessible navigation. */
 .reviews-page .form-select:focus {
   border-color: #77966e;
   box-shadow: 0 0 0 3px #698d5c20;
 }
+
+/* Style navigation and action controls consistently with the surrounding panel. */
 
 .reviews-page .review-outline-button {
   display: inline-flex;
@@ -246,10 +315,14 @@
   box-shadow: none;
 }
 
+/* Highlight the control under the pointer without changing its layout. */
+
 .reviews-page .review-outline-button:hover {
   background: #eef5e9;
   border-color: #8da688;
 }
+
+/* Style navigation and action controls consistently with the surrounding panel. */
 
 .review-text-button {
   background: transparent;
@@ -261,6 +334,8 @@
   text-underline-offset: 3px;
 }
 
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
+
 .review-state {
   text-align: center;
   padding: 3rem 1rem;
@@ -269,9 +344,13 @@
   background: #f8faf5;
 }
 
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
+
 .review-state h3 {
   font-size: 1.2rem;
 }
+
+/* Set typography, spacing and alignment for this component element. */
 
 .review-empty-icon {
   display: block;
@@ -280,19 +359,25 @@
   margin-bottom: 0.75rem;
 }
 
+/* Set typography, spacing and alignment for this component element. */
+
 .review-list {
   display: grid;
   gap: 1rem;
 }
 
 /* Card layout is independent of the page wrapper for future profile embedding. */
+/* Style the shared review content, author identity and discussion controls. */
 .review-card {
   padding: 1.4rem;
   border: 1px solid var(--review-border);
   border-radius: 16px;
   background: white;
-  animation: review-appear 0.24s ease both;
+  /* Release the entry transform after playback so shared hover effects can take over. */
+  animation: review-appear 0.24s ease backwards;
 }
+
+/* Style the shared review content, author identity and discussion controls. */
 
 .review-card header {
   display: flex;
@@ -301,21 +386,29 @@
   flex-wrap: wrap;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card .identity {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card h3 {
   font-size: 0.95rem;
   margin: 0 0 0.2rem;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card time {
   font-size: 0.74rem;
   color: var(--review-muted);
 }
+
+/* Style the shared review content, author identity and discussion controls. */
 
 .review-card .kind {
   font-size: 0.69rem;
@@ -325,6 +418,8 @@
   padding: 0.35rem 0.6rem;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card .target {
   font-size: 0.8rem;
   color: var(--review-muted);
@@ -332,7 +427,10 @@
   overflow-wrap: anywhere;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card .comment,
+/* Style the shared review content, author identity and discussion controls. */
 .review-card .reply p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -340,6 +438,8 @@
   font-size: 0.9rem;
   margin: 0.55rem 0;
 }
+
+/* Style the shared review content, author identity and discussion controls. */
 
 .review-card .reply-button {
   border: 0;
@@ -351,16 +451,22 @@
   font-weight: 600;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card .replies {
   margin-top: 1rem;
   border-left: 2px solid #dce7d3;
   padding-left: 1rem;
 }
 
+/* Style the shared review content, author identity and discussion controls. */
+
 .review-card .reply {
   padding: 0.4rem 0;
   font-size: 0.85rem;
 }
+
+/* Style the shared review content, author identity and discussion controls. */
 
 .review-card .reply-form {
   display: grid;
@@ -369,6 +475,8 @@
   justify-items: start;
   font-size: 0.85rem;
 }
+
+/* Style the shared review content, author identity and discussion controls. */
 
 .review-card textarea {
   width: 100%;
@@ -380,6 +488,7 @@
 
 /* Two identical star glyphs overlap. Clip only the gold layer; the grey layer
    remains visible behind a fractional star (e.g. width: 50% for half a star). */
+/* Present ratings and their selected or empty star states. */
 .review-stars {
   display: inline-flex;
   gap: 0.16em;
@@ -389,10 +498,14 @@
   vertical-align: middle;
 }
 
+/* Present ratings and their selected or empty star states. */
+
 .review-star {
   display: inline-block;
   position: relative;
 }
+
+/* Present ratings and their selected or empty star states. */
 
 .review-star-fill {
   position: absolute;
@@ -403,12 +516,16 @@
   color: var(--review-gold);
 }
 
+/* Present ratings and their selected or empty star states. */
+
 .review-rating-input {
   border: 0;
   padding: 0;
   margin: 0;
   color: #c6cec8;
 }
+
+/* Present ratings and their selected or empty star states. */
 
 .review-rating-input legend {
   float: none;
@@ -419,6 +536,8 @@
   margin-bottom: 0.3rem;
 }
 
+/* Present ratings and their selected or empty star states. */
+
 .review-rating-input label {
   position: relative;
   cursor: pointer;
@@ -427,9 +546,13 @@
   font-size: 2rem;
 }
 
+/* Present ratings and their selected or empty star states. */
+
 .review-rating-input label.filled {
   color: var(--review-gold);
 }
+
+/* Present ratings and their selected or empty star states. */
 
 .review-rating-input input {
   position: absolute;
@@ -440,24 +563,35 @@
   cursor: pointer;
 }
 
+/* Keep keyboard focus visible for accessible navigation. */
+
 .reviews-page button:focus-visible,
+/* Keep keyboard focus visible for accessible navigation. */
 .review-card button:focus-visible,
+/* Keep keyboard focus visible for accessible navigation. */
 .review-card textarea:focus-visible,
+/* Keep keyboard focus visible for accessible navigation. */
 .review-rating-input label:focus-within {
   outline: 2px solid #527e43;
   outline-offset: 3px;
 }
+
+/* Provide refresh progress feedback. */
 
 .review-spin {
   display: inline-block;
   animation: review-spin 1s linear infinite;
 }
 
+/* Define the animation frames used by loading or entry feedback. */
+
 @keyframes review-spin {
   to {
     transform: rotate(360deg);
   }
 }
+
+/* Define the animation frames used by loading or entry feedback. */
 
 @keyframes review-appear {
   from {
@@ -472,14 +606,20 @@
 }
 
 /* At the Bootstrap sm breakpoint, categories become a two-by-two control. */
+/* Adjust layout and spacing for this viewport size. */
 @media (max-width: 575.98px) {
+  /* Constrain the section width and separate it from surrounding content. */
   .reviews-page {
     margin-top: 1.25rem;
   }
 
+  /* Style review filters, search controls and their selected states. */
+
   .review-type-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Style review filters, search controls and their selected states. */
 
   .review-type-button {
     justify-content: flex-start;
@@ -488,44 +628,83 @@
     font-size: 0.78rem;
   }
 
+  /* Style review filters, search controls and their selected states. */
+
   .review-count {
     margin-left: auto;
   }
+
+  /* Style review filters, search controls and their selected states. */
 
   .review-direction {
     display: flex;
   }
 
+  /* Style review filters, search controls and their selected states. */
+
   .review-direction button {
     flex: 1;
   }
+
+  /* Present ratings and their selected or empty star states. */
 
   .review-rating-summary {
     padding: 1.3rem;
   }
 
+  /* Align summary statistics and their supporting labels. */
+
   .review-stat {
     padding: 1rem;
   }
+
+  /* Style the shared review content, author identity and discussion controls. */
 
   .review-card {
     padding: 1rem;
   }
 }
 
+/* Respect reduced-motion preferences by removing animation and transitions. */
+
 @media (prefers-reduced-motion: reduce) {
+  /* Style the shared review content, author identity and discussion controls. */
 
   .review-card,
+  /* Provide refresh progress feedback. */
   .review-spin {
     animation: none;
   }
 
+  /* Style review filters, search controls and their selected states. */
+
   .review-type-button,
+  /* Style review filters, search controls and their selected states. */
   .review-direction button {
     transition: none;
   }
-}.review-card-linked { cursor: pointer; }
-.review-card-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.review-card-post { padding: 1rem 0; border: 0; border-bottom: 1px solid var(--review-border); border-radius: 0; animation: none; }
-.review-card-post header { gap: .6rem; }
-.review-card-post .comment { font-size: .85rem; }
+}
+.review-card-linked {
+  cursor: pointer;
+}
+/* Keep keyboard focus visible for accessible navigation. */
+.review-card-linked:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* Use a compact, flat review layout within the post discussion. */
+.review-card-post {
+  padding: 1rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--review-border);
+  border-radius: 0;
+  animation: none;
+}
+/* Use a compact, flat review layout within the post discussion. */
+.review-card-post header {
+  gap: 0.6rem;
+}
+/* Use a compact, flat review layout within the post discussion. */
+.review-card-post .comment {
+  font-size: 0.85rem;
+}

@@ -13,7 +13,7 @@ const editing = computed(() => !!route.params.postId)
 const loading = ref(editing.value)
 const loadError = ref('')
 const retained = ref([])
-const backTo = computed(() => editing.value ? '/my-posts' : '/community')
+const backTo = computed(() => (editing.value ? '/my-posts' : '/community'))
 const { show: toast } = useToast()
 const title = ref('')
 const content = ref('')
@@ -21,6 +21,8 @@ const photos = ref([])
 const submitting = ref(false)
 const error = ref('')
 const photoError = ref('')
+
+// Validate the combined photo count, file types and sizes before creating local previews.
 
 function selectPhotos(event) {
   photoError.value = ''
@@ -42,12 +44,15 @@ function selectPhotos(event) {
   }
   photos.value.push(...selected.map((file) => ({ file, preview: URL.createObjectURL(file) })))
 }
+// Release the temporary preview URL when a selected upload is removed.
 function removePhoto(index) {
   URL.revokeObjectURL(photos.value[index].preview)
   photos.value.splice(index, 1)
   photoError.value = ''
 }
 onBeforeUnmount(() => photos.value.forEach((photo) => URL.revokeObjectURL(photo.preview)))
+
+// Load the edit form and refuse to expose edit controls for another user’s post.
 
 async function loadPost() {
   loading.value = true
@@ -58,10 +63,16 @@ async function loadPost() {
     title.value = post.title || ''
     content.value = post.content
     retained.value = [...post.postImages]
-  } catch (err) { loadError.value = err.message }
-  finally { loading.value = false }
+  } catch (err) {
+    loadError.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
-onMounted(() => { if (editing.value) loadPost() })
+onMounted(() => {
+  if (editing.value) loadPost()
+})
+// Validate text, submit multipart photos, and return to the appropriate listing after saving.
 async function publish() {
   if (submitting.value) return
   error.value = ''
@@ -80,7 +91,10 @@ async function publish() {
   if (editing.value) body.append('retainedImages', JSON.stringify(retained.value))
   photos.value.forEach((photo) => body.append('photos', photo.file))
   try {
-    await auth.authorizedRequest(editing.value ? '/post/' + route.params.postId : '/post', { method: editing.value ? 'PATCH' : 'POST', body })
+    await auth.authorizedRequest(editing.value ? '/post/' + route.params.postId : '/post', {
+      method: editing.value ? 'PATCH' : 'POST',
+      body,
+    })
   } catch (err) {
     error.value = err.message
     submitting.value = false
@@ -93,7 +107,9 @@ async function publish() {
 
 <template>
   <main class="community-page community-create">
-    <RouterLink :to="backTo" class="community-back">← {{ editing ? 'My posts' : 'Back to community' }}</RouterLink>
+    <RouterLink :to="backTo" class="community-back"
+      >← {{ editing ? 'My posts' : 'Back to community' }}</RouterLink
+    >
     <header class="community-heading">
       <div>
         <p class="community-eyebrow">A LITTLE UPDATE GOES A LONG WAY</p>
@@ -102,7 +118,10 @@ async function publish() {
       </div>
     </header>
     <p v-if="loading" role="status">Loading your post…</p>
-    <div v-else-if="loadError" class="community-error" role="alert"><p>{{ loadError }}</p><button class="btn" @click="loadPost">Try again</button></div>
+    <div v-else-if="loadError" class="community-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button class="btn" @click="loadPost">Try again</button>
+    </div>
     <form v-else class="community-panel community-form" @submit.prevent="publish">
       <div class="community-author">
         <UserAvatar :user="auth.user" :size="44" />
@@ -113,7 +132,14 @@ async function publish() {
       </div>
       <fieldset :disabled="submitting">
         <label for="post-title">Title</label>
-        <input id="post-title" v-model="title" type="text" required maxlength="150" placeholder="Give your update a title" />
+        <input
+          id="post-title"
+          v-model="title"
+          type="text"
+          required
+          maxlength="150"
+          placeholder="Give your update a title"
+        />
         <label for="post-content"
           >Your update <span class="community-muted">(required)</span></label
         >
@@ -125,7 +151,10 @@ async function publish() {
           placeholder="A new leaf, a question, or a tip worth sharing…"
         ></textarea>
         <label for="post-photos"
-          >Photos <span class="community-muted">(optional · {{ retained.length + photos.length }}/9)</span></label
+          >Photos
+          <span class="community-muted"
+            >(optional · {{ retained.length + photos.length }}/9)</span
+          ></label
         >
         <div class="community-upload">
           <span aria-hidden="true">＋</span>
@@ -145,7 +174,15 @@ async function publish() {
           {{ photoError }}
         </p>
         <div v-if="retained.length" class="community-photo-previews">
-          <div v-for="(url, index) in retained" :key="url" class="community-photo-preview"><img :src="url" :alt="'Current photo ' + (index + 1)" /><button type="button" :aria-label="'Remove current photo ' + (index + 1)" @click="retained.splice(index, 1)">×</button></div>
+          <div v-for="(url, index) in retained" :key="url" class="community-photo-preview">
+            <img :src="url" :alt="'Current photo ' + (index + 1)" /><button
+              type="button"
+              :aria-label="'Remove current photo ' + (index + 1)"
+              @click="retained.splice(index, 1)"
+            >
+              ×
+            </button>
+          </div>
         </div>
         <div v-if="photos.length" class="community-photo-previews">
           <div
@@ -168,7 +205,11 @@ async function publish() {
       <p v-if="error" role="alert" class="community-error">{{ error }}</p>
       <div class="community-form-actions">
         <RouterLink v-if="!submitting" :to="backTo" class="btn">Cancel</RouterLink>
-        <button type="submit" class="btn btn-primary" :disabled="submitting || !title.trim() || !content.trim()">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          :disabled="submitting || !title.trim() || !content.trim()"
+        >
           {{ submitting ? 'Saving…' : editing ? 'Save changes' : 'Share post' }}
         </button>
       </div>

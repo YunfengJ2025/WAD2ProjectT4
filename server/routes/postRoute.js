@@ -2,6 +2,8 @@ const router = require("express").Router();
 const posts = require("../controllers/postController");
 const requireUser = require("../middleware/requireUser");
 
+// Register /me before /:postId so Express does not interpret "me" as a post ID.
+// Protected routes take the acting user's identity from requireUser.
 router.get('/me', requireUser, posts.getMyPosts);
 router.patch('/:postId', requireUser, require('../middleware/uploadPostPhotos'), posts.updatePost);
 router.delete('/:postId', requireUser, posts.deletePost);

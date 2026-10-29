@@ -73,10 +73,13 @@ const visibleReviews = computed(() =>
         : new Date(a.createdAt) - new Date(b.createdAt),
     ),
 )
+// Resolve a reply’s parent post and supply the shared card with consistent display fields.
 function displayReview(review) {
   return {
     ...review,
-    postId: review.postId || store.reviews.find(parent => parent.reviewId === review.parentReviewId)?.postId,
+    postId:
+      review.postId ||
+      store.reviews.find((parent) => parent.reviewId === review.parentReviewId)?.postId,
     // Use the live Pinia profile for our own entries after a profile-photo change.
     creatorPhotoUrl:
       review.creatorId === auth.user?.userId ? auth.user.photoUrl || '' : review.creatorPhotoUrl,

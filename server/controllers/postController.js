@@ -20,6 +20,8 @@ function handleError(res, err) {
   return res.status(500).json({ message: "Internal server error" });
 }
 
+// Upload validated photos, delegate creation to the model, and clean up uploads on failure.
+
 async function createPost(req, res) {
   const uploaded = [];
   try {
@@ -56,6 +58,8 @@ async function getPost(req, res) {
   } catch (err) { return handleError(res, err); }
 }
 
+// Attach public author names and photos so the frontend can display post cards
+// without making a separate profile request for each author.
 async function withAuthors(records) {
   const users = await User.find({ userId: { $in: [...new Set(records.map(record => record.creatorId))] } }).select("userId userName photoUrl").lean();
   return records.map(record => {
@@ -64,6 +68,7 @@ async function withAuthors(records) {
     return { ...data, creatorName: user?.userName || 'User #' + data.creatorId, creatorPhoto: user?.photoUrl || "" };
   });
 }
+// Derive the review creator from the session and receiver from the target post.
 async function createPostReview(req, res) {
   try {
     const postId = parseId(req.params.postId);
@@ -75,10 +80,12 @@ async function createPostReview(req, res) {
     return res.status(201).json((await withAuthors([review]))[0]);
   } catch (err) { return handleError(res, err); }
 }
+// Scope the listing to the authenticated creator rather than accepting an owner ID from the client.
 async function getMyPosts(req, res) {
   try { return res.json(await withAuthors(await posts.getMyPosts(req.userId))); }
   catch (err) { return handleError(res, err); }
 }
+// Restrict updates to the owner and allow only validated editable post fields.
 async function updatePost(req, res) {
   const uploaded = [];
   try {
@@ -101,6 +108,7 @@ async function updatePost(req, res) {
     return handleError(res, err);
   }
 }
+// Delete the owned post and its discussion and likes together to avoid orphaned records.
 async function deletePost(req, res) {
   try {
     await posts.deletePost(parseId(req.params.postId), req.userId);

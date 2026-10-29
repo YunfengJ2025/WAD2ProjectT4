@@ -11,10 +11,14 @@ const posts = ref([])
 const loading = ref(true)
 const error = ref('')
 
+// Use the current profile for the signed-in author and server-provided details for other users.
+
 function author(post) {
   if (auth.user?.userId === post.creatorId) return auth.user
   return { userName: post.creatorName || `User #${post.creatorId}`, photoUrl: post.creatorPhoto }
 }
+
+// Fetch the public feed and sort by the generated ID so the newest posts appear first.
 
 async function loadPosts() {
   loading.value = true

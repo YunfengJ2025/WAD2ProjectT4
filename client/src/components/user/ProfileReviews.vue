@@ -27,7 +27,6 @@ const received = computed(() =>
 )
 const recent = computed(() => received.value.slice(0, 6))
 
-
 function startDrag(event) {
   // Touch screens use native scrolling; add click-and-drag for a mouse.
   if (event.pointerType !== 'mouse' || event.button !== 0) return
@@ -98,12 +97,26 @@ function scroll(direction) {
         @keydown.right.prevent="scroll(1)"
       >
         <li v-for="review in recent" :key="review.reviewId" class="review-preview">
-          <ReviewCard source="profile" :review="{
-            ...review,
-            postId: review.postId || store.reviews.find(parent => parent.reviewId === review.parentReviewId)?.postId,
-            creatorPhotoUrl: review.creatorId === auth.user?.userId ? auth.user.photoUrl : review.creatorPhotoUrl,
-            targetTitle: review.type === 'VISIT' ? 'Care visit #' + review.visitId : review.type === 'POST' ? 'Post #' + review.postId : 'Reply to comment #' + review.parentReviewId,
-          }" :replies="store.reviews.filter(reply => reply.parentReviewId === review.reviewId)" />
+          <ReviewCard
+            source="profile"
+            :review="{
+              ...review,
+              postId:
+                review.postId ||
+                store.reviews.find((parent) => parent.reviewId === review.parentReviewId)?.postId,
+              creatorPhotoUrl:
+                review.creatorId === auth.user?.userId
+                  ? auth.user.photoUrl
+                  : review.creatorPhotoUrl,
+              targetTitle:
+                review.type === 'VISIT'
+                  ? 'Care visit #' + review.visitId
+                  : review.type === 'POST'
+                    ? 'Post #' + review.postId
+                    : 'Reply to comment #' + review.parentReviewId,
+            }"
+            :replies="store.reviews.filter((reply) => reply.parentReviewId === review.reviewId)"
+          />
         </li>
       </ul>
     </template>
@@ -114,6 +127,8 @@ function scroll(direction) {
 </template>
 
 <style scoped>
+/* Constrain the section width and separate it from surrounding content. */
+
 .profile-reviews {
   border-top: 1px solid var(--color-border);
   padding-top: 1.8rem;
@@ -121,28 +136,34 @@ function scroll(direction) {
   min-width: 0;
   scroll-margin-top: 1.5rem;
 }
+/* Set typography, spacing and alignment for this component element. */
 .reviews-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
+/* Set typography, spacing and alignment for this component element. */
 h2 {
   font-size: 1.15rem;
   color: var(--color-heading);
   font-weight: 600;
   margin: 0;
 }
+/* Set typography, spacing and alignment for this component element. */
 .reviews-heading p,
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .scroll-hint {
   font-size: 0.8rem;
   color: var(--muted);
   margin: 0.4rem 0 0;
 }
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .scroll-buttons {
   display: flex;
   gap: 0.5rem;
 }
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .scroll-buttons button {
   width: 34px;
   height: 34px;
@@ -151,13 +172,16 @@ h2 {
   color: var(--color-heading);
   background: var(--surface);
 }
+/* Highlight the control under the pointer without changing its layout. */
 .scroll-buttons button:hover {
   background: var(--accent-soft);
 }
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .scroll-hint {
   margin-top: 1.25rem;
   font-size: 0.7rem;
 }
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .reviews-track {
   display: flex;
   gap: 1rem;
@@ -171,44 +195,54 @@ h2 {
   cursor: grab;
   user-select: none;
 }
+/* Support horizontal browsing and visible scroll controls for profile reviews. */
 .reviews-track.dragging {
   cursor: grabbing;
   scroll-snap-type: none;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview {
   flex: 0 0 min(340px, 86%);
   min-width: 0;
   scroll-snap-align: start;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview > :deep(.review-card) {
   height: 100%;
   box-sizing: border-box;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview :deep(.review-card header) {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview :deep(.review-card .identity) {
   min-width: 0;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview :deep(.review-card time) {
   white-space: nowrap;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview :deep(.review-card .kind) {
   grid-column: 1 / -1;
   justify-self: start;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview :deep(.review-card header > a) {
   padding: 0;
   line-height: 1;
 }
+/* Lay out a single profile review without adding a second card border or padding. */
 .review-preview header {
   display: flex;
   gap: 0.75rem;
   align-items: center;
   margin-bottom: 1rem;
 }
+/* Set typography, spacing and alignment for this component element. */
 h3 {
   font-size: 0.88rem;
   font-weight: 600;
@@ -216,16 +250,19 @@ h3 {
   color: var(--color-heading);
   overflow-wrap: anywhere;
 }
+/* Set typography, spacing and alignment for this component element. */
 time {
   font-size: 0.7rem;
   color: var(--muted);
 }
+/* Set typography, spacing and alignment for this component element. */
 .review-kind {
   display: block;
   margin-bottom: 0.5rem;
   color: var(--muted);
   font-size: 0.7rem;
 }
+/* Set typography, spacing and alignment for this component element. */
 .review-comment {
   font-size: 0.85rem;
   line-height: 1.75;
@@ -233,14 +270,17 @@ time {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
 .review-state {
   margin: 1.5rem 0;
   font-size: 0.85rem;
   color: var(--muted);
 }
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
 .review-state p {
   margin-bottom: 0.5rem;
 }
+/* Style navigation and action controls consistently with the surrounding panel. */
 .retry-button {
   border: 0;
   background: none;
@@ -248,13 +288,17 @@ time {
   color: var(--accent);
   padding: 0;
 }
+/* Style navigation and action controls consistently with the surrounding panel. */
 .all-reviews {
   font-size: 0.82rem;
   gap: 1rem;
   margin-top: 0.25rem;
 }
+/* Keep keyboard focus visible for accessible navigation. */
 button:focus-visible,
+/* Keep keyboard focus visible for accessible navigation. */
 a:focus-visible,
+/* Keep keyboard focus visible for accessible navigation. */
 .reviews-track:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

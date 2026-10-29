@@ -119,9 +119,12 @@ async function getReviewsByReceiver(req, res) {
 }
 
 // GET /review/post/:postId
+// Return the post thread, including replies and public author details for the shared review card.
 async function getReviewsByPost(req, res) {
   try {
     const postId = parseId(req.params.postId, "postId");
+    // Load the post's comments, then their replies using the parent review IDs.
+    // Attach public author details so ReviewCard can display the complete thread.
     const comments = await reviewModel.getReviewsByPost(postId);
     const replies = await reviewModel.Review.find({ parentReviewId: { $in: comments.map(review => review.reviewId) }, reviewId: { $ne: null } }).sort({ createdAt: 1 });
     const records = [...comments, ...replies];

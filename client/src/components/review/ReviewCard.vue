@@ -1,26 +1,42 @@
 <script setup>
+// Both card types share hover, keyboard-focus and reduced-motion styling.
+import '@/assets/card.css'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import StarRating from './StarRating.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import '@/assets/reviews.css'
+// source controls the layout and available actions:
+// profile/reviews show matching summaries that link to the associated post;
+// post shows the discussion layout, with replies available when canReply is true.
 const props = defineProps({
   review: { type: Object, required: true },
   replies: { type: Array, default: () => [] },
-  source: { type: String, default: 'reviews', validator: value => ['profile', 'reviews', 'post'].includes(value) },
+  source: {
+    type: String,
+    default: 'reviews',
+    validator: (value) => ['profile', 'reviews', 'post'].includes(value),
+  },
   canReply: { type: Boolean, default: true },
   busy: Boolean,
 })
 const emit = defineEmits(['reply'])
 const router = useRouter()
-const postLink = computed(() => props.source !== 'post' && props.review.postId ? '/community/' + props.review.postId : null)
+const postLink = computed(() =>
+  props.source !== 'post' && props.review.postId ? '/community/' + props.review.postId : null,
+)
+// Navigate only from the card surface; nested links and form controls keep their own actions.
 function openPost(event) {
   if (!postLink.value || event.target.closest('a, button, textarea, input')) return
   router.push(postLink.value)
 }
+// Allow Enter and Space to activate a linked review without intercepting nested controls.
 function keyOpen(event) {
   if (event.target !== event.currentTarget) return
-  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPost(event) }
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    openPost(event)
+  }
 }
 const replying = ref(false)
 const message = ref('')
@@ -33,10 +49,19 @@ watch(
     }
   },
 )
+// Only authenticated post-detail cards may emit a reply; profile and reviews stay read-only.
 function submitReply() {
-  if (props.source !== 'post' || !props.canReply || props.busy || props.review.type !== 'POST' || !message.value.trim()) return
+  if (
+    props.source !== 'post' ||
+    !props.canReply ||
+    props.busy ||
+    props.review.type !== 'POST' ||
+    !message.value.trim()
+  )
+    return
   emit('reply', message.value.trim())
 }
+// Format dates consistently for Singapore and tolerate records with a missing date.
 function dateLabel(value) {
   if (!value || Number.isNaN(new Date(value).getTime())) return ''
   return new Intl.DateTimeFormat('en-SG', {
@@ -49,7 +74,15 @@ function dateLabel(value) {
 </script>
 
 <template>
-  <article class="review-card" :class="{ 'review-card-post': source === 'post', 'review-card-linked': postLink }" :role="postLink ? 'link' : undefined" :tabindex="postLink ? 0 : undefined" :aria-label="postLink ? 'View post for this review' : undefined" @click="openPost" @keydown="keyOpen">
+  <article
+    class="review-card"
+    :class="{ 'review-card-post': source === 'post', 'review-card-linked': postLink }"
+    :role="postLink ? 'link' : undefined"
+    :tabindex="postLink ? 0 : undefined"
+    :aria-label="postLink ? 'View post for this review' : undefined"
+    @click="openPost"
+    @keydown="keyOpen"
+  >
     <header>
       <!-- Match the profile/navbar avatar, including its missing-image fallback. -->
       <RouterLink
@@ -58,13 +91,19 @@ function dateLabel(value) {
         :aria-label="`View ${review.creatorName}'s profile`"
       >
         <UserAvatar
-          :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl || review.creatorPhoto }"
+          :user="{
+            userName: review.creatorName,
+            photoUrl: review.creatorPhotoUrl || review.creatorPhoto,
+          }"
           :size="42"
         />
       </RouterLink>
       <UserAvatar
         v-else
-        :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl || review.creatorPhoto }"
+        :user="{
+          userName: review.creatorName,
+          photoUrl: review.creatorPhotoUrl || review.creatorPhoto,
+        }"
         :size="42"
       />
       <div class="identity">
@@ -100,13 +139,19 @@ function dateLabel(value) {
             :aria-label="`View ${reply.creatorName}'s profile`"
           >
             <UserAvatar
-              :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto }"
+              :user="{
+                userName: reply.creatorName,
+                photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto,
+              }"
               :size="28"
             />
           </RouterLink>
           <UserAvatar
             v-else
-            :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto }"
+            :user="{
+              userName: reply.creatorName,
+              photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto,
+            }"
             :size="28"
           />
           <strong>{{ reply.creatorName }}</strong>

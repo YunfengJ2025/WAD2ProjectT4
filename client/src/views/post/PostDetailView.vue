@@ -28,6 +28,7 @@ const author = (record) => ({
 function move(amount) {
   active.value = (active.value + amount + images.value.length) % images.value.length
 }
+// Load post comments and their replies through the existing review endpoint.
 async function loadReviews() {
   reviewError.value = ''
   try {
@@ -36,6 +37,7 @@ async function loadReviews() {
     reviewError.value = err.message
   }
 }
+// Reset detail-page state before loading the selected post and its discussion.
 async function load() {
   loading.value = true
   error.value = ''
@@ -53,19 +55,29 @@ async function load() {
   }
 }
 watch(() => route.params.postId, load, { immediate: true })
+// Send an authenticated reply; append it only after the server confirms creation.
 async function shareReply(review, message) {
   if (replying.value !== null) return
   replying.value = review.reviewId
   reviewError.value = ''
   try {
     const result = await auth.authorizedRequest('/review/me/replies', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ parentReviewId: review.reviewId, comment: message }),
     })
-    reviews.value.push({ ...result, creatorName: auth.user.userName, creatorPhotoUrl: auth.user.photoUrl })
-  } catch (err) { reviewError.value = err.message }
-  finally { replying.value = null }
+    reviews.value.push({
+      ...result,
+      creatorName: auth.user.userName,
+      creatorPhotoUrl: auth.user.photoUrl,
+    })
+  } catch (err) {
+    reviewError.value = err.message
+  } finally {
+    replying.value = null
+  }
 }
+// Keep the draft on failure and insert the new review after a successful request.
 async function shareReview() {
   if (saving.value || !comment.value.trim()) return
   saving.value = true
@@ -176,7 +188,16 @@ async function shareReview() {
           <p v-if="!reviews.length && !reviewError" class="community-muted">
             No reviews yet. Start the conversation!
           </p>
-          <ReviewCard v-for="review in comments" :key="review.reviewId" source="post" :review="review" :replies="reviews.filter(reply => reply.parentReviewId === review.reviewId)" :can-reply="auth.isAuthenticated" :busy="replying !== null" @reply="shareReply(review, $event)" />
+          <ReviewCard
+            v-for="review in comments"
+            :key="review.reviewId"
+            source="post"
+            :review="review"
+            :replies="reviews.filter((reply) => reply.parentReviewId === review.reviewId)"
+            :can-reply="auth.isAuthenticated"
+            :busy="replying !== null"
+            @reply="shareReply(review, $event)"
+          />
         </section>
         <form
           v-if="auth.isAuthenticated"
