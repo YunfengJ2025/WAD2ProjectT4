@@ -1,13 +1,20 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { request } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
+import LikeButton from '@/components/post/LikeButton.vue'
 import ReviewCard from '@/components/review/ReviewCard.vue'
 import '@/assets/community.css'
 
 const route = useRoute()
+const router = useRouter()
+// Use app navigation history; direct visits fall back to the relevant listing.
+function goBack() {
+  if (router.options.history.state.back) router.back()
+  else router.replace('/community')
+}
 const auth = useAuthStore()
 const post = ref(null)
 const reviews = ref([])
@@ -18,6 +25,33 @@ const comment = ref('')
 const saving = ref(false)
 const replying = ref(null)
 const active = ref(0)
+const photoOffset = ref(0)
+const photoDragging = ref(false)
+let photoGesture = null
+// Preserve vertical page scrolling; capture only gestures that are predominantly horizontal.
+function startPhotoDrag(event) {
+  if (images.value.length < 2 || event.target.closest('button') || event.button > 0) return
+  photoGesture = { id: event.pointerId, x: event.clientX, y: event.clientY }
+}
+function movePhotoDrag(event) {
+  if (!photoGesture || photoGesture.id !== event.pointerId) return
+  const dx = event.clientX - photoGesture.x
+  const dy = event.clientY - photoGesture.y
+  if (!photoDragging.value && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { photoGesture = null; return }
+  if (Math.abs(dx) > 8) {
+    photoDragging.value = true
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    photoOffset.value = dx * .6
+  }
+}
+function endPhotoDrag(event) {
+  if (!photoGesture) return
+  const dx = event.clientX - photoGesture.x
+  const threshold = Math.min(70, event.currentTarget.clientWidth * .15)
+  if (photoDragging.value && Math.abs(dx) > threshold) move(dx < 0 ? 1 : -1)
+  cancelPhotoDrag()
+}
+function cancelPhotoDrag() { photoGesture = null; photoDragging.value = false; photoOffset.value = 0 }
 const failedImages = ref(new Set())
 const images = computed(() => post.value?.postImages || [])
 const comments = computed(() => reviews.value.filter((review) => review.type === 'POST'))
@@ -100,7 +134,7 @@ async function shareReview() {
 
 <template>
   <main class="community-detail">
-    <RouterLink to="/community" class="community-back">← Back to community</RouterLink>
+    <button type="button" class="community-back community-back-button" @click="goBack">← Back</button>
     <p v-if="loading" role="status" class="community-state">Loading post…</p>
     <div v-else-if="error" role="alert" class="community-panel community-state">
       <h1>Couldn't load this post</h1>
@@ -121,15 +155,20 @@ async function shareReview() {
         @keydown.left.prevent="move(-1)"
         @keydown.right.prevent="move(1)"
       >
-        <div class="community-gallery-stage">
+        <div class="community-gallery-stage" :class="{ 'photo-dragging': photoDragging }" @pointerdown="startPhotoDrag" @pointermove="movePhotoDrag" @pointerup="endPhotoDrag" @pointercancel="cancelPhotoDrag" @lostpointercapture="cancelPhotoDrag" @dragstart.prevent>
+          <Transition name="post-photo" mode="out-in">
           <img
             v-if="!failedImages.has(active)"
             :key="images[active]"
+            class="post-gallery-photo"
+            :style="{ transform: `translateX(${photoOffset}px)` }"
+            draggable="false"
             :src="images[active]"
             :alt="`Post photo ${active + 1} of ${images.length}`"
             @error="failedImages.add(active)"
           />
-          <p v-else class="community-muted">This photo is unavailable.</p>
+          <p v-else :key="`failed-${active}`" class="community-muted">This photo is unavailable.</p>
+          </Transition>
           <template v-if="images.length > 1">
             <span class="community-gallery-count" aria-live="polite"
               >{{ active + 1 }} / {{ images.length }}</span
@@ -174,9 +213,7 @@ async function shareReview() {
         </header>
         <h1 class="community-detail-title">{{ post.title }}</h1>
         <p class="community-content">{{ post.content }}</p>
-        <p class="community-muted">
-          ♡ {{ post.likedCount ?? 0 }} {{ post.likedCount === 1 ? 'like' : 'likes' }}
-        </p>
+        <LikeButton :post="post" />
         <section class="community-review-thread" aria-labelledby="post-reviews-heading">
           <h2 id="post-reviews-heading">
             Reviews <span class="community-muted">({{ comments.length }})</span>

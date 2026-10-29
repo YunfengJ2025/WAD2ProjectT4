@@ -38,4 +38,11 @@ async function setLiked(postId, creatorId, liked) {
   });
 }
 
-module.exports = { Like, setLiked };
+// Return only the signed-in user's likes, newest first; deleted posts are omitted.
+async function getLikedPosts(creatorId) {
+  const likes = await Like.find({ creatorId }).sort({ likedAt: -1, _id: -1 }).lean();
+  const posts = await Post.find({ postId: { $in: likes.map(like => like.postId) } }).lean();
+  const byId = new Map(posts.map(post => [post.postId, post]));
+  return likes.filter(like => byId.has(like.postId)).map(like => ({ ...byId.get(like.postId), likedAt: like.likedAt, liked: true }));
+}
+module.exports = { Like, setLiked, getLikedPosts };

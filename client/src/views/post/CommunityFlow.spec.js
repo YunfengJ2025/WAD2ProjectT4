@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import CommunityView from './CommunityView.vue'
 import CreatePostView from './CreatePostView.vue'
 import PostDetailView from './PostDetailView.vue'
+import RecentlyLikedView from './RecentlyLikedView.vue'
 import ProfilePosts from '@/components/user/ProfilePosts.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -37,7 +38,7 @@ async function open(component, path = '/community') {
     ],
   })
   await router.push(path)
-  wrapper = mount(component, { global: { plugins: [pinia, router] } })
+  wrapper = mount(component, { global: { plugins: [pinia, router], stubs: { LikeButton: true } } })
   await flushPromises()
   return router
 }
@@ -180,11 +181,11 @@ it('shows a large carousel, reviews and replies, and publishes a review', async 
   await open(PostDetailView, '/community/5')
   expect(wrapper.text()).toContain('Beautiful!')
   expect(wrapper.text()).toContain('Thank you!')
-  expect(wrapper.get('.community-gallery-stage > img').attributes('src')).toBe(post.postImages[0])
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[0])
   await wrapper.get('[aria-label="Next photo"]').trigger('click')
-  expect(wrapper.get('.community-gallery-stage > img').attributes('src')).toBe(post.postImages[1])
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[1])
   await wrapper.get('[aria-label="Next photo"]').trigger('click')
-  expect(wrapper.get('.community-gallery-stage > img').attributes('src')).toBe(post.postImages[0])
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[0])
   await wrapper.get('#new-review').setValue('Love this')
   await wrapper.get('form').trigger('submit')
   await flushPromises()
@@ -210,7 +211,7 @@ it('supports single-photo posts without carousel controls', async () => {
       .mockResolvedValueOnce(reply([])),
   )
   await open(PostDetailView, '/community/5')
-  expect(wrapper.get('.community-gallery-stage > img').attributes('src')).toBe(
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(
     'https://example.com/old.jpg',
   )
   expect(wrapper.find('[aria-label="Next photo"]').exists()).toBe(false)
@@ -247,4 +248,37 @@ it('edits own post, removes a retained photo and saves without changing the crea
   expect(options.body.get('title')).toBe('Updated')
   expect(JSON.parse(options.body.get('retainedImages'))).toEqual(['https://example.com/2.jpg'])
   expect(router.currentRoute.value.path).toBe('/my-posts')
+})
+
+
+it('swipes photos horizontally and ignores a primarily vertical gesture', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply({ postId: 5, creatorId: 2, title: 'Garden', content: 'Hello', postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] })).mockResolvedValueOnce(reply([])))
+  await open(PostDetailView, '/community/5')
+  const stage = wrapper.get('.community-gallery-stage')
+  Object.defineProperty(stage.element, 'clientWidth', { value: 500 })
+  async function pointer(type, values) {
+    const event = new Event(type, { bubbles: true })
+    Object.assign(event, values)
+    stage.element.dispatchEvent(event)
+    await flushPromises()
+  }
+  await pointer('pointerdown', { pointerId: 1, clientX: 200, clientY: 20, button: 0 })
+  await pointer('pointermove', { pointerId: 1, clientX: 50, clientY: 25 })
+  await pointer('pointerup', { pointerId: 1, clientX: 50, clientY: 25 })
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe('https://example.com/2.jpg')
+  await pointer('pointerdown', { pointerId: 2, clientX: 200, clientY: 20, button: 0 })
+  await pointer('pointermove', { pointerId: 2, clientX: 210, clientY: 120 })
+  await pointer('pointerup', { pointerId: 2, clientX: 210, clientY: 120 })
+  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe('https://example.com/2.jpg')
+})
+
+
+it('shows recently liked posts in server order and provides an empty state', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => reply([
+    { postId: 2, title: 'Most recent like', creatorId: 2, postImages: [], likedCount: 1 },
+    { postId: 9, title: 'Earlier like', creatorId: 2, postImages: [], likedCount: 1 },
+  ])))
+  await open(RecentlyLikedView)
+  expect(fetch.mock.calls[0][0]).toBe('/api/post/liked/me')
+  expect(wrapper.findAll('.post-card-title').map(node => node.text())).toEqual(['Most recent like', 'Earlier like'])
 })
