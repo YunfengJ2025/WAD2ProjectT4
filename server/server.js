@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
+const cors = require("cors"); 
 const server = express();
 const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");

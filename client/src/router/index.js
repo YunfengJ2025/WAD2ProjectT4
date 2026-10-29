@@ -53,6 +53,9 @@ const routes = [
   { path: '/dashboard', name: 'dashboard', component: DashboardView },
   // Leaderboard route — registered as part of Step 2.1
   { path: '/leaderboard', name: 'leaderboard', component: LeaderboardView },
+
+  // Schedule route
+  { path: '/schedule', name: 'schedule', meta: { requiresAuth: true }, component: () => import('../views/WateringSchedView.vue') },
 ]
 
 const router = createRouter({
