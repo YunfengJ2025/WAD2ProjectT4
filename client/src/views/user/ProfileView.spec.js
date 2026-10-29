@@ -19,6 +19,7 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
   wrapper = mount(ProfileView, { global: { plugins: [pinia], stubs: {
     RouterLink: RouterLinkStub,
+    ProfilePosts: { template: '<section id="profile-posts">Posts</section>' },
     ProfileReviews: { template: '<section id="profile-reviews">Reviews</section>' },
   } } })
 })
@@ -43,7 +44,7 @@ it('saves an optional bio below the user icon and allows it to be cleared', asyn
 })
 
 it('includes reviews navigation and highlights only the section reached by scrolling', async () => {
-  const positions = { 'about-me': -500, 'personal-details': 20, address: 300, 'profile-reviews': 600 }
+  const positions = { 'about-me': -500, 'personal-details': 20, address: 300, 'profile-reviews': 600, 'profile-posts': 900 }
   for (const id of Object.keys(positions)) {
     wrapper.get(`#${id}`).element.getBoundingClientRect = () => ({ top: positions[id] })
   }

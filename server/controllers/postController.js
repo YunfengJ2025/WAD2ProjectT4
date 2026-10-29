@@ -75,4 +75,36 @@ async function createPostReview(req, res) {
     return res.status(201).json((await withAuthors([review]))[0]);
   } catch (err) { return handleError(res, err); }
 }
-module.exports = { createPostReview, createPost, getAllPosts, getPost, parseId, handleError };
+async function getMyPosts(req, res) {
+  try { return res.json(await withAuthors(await posts.getMyPosts(req.userId))); }
+  catch (err) { return handleError(res, err); }
+}
+async function updatePost(req, res) {
+  const uploaded = [];
+  try {
+    const postId = parseId(req.params.postId);
+    const existing = await posts.getPost(postId);
+    if (!existing || existing.creatorId !== req.userId) throw posts.httpError(404, "Post not found or you do not own it");
+    const { title, content } = req.body || {};
+    if (typeof title !== 'string' || !title.trim() || title.trim().length > 150) throw posts.httpError(400, 'Title must contain between 1 and 150 characters');
+    if (typeof content !== 'string' || !content.trim()) throw posts.httpError(400, 'Content is required');
+    let retained = existing.postImages;
+    if (req.body.retainedImages !== undefined) {
+      try { retained = JSON.parse(req.body.retainedImages); } catch { throw posts.httpError(400, 'Invalid retained photos'); }
+      if (!Array.isArray(retained) || retained.some(url => !existing.postImages.includes(url)) || new Set(retained).size !== retained.length) throw posts.httpError(400, 'Invalid retained photos');
+    }
+    if (retained.length + (req.files || []).length > 9) throw posts.httpError(400, 'Choose up to 9 photos');
+    for (const file of req.files || []) uploaded.push(await images.uploadImage(file.buffer, images.FOLDERS.postImage));
+    return res.json(await posts.updatePost(postId, req.userId, { title: title.trim(), content: content.trim(), postImages: [...retained, ...uploaded.map(image => image.url)] }));
+  } catch (err) {
+    await Promise.all(uploaded.map(image => images.deleteImage(image.publicId)));
+    return handleError(res, err);
+  }
+}
+async function deletePost(req, res) {
+  try {
+    await posts.deletePost(parseId(req.params.postId), req.userId);
+    return res.status(204).end();
+  } catch (err) { return handleError(res, err); }
+}
+module.exports = { getMyPosts, updatePost, deletePost, createPostReview, createPost, getAllPosts, getPost, parseId, handleError };

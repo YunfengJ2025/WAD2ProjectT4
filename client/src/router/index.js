@@ -13,6 +13,8 @@ import CareVisits from '@/components/careVisit/CareVisits.vue'
 
 // One list with every page. (createRouter only takes one `routes` list.)
 const routes = [
+  { path: '/my-posts', name: 'my-posts', meta: { requiresAuth: true }, component: () => import('../views/post/MyPostsView.vue') },
+  { path: '/community/:postId/edit', name: 'post-edit', meta: { requiresAuth: true }, component: () => import('../views/post/CreatePostView.vue') },
   {
     path: '/community/:postId',
     name: 'post-detail',

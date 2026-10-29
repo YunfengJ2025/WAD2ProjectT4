@@ -38,4 +38,24 @@ async function getPost(postId) {
   return Post.findOne({ postId });
 }
 
-module.exports = { Post, createPost, getAllPosts, getPost, httpError };
+async function getMyPosts(creatorId) {
+  return Post.find({ creatorId, postId: { $ne: null } }).sort({ postId: -1 });
+}
+async function updatePost(postId, creatorId, data) {
+  const post = await Post.findOneAndUpdate({ postId, creatorId }, { $set: data }, { new: true, runValidators: true });
+  if (!post) throw httpError(404, "Post not found or you do not own it");
+  return post;
+}
+async function deletePost(postId, creatorId) {
+  return mongoose.connection.transaction(async session => {
+    const post = await Post.findOneAndDelete({ postId, creatorId }, { session });
+    if (!post) throw httpError(404, "Post not found or you do not own it");
+    const { Review } = require('./reviewModel');
+    const { Like } = require('./likeModel');
+    const comments = await Review.find({ postId }).session(session);
+    await Review.deleteMany({ $or: [{ postId }, { parentReviewId: { $in: comments.map(review => review.reviewId) } }] }, { session });
+    await Like.deleteMany({ postId }, { session });
+    return post;
+  });
+}
+module.exports = { getMyPosts, updatePost, deletePost, Post, createPost, getAllPosts, getPost, httpError };

@@ -121,3 +121,57 @@ test('post reviews reject missing posts and blank comments', async (t) => {
   await controller.createPostReview({ userId: 2, params: { postId: '5' }, body: { comment: ' ' } }, blank);
   assert.equal(blank.code, 400);
 });
+
+ test('updates use both post and authenticated creator IDs and preserve protected fields', async (t) => {
+  let query;
+  let update;
+  t.mock.method(posts.Post, 'findOneAndUpdate', async (filter, data, options) => {
+    query = filter; update = data;
+    assert.equal(options.runValidators, true);
+    return { postId: 5, ...data.$set };
+  });
+  await posts.updatePost(5, 2, { title: 'New', content: 'Updated', postImages: [] });
+  assert.deepEqual(query, { postId: 5, creatorId: 2 });
+  assert.deepEqual(update, { $set: { title: 'New', content: 'Updated', postImages: [] } });
+});
+
+test('editing another user post is rejected before any upload or update', async (t) => {
+  t.mock.method(posts, 'getPost', async () => ({ postId: 5, creatorId: 7 }));
+  t.mock.method(posts, 'updatePost', () => assert.fail('must not update'));
+  t.mock.method(images, 'uploadImage', () => assert.fail('must not upload'));
+  const res = response();
+  await controller.updatePost({ userId: 2, params: { postId: '5' }, body: { title: 'New', content: 'Hello' } }, res);
+  assert.equal(res.code, 404);
+});
+
+test('edit rejects arbitrary photo URLs and preserves only the existing photos chosen', async (t) => {
+  t.mock.method(posts, 'getPost', async () => ({ postId: 5, creatorId: 2, postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] }));
+  let input;
+  t.mock.method(posts, 'updatePost', async (id, creatorId, data) => { input = data; return data; });
+  const bad = response();
+  await controller.updatePost({ userId: 2, params: { postId: '5' }, body: { title: 'New', content: 'Hello', retainedImages: '["https://other.com/photo.jpg"]' } }, bad);
+  assert.equal(bad.code, 400);
+  const good = response();
+  await controller.updatePost({ userId: 2, params: { postId: '5' }, body: { title: ' New ', content: ' Hello ', retainedImages: '["https://example.com/2.jpg"]', likedCount: 99 } }, good);
+  assert.equal(good.code, 200);
+  assert.deepEqual(input, { title: 'New', content: 'Hello', postImages: ['https://example.com/2.jpg'] });
+});
+
+test('deleting uses owner filter and removes reviews, replies and likes in the same transaction', async (t) => {
+  const session = {};
+  t.mock.method(mongoose.connection, 'transaction', async fn => fn(session));
+  t.mock.method(posts.Post, 'findOneAndDelete', async (filter, options) => {
+    assert.deepEqual(filter, { postId: 5, creatorId: 2 });
+    assert.equal(options.session, session);
+    return { postId: 5 };
+  });
+  t.mock.method(reviews.Review, 'find', () => ({ session: async () => [{ reviewId: 8 }] }));
+  t.mock.method(reviews.Review, 'deleteMany', async (filter, options) => {
+    assert.deepEqual(filter.$or, [{ postId: 5 }, { parentReviewId: { $in: [8] } }]);
+    assert.equal(options.session, session);
+  });
+  t.mock.method(likes.Like, 'deleteMany', async (filter, options) => {
+    assert.deepEqual(filter, { postId: 5 }); assert.equal(options.session, session);
+  });
+  await posts.deletePost(5, 2);
+});

@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import CommunityView from './CommunityView.vue'
 import CreatePostView from './CreatePostView.vue'
 import PostDetailView from './PostDetailView.vue'
+import ProfilePosts from '@/components/user/ProfilePosts.vue'
 import { useAuthStore } from '@/stores/auth'
 
 let wrapper
@@ -28,6 +29,8 @@ async function open(component, path = '/community') {
     routes: [
       { path: '/community', component: emptyPage },
       { path: '/community/new', component: emptyPage },
+      { path: '/my-posts', component: emptyPage },
+      { path: '/community/:postId/edit', component: emptyPage },
       { path: '/community/:postId', component: emptyPage },
       { path: '/signin', name: 'sign-in', component: emptyPage },
       { path: '/profile/:userId', component: emptyPage },
@@ -219,4 +222,29 @@ it('shows the title in a card without photos and links avatars to profiles', asy
   expect(wrapper.get('.post-card-text').text()).toBe('Growing without a photo')
   expect(wrapper.get('.post-card-link').attributes('href')).toBe('/community/7')
   expect(wrapper.get('.post-card-author').attributes('href')).toBe('/profile/2')
+})
+
+
+it('shows recent own posts on the profile and links to all posts', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => reply([{ postId: 5, creatorId: 3, title: 'My fern', content: 'Hello', postImages: [] }])))
+  await open(ProfilePosts)
+  expect(fetch.mock.calls[0][0]).toBe('/api/post/me')
+  expect(wrapper.text()).toContain('My fern')
+  expect(wrapper.findAll('a').some(link => link.attributes('href') === '/my-posts')).toBe(true)
+})
+
+it('edits own post, removes a retained photo and saves without changing the creator', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply({ postId: 5, creatorId: 3, title: 'Original', content: 'Hello', postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] })).mockResolvedValueOnce(reply({ postId: 5 })))
+  const router = await open(CreatePostView, '/community/5/edit')
+  expect(wrapper.get('#post-title').element.value).toBe('Original')
+  await wrapper.get('[aria-label="Remove current photo 1"]').trigger('click')
+  await wrapper.get('#post-title').setValue('Updated')
+  await wrapper.get('form').trigger('submit')
+  await flushPromises()
+  const [url, options] = fetch.mock.calls[1]
+  expect(url).toBe('/api/post/5')
+  expect(options.method).toBe('PATCH')
+  expect(options.body.get('title')).toBe('Updated')
+  expect(JSON.parse(options.body.get('retainedImages'))).toEqual(['https://example.com/2.jpg'])
+  expect(router.currentRoute.value.path).toBe('/my-posts')
 })

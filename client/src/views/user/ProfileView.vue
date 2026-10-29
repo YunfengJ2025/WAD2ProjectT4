@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ProfileReviews from '@/components/user/ProfileReviews.vue'
+import ProfilePosts from '@/components/user/ProfilePosts.vue'
 import '@/assets/profile.css'
 
 const auth = useAuthStore()
@@ -18,6 +19,7 @@ const sections = [
   { id: 'personal-details', label: 'Personal details', icon: '☷' },
   { id: 'address', label: 'My address', icon: '⌂' },
   { id: 'profile-reviews', label: 'My reviews', icon: '☆' },
+  { id: 'profile-posts', label: 'My posts', icon: '▧' },
 ]
 let scrollFrame = null
 let resizeObserver
@@ -403,6 +405,7 @@ async function save() {
         </div>
       </form>
       <ProfileReviews />
+        <ProfilePosts />
     </div>
   </main>
 </template>

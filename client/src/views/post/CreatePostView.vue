@@ -1,6 +1,6 @@
 <script setup>
-import { onBeforeUnmount, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import UserAvatar from '@/components/user/UserAvatar.vue'
@@ -8,6 +8,12 @@ import '@/assets/community.css'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+const editing = computed(() => !!route.params.postId)
+const loading = ref(editing.value)
+const loadError = ref('')
+const retained = ref([])
+const backTo = computed(() => editing.value ? '/my-posts' : '/community')
 const { show: toast } = useToast()
 const title = ref('')
 const content = ref('')
@@ -20,7 +26,7 @@ function selectPhotos(event) {
   photoError.value = ''
   const selected = Array.from(event.target.files || [])
   event.target.value = ''
-  if (photos.value.length + selected.length > 9) {
+  if (retained.value.length + photos.value.length + selected.length > 9) {
     photoError.value = 'Choose up to 9 photos per post.'
     return
   }
@@ -43,6 +49,19 @@ function removePhoto(index) {
 }
 onBeforeUnmount(() => photos.value.forEach((photo) => URL.revokeObjectURL(photo.preview)))
 
+async function loadPost() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const post = await auth.authorizedRequest('/post/' + route.params.postId)
+    if (post.creatorId !== auth.user?.userId) throw new Error('You can only edit your own posts.')
+    title.value = post.title || ''
+    content.value = post.content
+    retained.value = [...post.postImages]
+  } catch (err) { loadError.value = err.message }
+  finally { loading.value = false }
+}
+onMounted(() => { if (editing.value) loadPost() })
 async function publish() {
   if (submitting.value) return
   error.value = ''
@@ -58,30 +77,33 @@ async function publish() {
   const body = new FormData()
   body.append('title', title.value.trim())
   body.append('content', content.value.trim())
+  if (editing.value) body.append('retainedImages', JSON.stringify(retained.value))
   photos.value.forEach((photo) => body.append('photos', photo.file))
   try {
-    await auth.authorizedRequest('/post', { method: 'POST', body })
+    await auth.authorizedRequest(editing.value ? '/post/' + route.params.postId : '/post', { method: editing.value ? 'PATCH' : 'POST', body })
   } catch (err) {
     error.value = err.message
     submitting.value = false
     return
   }
-  toast('Your post has been shared!')
-  await router.push('/community')
+  toast(editing.value ? 'Your post has been updated!' : 'Your post has been shared!')
+  await router.push(backTo.value)
 }
 </script>
 
 <template>
   <main class="community-page community-create">
-    <RouterLink to="/community" class="community-back">← Back to community</RouterLink>
+    <RouterLink :to="backTo" class="community-back">← {{ editing ? 'My posts' : 'Back to community' }}</RouterLink>
     <header class="community-heading">
       <div>
         <p class="community-eyebrow">A LITTLE UPDATE GOES A LONG WAY</p>
-        <h1>Create a post<span>.</span></h1>
+        <h1>{{ editing ? 'Edit your post' : 'Create a post' }}<span>.</span></h1>
         <p class="community-muted">What’s growing in your corner of the world?</p>
       </div>
     </header>
-    <form class="community-panel community-form" @submit.prevent="publish">
+    <p v-if="loading" role="status">Loading your post…</p>
+    <div v-else-if="loadError" class="community-error" role="alert"><p>{{ loadError }}</p><button class="btn" @click="loadPost">Try again</button></div>
+    <form v-else class="community-panel community-form" @submit.prevent="publish">
       <div class="community-author">
         <UserAvatar :user="auth.user" :size="44" />
         <div>
@@ -103,7 +125,7 @@ async function publish() {
           placeholder="A new leaf, a question, or a tip worth sharing…"
         ></textarea>
         <label for="post-photos"
-          >Photos <span class="community-muted">(optional · {{ photos.length }}/9)</span></label
+          >Photos <span class="community-muted">(optional · {{ retained.length + photos.length }}/9)</span></label
         >
         <div class="community-upload">
           <span aria-hidden="true">＋</span>
@@ -122,6 +144,9 @@ async function publish() {
         <p id="photo-error" class="community-error" v-show="photoError" role="alert">
           {{ photoError }}
         </p>
+        <div v-if="retained.length" class="community-photo-previews">
+          <div v-for="(url, index) in retained" :key="url" class="community-photo-preview"><img :src="url" :alt="'Current photo ' + (index + 1)" /><button type="button" :aria-label="'Remove current photo ' + (index + 1)" @click="retained.splice(index, 1)">×</button></div>
+        </div>
         <div v-if="photos.length" class="community-photo-previews">
           <div
             v-for="(photo, index) in photos"
@@ -142,9 +167,9 @@ async function publish() {
       </fieldset>
       <p v-if="error" role="alert" class="community-error">{{ error }}</p>
       <div class="community-form-actions">
-        <RouterLink v-if="!submitting" to="/community" class="btn">Cancel</RouterLink>
+        <RouterLink v-if="!submitting" :to="backTo" class="btn">Cancel</RouterLink>
         <button type="submit" class="btn btn-primary" :disabled="submitting || !title.trim() || !content.trim()">
-          {{ submitting ? 'Uploading & sharing…' : 'Share post' }}
+          {{ submitting ? 'Saving…' : editing ? 'Save changes' : 'Share post' }}
         </button>
       </div>
     </form>
