@@ -23,7 +23,7 @@ const navigationitems = [
   { label: 'My Plants', to: '/plants' },
   { label: 'Find Nearby', to: '/find-nearby' },
   { label: 'Care Visits', to: '/care-visits' },
-  { label: 'Schedule', to: '/schedule' }
+  { label: 'Schedule', to: '/schedule' },
   { label: 'Reviews', to: '/reviews' }
 ]
 

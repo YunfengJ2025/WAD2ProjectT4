@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+import { usePlantsStore } from '@/stores/plants'
 import WeatherHeader from '../components/schedule/WeatherHeader.vue'
 import ScheduleCalendar from '../components/schedule/ScheduleCalendar.vue'
 import ScheduleList from '../components/schedule/ScheduleList.vue'
@@ -9,17 +10,24 @@ import { buildSchedule } from '../composables/schedule/buildSchedule'
 import { useWeather } from '../composables/schedule/useWeather'
 import { applyWeatherAdjustments } from '../composables/schedule/applyWeatherAdjustments'
 
+const auth = useAuthStore()
+const plantsStore = usePlantsStore()
+
 const loading = ref(true)
 const errorMessage = ref(null)
 const schedule = ref([])   // array of RequestItem-shaped objects
-const plants = ref([])
-// const user = ref(null)     // logged-in owner, has Lat/Lng
-const user = ref({ lat: 1.3521, lng: 103.8198, userRole: 'user' }) // placeholder test user hardcoded
+const plants = computed(() => plantsStore.plants)
+
+// the logged-in owner; fall back to central Singapore if lat/lng were never set
+const user = computed(() => auth.user)
+const lat = auth.user?.lat ?? 1.3521
+const lng = auth.user?.lng ?? 103.8198
+
 
 const isHelper = ref(true) // placeholder, decides when the schedule alert banner shows
 
 // fetch weather, shared to header and schedule logic
-const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(user.value.lat, user.value.lng)
+const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(lat, lng)
 
 // 'rain' to test the rain skip, 'sunny' for heat, null for real
 const demoCondition = ref(null)
@@ -40,13 +48,10 @@ onMounted(async () => {
   fetchTemperature()
 
   try {
-    const response = await axios.get('/api/plants')
-
-    plants.value = response.data.plants // the response is {count, plants}
+    await plantsStore.fetchPlants()          // sends the Bearer token for us
     schedule.value = buildSchedule(plants.value)
-    
   } catch (error) {
-    errorMessage.value = error.response?.data?.message ?? error.message
+    errorMessage.value = error.message
   } finally {
     loading.value = false
   }
