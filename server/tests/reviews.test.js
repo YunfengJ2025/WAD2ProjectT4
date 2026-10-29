@@ -17,15 +17,18 @@ test('profile lookup scopes by both participants and includes post thread contex
     return { lean: async () => queries.length === 1 ? own : context };
   });
   t.mock.method(User, 'find', () => ({ select: (fields) => {
-    assert.equal(fields, 'userId userName -_id');
-    return { lean: async () => [{ userId: 1, userName: 'Me' }, { userId: 2, userName: 'Alice' }] };
+    assert.equal(fields, 'userId userName photoUrl -_id');
+    return { lean: async () => [{ userId: 1, userName: 'Me', photoUrl: 'https://images.example/me.png' }, { userId: 2, userName: 'Alice', photoUrl: 'https://images.example/alice.png' }] };
   } }));
   const result = await model.getProfileReviews(1);
   assert.deepEqual(queries[0].$or, [{ creatorId: 1 }, { receiverId: 1 }]);
   assert.deepEqual(queries[1].$or, [{ parentReviewId: { $in: [2] } }, { reviewId: { $in: [5] } }]);
   assert.equal(result.length, 4);
   assert.equal(result[0].creatorName, 'Alice');
+  assert.equal(result[0].creatorPhotoUrl, 'https://images.example/alice.png');
+  assert.equal(result[1].creatorPhotoUrl, 'https://images.example/me.png');
   assert.equal(result[3].creatorName, 'User #3');
+  assert.equal(result[3].creatorPhotoUrl, '');
 });
 
 test('profile controller uses the authenticated user rather than client IDs', async (t) => {

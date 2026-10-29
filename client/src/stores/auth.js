@@ -62,10 +62,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateProfile(details) {
+    const token = accessToken.value
+    const multipart = details instanceof FormData
     const data = await authorizedRequest('/user/me', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(details),
+      method: 'PATCH',
+      ...(multipart ? {} : { headers: { 'Content-Type': 'application/json' } }),
+      body: multipart ? details : JSON.stringify(details),
     })
+    if (accessToken.value !== token) throw new Error('Your session changed. Please sign in again.')
     user.value = data.user
     return data.user
   }

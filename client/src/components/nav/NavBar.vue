@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 
 defineProps({ navigationitems: { type: Array, default: () => [] } })
 defineEmits(['logout'])
@@ -18,7 +19,10 @@ const auth = useAuthStore()
       </ul>
       <div class="d-flex align-items-center gap-2">
         <template v-if="auth.isAuthenticated">
-          <RouterLink class="nav-link" active-class="active" to="/profile">{{ auth.user.userName }}</RouterLink>
+          <RouterLink class="nav-link d-flex align-items-center gap-2" active-class="active" to="/profile" aria-label="My profile">
+            <UserAvatar :user="auth.user" :size="34" />
+            {{ auth.user.userName }}
+          </RouterLink>
           <button type="button" class="btn btn-outline-secondary" @click="$emit('logout')">Log out</button>
         </template>
         <template v-else>

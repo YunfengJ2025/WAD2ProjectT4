@@ -1,0 +1,46 @@
+/* Shared profile presentation. Layout and page-specific controls stay in each view. */
+.profile-shell {
+  margin: 2rem auto 5rem;
+  color: var(--color-text);
+}
+
+.profile-shell .eyebrow {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.profile-identity-card {
+  background: var(--surface);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  text-align: center;
+}
+
+.profile-shell .profile-name {
+  color: var(--color-heading);
+  overflow-wrap: anywhere;
+}
+
+.profile-shell .member-label {
+  color: var(--muted);
+}
+
+.profile-bio-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-shell .profile-meta dt {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.profile-shell .profile-meta dd {
+  color: var(--color-heading);
+  font-weight: 600;
+}
+
+.profile-shell :is(a, button, input, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

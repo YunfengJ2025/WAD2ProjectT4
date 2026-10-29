@@ -18,6 +18,7 @@ const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
 const navigationitems = [
+  { label: 'Community', to: '/community' },
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },

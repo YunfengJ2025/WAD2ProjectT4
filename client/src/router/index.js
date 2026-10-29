@@ -11,9 +11,26 @@ import LeaderboardView from '../views/boards/LeaderboardView.vue'
 import FindNearby from '@/components/map/FindNearby.vue'
 import CareVisits from '@/components/careVisit/CareVisits.vue'
 
-
 // One list with every page. (createRouter only takes one `routes` list.)
 const routes = [
+  { path: '/my-posts', name: 'my-posts', meta: { requiresAuth: true }, component: () => import('../views/post/MyPostsView.vue') },
+  { path: '/community/:postId/edit', name: 'post-edit', meta: { requiresAuth: true }, component: () => import('../views/post/CreatePostView.vue') },
+  {
+    path: '/community/:postId',
+    name: 'post-detail',
+    component: () => import('../views/post/PostDetailView.vue'),
+  },
+  {
+    path: '/community',
+    name: 'community',
+    component: () => import('../views/post/CommunityView.vue'),
+  },
+  {
+    path: '/community/new',
+    name: 'post-new',
+    meta: { requiresAuth: true },
+    component: () => import('../views/post/CreatePostView.vue'),
+  },
   // Home — the navbar's "Home" and "Dashboard" links go here
   { path: '/', name: 'Dashboard', component: DashboardView },
 
@@ -30,8 +47,16 @@ const routes = [
   },
 
   // My Plants
-  { path: '/plants', name: 'my-plants', component: () => import('../views/plant/MyPlantsView.vue') },
-  { path: '/plants/new', name: 'plant-new', component: () => import('../views/plant/PlantFormView.vue') },
+  {
+    path: '/plants',
+    name: 'my-plants',
+    component: () => import('../views/plant/MyPlantsView.vue'),
+  },
+  {
+    path: '/plants/new',
+    name: 'plant-new',
+    component: () => import('../views/plant/PlantFormView.vue'),
+  },
   {
     path: '/plants/:plantId',
     name: 'plant-detail',
@@ -43,11 +68,26 @@ const routes = [
     component: () => import('../views/plant/PlantFormView.vue'),
   },
 
-  { path: '/profile', name: 'profile', meta: { requiresAuth: true }, component: () => import('../views/user/ProfileView.vue') },
+  {
+    path: '/profile',
+    name: 'profile',
+    meta: { requiresAuth: true },
+    component: () => import('../views/user/ProfileView.vue'),
+  },
+  {
+    path: '/profile/:userId',
+    name: 'public-profile',
+    component: () => import('../views/user/PublicProfileView.vue'),
+  },
 
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
   { path: '/care-visits', name: 'Care Visits', component: CareVisits },
-  { path: '/reviews', name: 'reviews', meta: { requiresAuth: true }, component: () => import('../views/review/ReviewsView.vue') },
+  {
+    path: '/reviews',
+    name: 'reviews',
+    meta: { requiresAuth: true },
+    component: () => import('../views/review/ReviewsView.vue'),
+  },
 
   // Dashboard route — registered as part of Step 2.1
   { path: '/dashboard', name: 'dashboard', component: DashboardView },
@@ -55,7 +95,12 @@ const routes = [
   { path: '/leaderboard', name: 'leaderboard', component: LeaderboardView },
 
   // Schedule route
-  { path: '/schedule', name: 'schedule', meta: { requiresAuth: true }, component: () => import('../views/WateringSchedView.vue') },
+  {
+    path: '/schedule',
+    name: 'schedule',
+    meta: { requiresAuth: true },
+    component: () => import('../views/WateringSchedView.vue'),
+  },
 ]
 
 const router = createRouter({

@@ -6,14 +6,13 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const fs = require("fs");
-const cors = require("cors"); 
 const server = express();
 const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");
 const cors = require("cors");
 const boardRoutes = require("./routes/boardRoute");
 const tokenRoutes = require("./routes/tokenRoute");
-const reviewRoutes = require("./routes/reviewRoute")
+const reviewRoutes = require("./routes/reviewRoute");
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
 // Specify the path to the environment variable file '.env'
@@ -28,10 +27,12 @@ server.use(express.json());
 //   }),
 // );
 //Routes
-server.use("/user",  userRoutes);;
+server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
-server.use("/review", reviewRoutes);server.use("/api", boardRoutes);
+server.use("/review", reviewRoutes);
+server.use("/post", require("./routes/postRoute"));
+server.use("/api", boardRoutes);
 
 async function connectDB() {
   try {
