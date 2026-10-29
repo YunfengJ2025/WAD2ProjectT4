@@ -22,6 +22,7 @@ server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
 server.use("/review", reviewRoutes);
+// server.use("/find-nearby", require("./routes/nearbyRequests"));
 async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
