@@ -1,6 +1,7 @@
 const dns = require("node:dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const express = require("express");
+const session = require("express-session");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
@@ -9,20 +10,29 @@ const cors = require("cors");
 const server = express();
 const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");
+const cors = require("cors");
+const boardRoutes = require("./routes/boardRoute");
 const tokenRoutes = require("./routes/tokenRoute");
 const reviewRoutes = require("./routes/reviewRoute")
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
 // Specify the path to the environment variable file '.env'
-server.use(cors());  
+server.use(cors());
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
+// server.use(
+//   session({
+//     secret: process.env.SECRET || "wad2_secret_key",
+//     resave: false,
+//     saveUninitialized: false,
+//   }),
+// );
 //Routes
-server.use("/user", userRoutes);
+server.use("/user",  userRoutes);;
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
-server.use("/review", reviewRoutes);
-// server.use("/find-nearby", require("./routes/nearbyRequests"));
+server.use("/review", reviewRoutes);server.use("/api", boardRoutes);
+
 async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
