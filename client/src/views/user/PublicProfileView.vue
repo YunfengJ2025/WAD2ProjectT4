@@ -89,7 +89,7 @@ const average = computed(() =>
             </p>
             <ul v-else class="public-review-list">
               <li v-for="review in store.profile.reviews" :key="review.reviewId">
-                <ReviewCard :review="review" />
+                <ReviewCard source="profile" :review="review" />
               </li>
             </ul>
           </section>

@@ -6,6 +6,8 @@ import ReviewCard from '@/components/review/ReviewCard.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
 
+const push = vi.hoisted(() => vi.fn())
+vi.mock('vue-router', async importOriginal => ({ ...await importOriginal(), useRouter: () => ({ push }) }))
 const records = [
   {
     reviewId: 1,
@@ -141,38 +143,16 @@ describe('profile reviews', () => {
     expect(wrapper.text()).toContain('No matching reviews')
     expect(wrapper.get('[data-testid="average-rating"]').text()).toContain('4.0')
   })
-  it('persists replies with the authorized API and never offers replies on visits', async () => {
+  it('hides reply controls and opens the post from a review card', async () => {
     await open()
     const cards = wrapper.findAllComponents(ReviewCard)
-    expect(
-      cards
-        .find((card) => card.props('review').type === 'VISIT')
-        .find('.reply-button')
-        .exists(),
-    ).toBe(false)
-    auth.authorizedRequest.mockResolvedValueOnce({
-      reviewId: 5,
-      type: 'REVIEW',
-      parentReviewId: 3,
-      creatorId: 1,
-      receiverId: 2,
-      comment: 'Thank you!',
-      createdAt: '2026-10-24',
-    })
-    const card = cards.find((card) => card.props('review').type === 'POST')
-    await card.get('.reply-button').trigger('click')
-    await card.get('textarea').setValue('Thank you!')
-    await card.get('form').trigger('submit')
-    await flushPromises()
-    expect(auth.authorizedRequest).toHaveBeenLastCalledWith(
-      '/review/me/replies',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ parentReviewId: 3, comment: 'Thank you!' }),
-      }),
-    )
-    expect(card.text()).toContain('Thank you!')
-    expect(card.find('.reply .reply-button').exists()).toBe(false)
+    expect(wrapper.find('.reply-button').exists()).toBe(false)
+    const card = cards.find(card => card.props('review').type === 'POST')
+    await card.get('.comment').trigger('click')
+    expect(push).toHaveBeenCalledWith('/community/5')
+    push.mockClear()
+    await card.get('article').trigger('keydown', { key: 'Enter' })
+    expect(push).toHaveBeenCalledWith('/community/5')
   })
   it('shows load errors and retries rather than displaying sample data', async () => {
     auth.authorizedRequest.mockRejectedValueOnce(new Error('Offline'))

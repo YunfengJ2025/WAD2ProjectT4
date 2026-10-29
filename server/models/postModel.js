@@ -6,7 +6,8 @@ const postSchema = new mongoose.Schema({
   postId: { type: Number, unique: true, sparse: true },
   creatorId: { type: Number, required: true },
   content: { type: String, required: true, trim: true },
-  postImage: { type: String, default: "" },
+  title: { type: String, required: true, trim: true, maxlength: 150 },
+  postImages: { type: [String], default: [] },
   likedCount: { type: Number, default: 0, min: 0 },
 });
 postSchema.index({ creatorId: 1 });
@@ -16,13 +17,13 @@ function httpError(status, message) {
   return Object.assign(new Error(message), { status });
 }
 
-async function createPost({ creatorId, content, postImage }) {
+async function createPost({ creatorId, title, content, postImages }) {
   return mongoose.connection.transaction(async (session) => {
     if (!await User.exists({ userId: creatorId }).session(session)) {
       throw httpError(404, "Creator not found");
     }
     // Insert first, as in createReview. Roll back the counter too if saving fails.
-    const [post] = await Post.create([{ creatorId, content, postImage }], { session });
+    const [post] = await Post.create([{ creatorId, title, content, postImages }], { session });
     post.postId = await counter.getNextSequence("postId", session);
     await post.save({ session });
     return post;

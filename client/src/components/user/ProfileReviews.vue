@@ -3,8 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
-import StarRating from '@/components/review/StarRating.vue'
-import UserAvatar from '@/components/user/UserAvatar.vue'
+import ReviewCard from '@/components/review/ReviewCard.vue'
 
 const auth = useAuthStore()
 const store = useReviewsStore()
@@ -28,13 +27,6 @@ const received = computed(() =>
 )
 const recent = computed(() => received.value.slice(0, 6))
 
-function dateLabel(value) {
-  return new Date(value).toLocaleDateString('en-SG', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Asia/Singapore',
-  })
-}
 
 function startDrag(event) {
   // Touch screens use native scrolling; add click-and-drag for a mouse.
@@ -106,46 +98,12 @@ function scroll(direction) {
         @keydown.right.prevent="scroll(1)"
       >
         <li v-for="review in recent" :key="review.reviewId" class="review-preview">
-          <header>
-            <RouterLink
-              v-if="review.creatorId"
-              :to="`/profile/${review.creatorId}`"
-              :aria-label="`View ${review.creatorName || 'neighbour'}'s profile`"
-            >
-              <UserAvatar
-                :user="{
-                  userName: review.creatorName || 'Neighbour',
-                  photoUrl: review.creatorPhotoUrl,
-                }"
-                :size="40"
-              />
-            </RouterLink>
-            <UserAvatar
-              v-else
-              :user="{
-                userName: review.creatorName || 'Neighbour',
-                photoUrl: review.creatorPhotoUrl,
-              }"
-              :size="40"
-            />
-            <div>
-              <h3>{{ review.creatorName || 'Neighbour' }}</h3>
-              <time :datetime="review.createdAt">{{ dateLabel(review.createdAt) }}</time>
-            </div>
-          </header>
-          <span class="review-kind">{{
-            review.type === 'VISIT'
-              ? 'Care visit'
-              : review.type === 'POST'
-                ? 'Post comment'
-                : 'Reply'
-          }}</span>
-          <StarRating
-            v-if="review.type === 'VISIT' && Number.isFinite(review.rating)"
-            :model-value="review.rating"
-            readonly
-          />
-          <p class="review-comment">{{ review.comment }}</p>
+          <ReviewCard source="profile" :review="{
+            ...review,
+            postId: review.postId || store.reviews.find(parent => parent.reviewId === review.parentReviewId)?.postId,
+            creatorPhotoUrl: review.creatorId === auth.user?.userId ? auth.user.photoUrl : review.creatorPhotoUrl,
+            targetTitle: review.type === 'VISIT' ? 'Care visit #' + review.visitId : review.type === 'POST' ? 'Post #' + review.postId : 'Reply to comment #' + review.parentReviewId,
+          }" :replies="store.reviews.filter(reply => reply.parentReviewId === review.reviewId)" />
         </li>
       </ul>
     </template>
@@ -218,13 +176,32 @@ h2 {
   scroll-snap-type: none;
 }
 .review-preview {
-  flex: 0 0 min(310px, 86%);
+  flex: 0 0 min(340px, 86%);
   min-width: 0;
-  padding: 1.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--surface);
   scroll-snap-align: start;
+}
+.review-preview > :deep(.review-card) {
+  height: 100%;
+  box-sizing: border-box;
+}
+.review-preview :deep(.review-card header) {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+}
+.review-preview :deep(.review-card .identity) {
+  min-width: 0;
+}
+.review-preview :deep(.review-card time) {
+  white-space: nowrap;
+}
+.review-preview :deep(.review-card .kind) {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.review-preview :deep(.review-card header > a) {
+  padding: 0;
+  line-height: 1;
 }
 .review-preview header {
   display: flex;

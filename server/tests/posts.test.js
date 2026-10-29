@@ -15,9 +15,9 @@ test('creation uses authenticated creator and ignores client count and ID', asyn
   let input;
   t.mock.method(posts, 'createPost', async (data) => { input = data; return data; });
   const res = response();
-  await controller.createPost({ userId: 2, body: { creatorId: 99, postId: 100, likedCount: 50, content: ' Hello ' } }, res);
+  await controller.createPost({ userId: 2, body: { creatorId: 99, postId: 100, likedCount: 50, title: 'Title', content: ' Hello ' } }, res);
   assert.equal(res.code, 201);
-  assert.deepEqual(input, { creatorId: 2, content: 'Hello', postImage: undefined });
+  assert.deepEqual(input, { creatorId: 2, title: 'Title', content: 'Hello' });
 });
 
 test('invalid content is rejected before reaching model', async (t) => {
@@ -76,4 +76,48 @@ test('likes increment once and unlikes decrement once; repeats leave count uncha
 test('schemas default count to zero and enforce a unique creator/post pair', () => {
   assert.equal(new posts.Post({ creatorId: 2, content: 'Hello' }).likedCount, 0);
   assert.ok(likes.Like.schema.indexes().some(([keys, options]) => keys.creatorId === 1 && keys.postId === 1 && options.unique));
+});
+
+const images = require('../config/cloudinary');
+const reviews = require('../models/reviewModel');
+
+test('uploads multiple photos in order and removes uploads if post creation fails', async (t) => {
+  const removed = [];
+  let index = 0;
+  t.mock.method(images, 'uploadImage', async (buffer, folder) => {
+    assert.equal(folder, images.FOLDERS.postImage);
+    index += 1;
+    return { url: `https://example.com/${index}.jpg`, publicId: `photo${index}` };
+  });
+  t.mock.method(images, 'deleteImage', async (id) => removed.push(id));
+  t.mock.method(posts, 'createPost', async (data) => {
+    assert.deepEqual(data.postImages, ['https://example.com/1.jpg', 'https://example.com/2.jpg']);
+    throw Object.assign(new Error('Creation failed'), { status: 503 });
+  });
+  const res = response();
+  await controller.createPost({ userId: 2, body: { title: 'Title', content: 'Hello' }, files: [{ buffer: Buffer.from('1') }, { buffer: Buffer.from('2') }] }, res);
+  assert.equal(res.code, 503);
+  assert.deepEqual(removed, ['photo1', 'photo2']);
+});
+
+test('post review takes creator from session and receiver from the post', async (t) => {
+  t.mock.method(posts, 'getPost', async () => ({ postId: 5, creatorId: 7 }));
+  t.mock.method(User, 'find', () => ({ select: () => ({ lean: async () => [] }) }));
+  let input;
+  t.mock.method(reviews, 'createReview', async (data) => { input = data; return { ...data, reviewId: 1 }; });
+  const res = response();
+  await controller.createPostReview({ userId: 2, params: { postId: '5' }, body: { comment: ' Nice! ', creatorId: 99, receiverId: 99 } }, res);
+  assert.equal(res.code, 201);
+  assert.deepEqual(input, { type: 'POST', postId: 5, creatorId: 2, receiverId: 7, comment: 'Nice!' });
+});
+
+test('post reviews reject missing posts and blank comments', async (t) => {
+  t.mock.method(posts, 'getPost', async () => null);
+  t.mock.method(reviews, 'createReview', () => assert.fail('must not insert'));
+  const missing = response();
+  await controller.createPostReview({ userId: 2, params: { postId: '5' }, body: { comment: 'Hello' } }, missing);
+  assert.equal(missing.code, 404);
+  const blank = response();
+  await controller.createPostReview({ userId: 2, params: { postId: '5' }, body: { comment: ' ' } }, blank);
+  assert.equal(blank.code, 400);
 });

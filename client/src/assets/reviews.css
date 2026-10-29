@@ -524,4 +524,8 @@
   .review-direction button {
     transition: none;
   }
-}
+}.review-card-linked { cursor: pointer; }
+.review-card-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.review-card-post { padding: 1rem 0; border: 0; border-bottom: 1px solid var(--review-border); border-radius: 0; animation: none; }
+.review-card-post header { gap: .6rem; }
+.review-card-post .comment { font-size: .85rem; }

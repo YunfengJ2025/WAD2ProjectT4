@@ -12,15 +12,12 @@ const direction = ref('received')
 const filter = ref('ALL')
 const search = ref('')
 const sort = ref('newest')
-const busy = ref(null)
-const replyError = ref('')
 watch(
   () => auth.user?.userId,
   (id) => {
     direction.value = 'received'
     filter.value = 'ALL'
     search.value = ''
-    replyError.value = ''
     if (id) store.fetchReviews()
   },
   { immediate: true },
@@ -79,6 +76,7 @@ const visibleReviews = computed(() =>
 function displayReview(review) {
   return {
     ...review,
+    postId: review.postId || store.reviews.find(parent => parent.reviewId === review.parentReviewId)?.postId,
     // Use the live Pinia profile for our own entries after a profile-photo change.
     creatorPhotoUrl:
       review.creatorId === auth.user?.userId ? auth.user.photoUrl || '' : review.creatorPhotoUrl,
@@ -88,18 +86,6 @@ function displayReview(review) {
         : review.type === 'POST'
           ? 'Post #' + review.postId
           : 'Reply to comment #' + review.parentReviewId,
-  }
-}
-async function shareReply(review, comment) {
-  if (busy.value !== null) return
-  busy.value = review.reviewId
-  replyError.value = ''
-  try {
-    await store.reply(review, comment)
-  } catch (err) {
-    replyError.value = err.message
-  } finally {
-    busy.value = null
   }
 }
 </script>
@@ -257,14 +243,13 @@ async function shareReply(review, comment) {
               Clear filters
             </button>
           </div>
-          <p v-if="replyError" role="alert" class="alert alert-danger">{{ replyError }}</p>
           <!-- A keyed list keeps each reply draft attached to its review after sorting/filtering. -->
           <div v-if="visibleReviews.length" class="review-list">
             <ReviewCard
+              source="reviews"
               v-for="review in visibleReviews"
               :key="review.reviewId"
               :review="displayReview(review)"
-              :busy="busy !== null"
               :replies="
                 store.reviews
                   .filter(
@@ -272,7 +257,6 @@ async function shareReply(review, comment) {
                   )
                   .map(displayReview)
               "
-              @reply="shareReply(review, $event)"
             />
           </div>
           <div v-else class="review-state">

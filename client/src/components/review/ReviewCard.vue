@@ -1,15 +1,27 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import StarRating from './StarRating.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import '@/assets/reviews.css'
 const props = defineProps({
   review: { type: Object, required: true },
   replies: { type: Array, default: () => [] },
+  source: { type: String, default: 'reviews', validator: value => ['profile', 'reviews', 'post'].includes(value) },
+  canReply: { type: Boolean, default: true },
   busy: Boolean,
 })
 const emit = defineEmits(['reply'])
+const router = useRouter()
+const postLink = computed(() => props.source !== 'post' && props.review.postId ? '/community/' + props.review.postId : null)
+function openPost(event) {
+  if (!postLink.value || event.target.closest('a, button, textarea, input')) return
+  router.push(postLink.value)
+}
+function keyOpen(event) {
+  if (event.target !== event.currentTarget) return
+  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPost(event) }
+}
 const replying = ref(false)
 const message = ref('')
 watch(
@@ -22,10 +34,11 @@ watch(
   },
 )
 function submitReply() {
-  if (props.busy || props.review.type !== 'POST' || !message.value.trim()) return
+  if (props.source !== 'post' || !props.canReply || props.busy || props.review.type !== 'POST' || !message.value.trim()) return
   emit('reply', message.value.trim())
 }
 function dateLabel(value) {
+  if (!value || Number.isNaN(new Date(value).getTime())) return ''
   return new Intl.DateTimeFormat('en-SG', {
     day: 'numeric',
     month: 'short',
@@ -36,7 +49,7 @@ function dateLabel(value) {
 </script>
 
 <template>
-  <article class="review-card">
+  <article class="review-card" :class="{ 'review-card-post': source === 'post', 'review-card-linked': postLink }" :role="postLink ? 'link' : undefined" :tabindex="postLink ? 0 : undefined" :aria-label="postLink ? 'View post for this review' : undefined" @click="openPost" @keydown="keyOpen">
     <header>
       <!-- Match the profile/navbar avatar, including its missing-image fallback. -->
       <RouterLink
@@ -45,24 +58,24 @@ function dateLabel(value) {
         :aria-label="`View ${review.creatorName}'s profile`"
       >
         <UserAvatar
-          :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl }"
+          :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl || review.creatorPhoto }"
           :size="42"
         />
       </RouterLink>
       <UserAvatar
         v-else
-        :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl }"
+        :user="{ userName: review.creatorName, photoUrl: review.creatorPhotoUrl || review.creatorPhoto }"
         :size="42"
       />
       <div class="identity">
         <h3>{{ review.creatorName }}</h3>
         <time :datetime="review.createdAt">{{ dateLabel(review.createdAt) }}</time>
       </div>
-      <span class="kind">{{
+      <span v-if="source !== 'post'" class="kind">{{
         review.type === 'VISIT' ? 'Care visit' : review.type === 'POST' ? 'Post comment' : 'Reply'
       }}</span>
     </header>
-    <p class="target">{{ review.targetTitle }}</p>
+    <p v-if="source !== 'post'" class="target">{{ review.targetTitle }}</p>
     <p v-if="review.type === 'VISIT'" class="target">
       Review of {{ review.receiverName
       }}<template v-if="review.receiverRole"> ({{ review.receiverRole }})</template>
@@ -70,7 +83,7 @@ function dateLabel(value) {
     <StarRating v-if="review.type === 'VISIT'" :model-value="review.rating" readonly />
     <p class="comment">{{ review.comment }}</p>
     <button
-      v-if="review.type === 'POST'"
+      v-if="source === 'post' && canReply && review.type === 'POST'"
       type="button"
       class="reply-button"
       :aria-expanded="replying"
@@ -87,13 +100,13 @@ function dateLabel(value) {
             :aria-label="`View ${reply.creatorName}'s profile`"
           >
             <UserAvatar
-              :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl }"
+              :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto }"
               :size="28"
             />
           </RouterLink>
           <UserAvatar
             v-else
-            :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl }"
+            :user="{ userName: reply.creatorName, photoUrl: reply.creatorPhotoUrl || reply.creatorPhoto }"
             :size="28"
           />
           <strong>{{ reply.creatorName }}</strong>
@@ -102,7 +115,7 @@ function dateLabel(value) {
       </div>
     </div>
     <form
-      v-if="review.type === 'POST' && replying"
+      v-if="source === 'post' && canReply && review.type === 'POST' && replying"
       class="reply-form"
       @submit.prevent="submitReply"
     >
