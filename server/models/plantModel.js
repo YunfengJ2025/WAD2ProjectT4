@@ -119,7 +119,7 @@ const httpError = (status, message) => {
 // grouped into the wateringInfo sub-document here.
 function pickPlantFields(body = {}) {
     const data = {};
-    for (const field of ["plantName", "plantLocation", "rainExposed"]) {
+    for (const field of ["plantName", "plantLocation", "rainExposed", "weatherAdjustmentEnabled"]) {
         if (field in body) data[field] = body[field];
     }
     if ("frequencyDays" in body || "amountMl" in body || "notes" in body) {

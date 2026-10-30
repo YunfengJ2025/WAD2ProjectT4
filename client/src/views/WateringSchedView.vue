@@ -6,6 +6,7 @@ import WeatherHeader from '../components/schedule/WeatherHeader.vue'
 import ScheduleCalendar from '../components/schedule/ScheduleCalendar.vue'
 import ScheduleList from '../components/schedule/ScheduleList.vue'
 import ScheduleAlertBanner from '../components/schedule/ScheduleAlertBanner.vue'
+import OpenRequestsPreview from '../components/schedule/OpenRequestsPreview.vue'
 import { buildSchedule } from '../composables/schedule/buildSchedule'
 import { useWeather } from '../composables/schedule/useWeather'
 import { applyWeatherAdjustments } from '../composables/schedule/applyWeatherAdjustments'
@@ -94,5 +95,8 @@ onMounted(async () => {
       <ScheduleCalendar class="d-none d-md-block" :items="adjustedSchedule" />
       <ScheduleList class="d-md-none" :items="adjustedSchedule" />
     </template>
+
+    <!-- Home page: a few open requests, "View more" goes to Find Nearby -->
+    <OpenRequestsPreview />
   </div>
 </template>

@@ -41,6 +41,8 @@ const form = ref({
   amountMl: props.plant?.wateringInfo.amountMl ? String(props.plant.wateringInfo.amountMl) : '',
   // null = not chosen yet (new plant); editing starts with the saved true/false
   rainExposed: props.plant ? props.plant.rainExposed : null,
+  // Lets the watering schedule change with the weather (off unless ticked)
+  weatherAdjustmentEnabled: props.plant?.weatherAdjustmentEnabled ?? false,
   notes: props.plant?.wateringInfo.notes ?? '',
   lastWateredAt: initialLastWatered,
 })
@@ -159,6 +161,7 @@ function buildFormData() {
   data.append('frequencyDays', String(form.value.frequencyDays).trim())
   data.append('amountMl', String(form.value.amountMl).trim())
   data.append('rainExposed', String(form.value.rainExposed)) // "true" or "false"
+  data.append('weatherAdjustmentEnabled', String(form.value.weatherAdjustmentEnabled))
   data.append('notes', form.value.notes.trim())
   // When editing, only send the date if it changed so the stored time is kept.
   if (!isEdit.value || form.value.lastWateredAt !== initialLastWatered) {
@@ -336,6 +339,23 @@ async function onSubmit() {
         {{ errors.rainExposed }}
       </p>
     </fieldset>
+
+    <!-- Weather adjustment: used by the watering schedule (rain skips, hot-day extras) -->
+    <div class="field">
+      <label class="checkbox" for="weatherAdjustmentEnabled">
+        <input
+          id="weatherAdjustmentEnabled"
+          v-model="form.weatherAdjustmentEnabled"
+          type="checkbox"
+          aria-describedby="weatherAdjustmentEnabled-hint"
+        />
+        <span>Adjust watering for the weather</span>
+      </label>
+      <p id="weatherAdjustmentEnabled-hint" class="hint">
+        Skips watering when rain is forecast (only if the spot gets rain), and adds an extra
+        watering on very hot days.
+      </p>
+    </div>
 
     <div class="field">
       <label for="notes">Care notes</label>
@@ -533,6 +553,28 @@ textarea:focus-visible {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Checkbox with its label text beside it */
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.checkbox input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Segmented radio buttons */
