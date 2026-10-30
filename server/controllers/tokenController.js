@@ -17,7 +17,6 @@ const handleError = (err, res) => {
   res.status(500).json({ message: "Server error" });
 };
 
-
 exports.createTokenTran = async (req, res) => {
   try {
     const txn = await model.createTransaction(req.body);
