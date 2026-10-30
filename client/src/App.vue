@@ -17,17 +17,13 @@ const { show: toast } = useToast()
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
+// Main links. The logo goes to the schedule (/), and Profile, Dashboard,
+// Leaderboard etc. are in the avatar dropdown (NavBar.vue).
 const navigationitems = [
-  { label: 'Community', to: '/community' },
-  { label: 'Recently liked', to: '/recently-liked' },
-  { label: 'Dashboard', to: '/dashboard' },
-  { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },
-  { label: 'Care Requests', to: '/care-requests' },
   { label: 'Find Nearby', to: '/find-nearby' },
-  { label: 'Care Visits', to: '/care-visits' },
-  { label: 'Schedule', to: '/schedule' },
-  { label: 'Reviews', to: '/reviews' }
+  { label: 'Requests', to: '/requests' },
+  { label: 'Community', to: '/community' },
 ]
 
 async function logout() {
