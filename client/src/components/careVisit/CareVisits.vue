@@ -11,17 +11,22 @@ const loading = ref(true)
 const error = ref('')
 const message = ref('')
 const submitting = ref('')
+const paidVisitIds = ref([])
 
 async function load() {
   loading.value = true
   error.value = ''
   try {
-    const [active, past] = await Promise.all([
+    const [active, past, transactions] = await Promise.all([
       auth.authorizedRequest('/care-visits/assignments'),
       auth.authorizedRequest('/care-visits'),
+      auth.authorizedRequest(`/token/user/${auth.user.userId}`),
+      auth.refreshUser(),
     ])
     assignments.value = active.visits
     history.value = past.visits
+    // Hide the claim button only for transactions whose balance update has been applied.
+    paidVisitIds.value = transactions.filter((txn) => txn.type === 'CARE' && txn.balanceApplied).map((txn) => txn.visitId)
   } catch (err) {
     error.value = err.message
   } finally {
@@ -32,6 +37,33 @@ onMounted(load)
 
 function setFile(requestId, event) {
   files.value[requestId] = event.target.files?.[0] || null
+}
+
+async function awardReward(visitId) {
+  // Send only the visit identity; the backend verifies proof and determines the reward.
+  const reward = await auth.authorizedRequest('/token/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'CARE', visitId }),
+  })
+  return reward.transaction.amount
+}
+
+async function claimReward(visit) {
+  // Retry payment from history without uploading proof again for an already completed visit.
+  if (submitting.value) return
+  submitting.value = String(visit.visitId)
+  error.value = ''
+  message.value = ''
+  try {
+    const amount = await awardReward(visit.visitId)
+    message.value = `${amount} tokens awarded for visit #${visit.visitId}.`
+    await load()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    submitting.value = ''
+  }
 }
 
 async function submitVisit(visit) {
@@ -59,28 +91,17 @@ async function submitVisit(visit) {
     message.value = `Visit #${result.visit.visitId} saved with photo proof.`
     files.value[visit.visitId] = null
     actions.value[visit.visitId] = ''
+    // Proof and payment are separate requests: payment failure must not suggest
+    // that the saved photo needs resubmitting. Keep the visit available for a reward retry.
     let rewardError = ''
     try {
-      const reward = await auth.authorizedRequest('/token/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          visitId: result.visit.visitId,
-          reason: `Reward for completing care visit #${result.visit.visitId}`,
-          type: 'CARE',
-          senderId: visit.request.ownerId,
-          receiverId: result.visit.sitterId,
-          amount: visit.request.tokenReward,
-        }),
-      })
-      if (auth.user?.userId === result.visit.sitterId) {
-        auth.user.tokenBalance = reward.receiverBalance
-      }
-      message.value += ` ${visit.request.tokenReward} tokens awarded.`
+      const amount = await awardReward(result.visit.visitId)
+      message.value += ` ${amount} tokens awarded.`
     } catch (err) {
       rewardError = `Your photo proof was saved, but the token reward could not be awarded: ${err.message}`
     }
     await load()
+    // load() clears errors, so restore a payment error after refreshing the visit lists.
     if (rewardError) error.value = rewardError
   } catch (err) {
     error.value = err.message
@@ -148,6 +169,7 @@ const date = (value) => new Date(value).toLocaleString('en-GB')
           ><a v-if="visit.proofUrl" :href="visit.proofUrl" target="_blank" rel="noopener noreferrer"
             >View proof</a
           >
+          <button v-if="visit.status === 'completed' && !paidVisitIds.includes(visit.visitId)" type="button" class="btn btn-outline-primary btn-sm" :disabled="!!submitting" @click="claimReward(visit)">Claim reward</button>
         </li>
       </ul>
     </section>

@@ -6,7 +6,11 @@ const requestItemSchema = new mongoose.Schema({
   visitId: { type: Number, required: true, immutable: true },
   plantId: { type: Number, required: true, immutable: true },
   action: { type: String, required: true, trim: true, maxlength: 100 },
-  status: { type: String, enum: ["pending", "accepted", "completed", "cancelled"], default: "pending" },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "completed", "cancelled"],
+    default: "pending",
+  },
   originalDueAt: { type: Date, required: true },
   dueAt: { type: Date, required: true },
   adjustmentType: { type: String, default: "none" },
@@ -15,7 +19,12 @@ const requestItemSchema = new mongoose.Schema({
 });
 
 requestItemSchema.pre("save", async function () {
-  if (this.isNew && this.requestItemId == null) this.requestItemId = await getNextSequence("requestItemId");
+  if (this.isNew && this.requestItemId == null)
+    this.requestItemId = await getNextSequence("requestItemId");
 });
 
-module.exports = mongoose.model("RequestItem", requestItemSchema, "RequestItem");
+module.exports = mongoose.model(
+  "RequestItem",
+  requestItemSchema,
+  "RequestItem",
+);

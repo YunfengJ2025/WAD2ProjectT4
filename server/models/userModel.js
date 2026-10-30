@@ -11,7 +11,12 @@ const userSchema = new mongoose.Schema(
       sparse: true, // lets multiple documents exist without a userId
     },
     photoUrl: { type: String, default: "" },
-    bio: { type: String, trim: true, maxlength: [500, "Bio cannot exceed 500 characters"], default: "" },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Bio cannot exceed 500 characters"],
+      default: "",
+    },
     photoPublicId: { type: String, default: "", select: false },
     userName: {
       type: String,
@@ -56,6 +61,17 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: [0, "Token balance cannot be negative"],
     },
+    // Reserved tokens remain part of tokenBalance but cannot fund another request.
+    // Store them on the user so checking and freezing funds can use one atomic update.
+    tokenReservations: {
+      type: [
+        {
+          requestId: { type: Number, required: true },
+          amount: { type: Number, required: true, min: 0 },
+        },
+      ],
+      default: [],
+    },
     accountPublic: {
       type: Boolean,
       default: false,
@@ -78,6 +94,78 @@ const httpError = (status, message) => {
   err.status = status;
   return err;
 };
+
+// Total includes frozen tokens; available = total minus all outstanding reservations.
+// Hide exhausted reservations and support older users without a reservations field.
+function tokenSummary(user) {
+  const reservations = (user.tokenReservations || []).filter(
+    (item) => item.amount > 0,
+  );
+  const frozenTokenBalance = reservations.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  return {
+    tokenBalance: user.tokenBalance,
+    frozenTokenBalance,
+    availableTokenBalance: user.tokenBalance - frozenTokenBalance,
+    tokenReservations: reservations.map(({ requestId, amount }) => ({
+      requestId,
+      amount,
+    })),
+  };
+}
+
+async function reserveTokens(userId, requestId, amount) {
+  if (!Number.isSafeInteger(amount) || amount < 1)
+    throw httpError(400, "Invalid total reward");
+  // Check available funds and reserve them in the same database operation.
+  // Reading the balance first would let simultaneous requests spend the same tokens.
+  const result = await User.updateOne(
+    {
+      userId,
+      "tokenReservations.requestId": { $ne: requestId }, // Prevent duplicate reservations.
+      $expr: {
+        $gte: [
+          {
+            $subtract: [
+              "$tokenBalance",
+              { $sum: { $ifNull: ["$tokenReservations.amount", []] } },
+            ],
+          },
+          amount,
+        ],
+      },
+    },
+    { $push: { tokenReservations: { requestId, amount } } },
+  );
+  if (!result.modifiedCount)
+    throw httpError(
+      400,
+      "Insufficient available tokens for all visits in this request",
+    );
+}
+
+async function releaseTokens(userId, requestId, amount) {
+  // Cancellation releases a specific amount, retaining rewards for completed unpaid visits.
+  // Omit amount to remove the whole reservation when rolling back failed request creation.
+  if (amount !== undefined) {
+    await User.updateOne(
+      {
+        userId,
+        tokenReservations: {
+          $elemMatch: { requestId, amount: { $gte: amount } },
+        },
+      },
+      { $inc: { "tokenReservations.$.amount": -amount } },
+    );
+    return;
+  }
+  await User.updateOne(
+    { userId },
+    { $pull: { tokenReservations: { requestId } } },
+  );
+}
 
 // Creates a new user. Only whitelisted fields are accepted, so callers
 // can't set userRole, tokenBalance, etc.
@@ -142,12 +230,20 @@ async function loginUser(email, password) {
 
 // Updates the logged-in user's own details. Only these fields can be changed,
 // so callers can't edit userRole, tokenBalance, etc.
-const EDITABLE_FIELDS = ["userName", "email", "postalCode", "block", "unitNumber", "bio"];
+const EDITABLE_FIELDS = [
+  "userName",
+  "email",
+  "postalCode",
+  "block",
+  "unitNumber",
+  "bio",
+];
 
 async function updateProfile(user, data, file) {
   for (const field of EDITABLE_FIELDS) {
     if (data[field] !== undefined) {
-      if (typeof data[field] !== "string") throw httpError(400, `${field} must be text`);
+      if (typeof data[field] !== "string")
+        throw httpError(400, `${field} must be text`);
       user[field] = data[field].trim();
     }
   }
@@ -185,24 +281,39 @@ async function applyTransactionToBalances(transactionId) {
     throw httpError(404, "Transaction not found or balance already updated");
   }
 
-  const { senderId, receiverId, amount } = txn;
+  const { senderId, receiverId, amount, requestId } = txn;
   let debited = false;
 
   try {
-    // Debit sender (skipped for SYSTEM_GIFT). The $gte filter makes the
-    // balance check and the deduction a single atomic operation.
+    // Care payments consume this request's reserved funds. Reduce total and frozen
+    // tokens together so the owner's available balance stays unchanged by the payout.
+    // System gifts have no sender and skip this debit.
     if (senderId) {
       const res = await User.updateOne(
-        { userId: senderId, tokenBalance: { $gte: amount } },
-        { $inc: { tokenBalance: -amount } },
+        {
+          userId: senderId,
+          tokenBalance: { $gte: amount },
+          tokenReservations: {
+            $elemMatch: { requestId, amount: { $gte: amount } },
+          },
+        },
+        {
+          $inc: {
+            tokenBalance: -amount,
+            "tokenReservations.$.amount": -amount,
+          },
+        },
       );
       if (res.modifiedCount === 0) {
-        throw httpError(400, "Insufficient token balance or sender not found");
+        throw httpError(
+          400,
+          "Care request has insufficient reserved tokens or its owner was not found",
+        );
       }
       debited = true;
     }
 
-    // Credit receiver (skipped for SHOP_PURCHASE)
+    // Credit the sitter or system-gift recipient.
     if (receiverId) {
       const res = await User.updateOne(
         { userId: receiverId },
@@ -215,9 +326,12 @@ async function applyTransactionToBalances(transactionId) {
   } catch (err) {
     // Undo whatever already happened so balances stay consistent
     if (debited) {
+      // Restore both the owner's total and reservation if crediting the sitter failed.
       await User.updateOne(
-        { userId: senderId },
-        { $inc: { tokenBalance: amount } },
+        { userId: senderId, "tokenReservations.requestId": requestId },
+        {
+          $inc: { tokenBalance: amount, "tokenReservations.$.amount": amount },
+        },
       );
     }
     await TokenTransaction.updateOne(
@@ -292,7 +406,6 @@ async function getPublicProfile(userId) {
   };
 }
 
-
 // add to module.exports:
 // Shape of the user object that is safe to send to the client
 function toAuthJSON(user) {
@@ -302,7 +415,7 @@ function toAuthJSON(user) {
     userName: user.userName,
     email: user.email,
     userRole: user.userRole,
-    tokenBalance: user.tokenBalance,
+    ...tokenSummary(user),
     postalCode: user.postalCode,
     block: user.block,
     unitNumber: user.unitNumber,
@@ -313,6 +426,9 @@ function toAuthJSON(user) {
 }
 
 module.exports = {
+  tokenSummary,
+  reserveTokens,
+  releaseTokens,
   User,
   getAllUsers,
   registerUser,

@@ -2,9 +2,8 @@ const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
 const PhotoProof = require("../models/photoProofModel");
-const tokenTransaction = require("../models/tokenModel")
 const { Plant } = require("../models/plantModel");
-const { User } = require("../models/userModel");
+const { User, reserveTokens, releaseTokens } = require("../models/userModel");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const dateInSingapore = (value) => new Date(`${value}T00:00:00+08:00`);
@@ -90,10 +89,18 @@ exports.create = async (req, res) => {
       endDate,
       note: req.body.note || "",
       tokenReward: Number(req.body.tokenReward),
+      status: "funding", // Keep the request unavailable until funding and setup succeed.
     });
     const createdVisits = [];
     const createdItems = [];
     try {
+      // Include both dates: a three-day request needs three daily visit rewards.
+      const visitCount = Math.floor((endDate - startDate) / 86_400_000) + 1;
+      await reserveTokens(
+        req.userId,
+        request.requestId,
+        request.tokenReward * visitCount,
+      );
       // The date range represents one planned plant-care visit per calendar day.
       for (
         let dueAt = new Date(startDate);
@@ -117,10 +124,15 @@ exports.create = async (req, res) => {
         });
         createdItems.push(item);
       }
+      // Publish only after funds are reserved and all daily visits have been created.
+      request.status = "open";
+      await request.save();
     } catch (err) {
       await Promise.all(createdItems.map((item) => item.deleteOne()));
       await Promise.all(createdVisits.map((visit) => visit.deleteOne()));
       await request.deleteOne();
+      // Failed setup must not leave funds frozen for a request that no longer exists.
+      await releaseTokens(req.userId, request.requestId);
       throw err;
     }
     res.status(201).json({ request: { ...request.toObject(), plant } });
@@ -181,7 +193,7 @@ exports.cancel = async (req, res) => {
       );
     request.status = "cancelled";
     await request.save();
-    await CareVisit.updateMany(
+    const cancelled = await CareVisit.updateMany(
       { requestId, status: "open" },
       { $set: { status: "cancelled" } },
     );
@@ -195,6 +207,13 @@ exports.cancel = async (req, res) => {
         status: "pending",
       },
       { $set: { status: "cancelled" } },
+    );
+    // Release only visits changed from open to cancelled. Completed visits may
+    // still await payment, so their rewards must remain reserved.
+    await releaseTokens(
+      req.userId,
+      request.requestId,
+      cancelled.modifiedCount * request.tokenReward,
     );
     res.json({ request });
   } catch (err) {
@@ -304,7 +323,6 @@ exports.addVisitProof = async (req, res) => {
     if (!remaining) {
       request.status = "completed";
       await request.save();
-
     }
     res.status(201).json({
       visit: {

@@ -1,5 +1,5 @@
 // tokenTransactionController.js
-const model = require("../models/tokenModel");
+const tokenTransaction = require("../models/tokenModel");
 const userModel = require("../models/userModel");
 
 const handleError = (err, res) => {
@@ -19,7 +19,43 @@ const handleError = (err, res) => {
 
 exports.createTokenTran = async (req, res) => {
   try {
-    const txn = await model.createTransaction(req.body);
+    // Public claims are for care rewards; registration issues system gifts internally.
+    if (req.body.type !== "CARE") {
+      return res
+        .status(400)
+        .json({ message: "Only care rewards can be created here" });
+    }
+    const CareVisit = require("../models/careVisitModel");
+    const CareRequest = require("../models/careRequestModel");
+    const PhotoProof = require("../models/photoProofModel");
+    // Only the authenticated sitter can claim a completed visit with saved photo proof.
+    const visit = await CareVisit.findOne({
+      visitId: Number(req.body.visitId),
+      sitterId: req.userId,
+      status: "completed",
+    });
+    if (!visit || !(await PhotoProof.exists({ visitId: visit.visitId }))) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Complete your visit with photo proof before claiming the reward",
+        });
+    }
+    const request = await CareRequest.findOne({ requestId: visit.requestId });
+    if (!request)
+      return res.status(404).json({ message: "Care request not found" });
+    // Derive the amount and participants from stored records, never client-supplied
+    // values that could increase the reward or charge a different owner.
+    const txn = await tokenTransaction.createTransaction({
+      type: "CARE",
+      visitId: visit.visitId,
+      requestId: request.requestId,
+      senderId: request.ownerId,
+      receiverId: visit.sitterId,
+      amount: request.tokenReward,
+      reason: `Reward for care visit #${visit.visitId} for request #${request.requestId}`,
+    });
     try {
       const result = await userModel.applyTransactionToBalances(
         txn.transactionId,
@@ -27,7 +63,7 @@ exports.createTokenTran = async (req, res) => {
       res.status(201).json(result);
     } catch (err) {
       // balance update failed (e.g. insufficient funds): don't keep the record
-      await model.TokenTransaction.deleteOne({ _id: txn._id });
+      await tokenTransaction.TokenTransaction.deleteOne({ _id: txn._id });
       throw err;
     }
   } catch (err) {
@@ -37,14 +73,14 @@ exports.createTokenTran = async (req, res) => {
 
 exports.getTranHistoryByUser = async (req, res) => {
   try {
-    res.json(await model.getTransactionsByUser(Number(req.params.userId)));
+    res.json(await tokenTransaction.getTransactionsByUser(Number(req.params.userId)));
   } catch (err) {
     handleError(err, res);
   }
 };
 exports.getAllTokenTran = async (req, res) => {
   try {
-    res.json(await model.getAllTransactions());
+    res.json(await tokenTransaction.getAllTransactions());
   } catch (err) {
     handleError(err, res);
   }
@@ -53,7 +89,7 @@ exports.getAllTokenTran = async (req, res) => {
 exports.getTranByType = async (req, res) => {
   try {
     // uppercase so /type/care and /type/CARE both work
-    res.json(await model.getTransactionsByType(req.params.type.toUpperCase()));
+    res.json(await tokenTransaction.getTransactionsByType(req.params.type.toUpperCase()));
   } catch (err) {
     handleError(err, res);
   }

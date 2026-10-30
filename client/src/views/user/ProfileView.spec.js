@@ -12,6 +12,7 @@ beforeEach(() => {
   const pinia = createPinia()
   auth = useAuthStore(pinia)
   auth.accessToken = 'token'
+  vi.spyOn(auth, 'refreshUser').mockResolvedValue()
   auth.user = { userId: 1, userName: 'Gardener', email: 'garden@example.com', block: '123A',
     unitNumber: '#05-12', postalCode: '123456', tokenBalance: 50, photoUrl: '', createdAt: '2026-01-01' }
   vi.stubGlobal('fetch', vi.fn())
