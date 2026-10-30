@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ProfileReviews from '@/components/user/ProfileReviews.vue'
 import ProfilePosts from '@/components/user/ProfilePosts.vue'
+import TokenBalance from '@/components/token/TokenBalance.vue'
 import '@/assets/profile.css'
 
 const auth = useAuthStore()
@@ -305,7 +306,8 @@ async function save() {
             <dl class="account-summary profile-meta">
               <div>
                 <dt>Community tokens</dt>
-                <dd>{{ user.tokenBalance ?? 0 }} <span>tokens</span></dd>
+                <!-- Share the same balance breakdown and reservation card as the request form. -->
+                <dd><TokenBalance /></dd>
               </div>
               <div v-if="memberSince">
                 <dt>Member since</dt>
