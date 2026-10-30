@@ -2,6 +2,7 @@ const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
 const PhotoProof = require("../models/photoProofModel");
+const tokenTransaction = require("../models/tokenModel")
 const { Plant } = require("../models/plantModel");
 const { User } = require("../models/userModel");
 
@@ -12,8 +13,11 @@ function handleError(err, res) {
   if (err.status) return res.status(err.status).json({ message: err.message });
   if (err.name === "ValidationError" || err.name === "CastError") {
     const errors = {};
-    for (const [key, detail] of Object.entries(err.errors || {})) errors[key] = detail.message;
-    return res.status(400).json({ message: "Please check the request details", errors });
+    for (const [key, detail] of Object.entries(err.errors || {}))
+      errors[key] = detail.message;
+    return res
+      .status(400)
+      .json({ message: "Please check the request details", errors });
   }
   console.error(err);
   return res.status(500).json({ message: "Server error" });
@@ -31,8 +35,12 @@ async function enrichVisits(visits) {
   const plantIds = [...new Set(items.map((item) => item.plantId))];
   const ownerIds = [...new Set(requests.map((request) => request.ownerId))];
   const [plants, owners] = await Promise.all([
-    Plant.find({ plantId: { $in: plantIds } }).select("plantId plantName photoUrl plantLocation").lean(),
-    User.find({ userId: { $in: ownerIds } }).select("userId userName block postalCode").lean(),
+    Plant.find({ plantId: { $in: plantIds } })
+      .select("plantId plantName photoUrl plantLocation")
+      .lean(),
+    User.find({ userId: { $in: ownerIds } })
+      .select("userId userName block postalCode")
+      .lean(),
   ]);
   const requestById = new Map(requests.map((r) => [r.requestId, r]));
   const itemByVisit = new Map(items.map((i) => [i.visitId, i]));
@@ -58,31 +66,54 @@ async function enrichVisits(visits) {
 exports.create = async (req, res) => {
   try {
     const plantId = Number(req.body.plantId);
-    if (!Number.isSafeInteger(plantId) || plantId < 1) throw fail(400, "Choose one of your plants");
+    if (!Number.isSafeInteger(plantId) || plantId < 1)
+      throw fail(400, "Choose one of your plants");
     const plant = await Plant.findOne({ plantId, ownerId: req.userId });
     if (!plant) throw fail(404, "Plant not found in your collection");
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-    const startDate = datePattern.test(req.body.startDate || "") ? dateInSingapore(req.body.startDate) : new Date(NaN);
-    const endDate = datePattern.test(req.body.endDate || "") ? dateInSingapore(req.body.endDate) : new Date(NaN);
-    if (Number.isNaN(startDate.getTime())) throw fail(400, "Enter a valid start date");
-    if (Number.isNaN(endDate.getTime())) throw fail(400, "Enter a valid end date");
-    if (endDate < startDate) throw fail(400, "End date must be on or after start date");
+    const startDate = datePattern.test(req.body.startDate || "")
+      ? dateInSingapore(req.body.startDate)
+      : new Date(NaN);
+    const endDate = datePattern.test(req.body.endDate || "")
+      ? dateInSingapore(req.body.endDate)
+      : new Date(NaN);
+    if (Number.isNaN(startDate.getTime()))
+      throw fail(400, "Enter a valid start date");
+    if (Number.isNaN(endDate.getTime()))
+      throw fail(400, "Enter a valid end date");
+    if (endDate < startDate)
+      throw fail(400, "End date must be on or after start date");
 
     const request = await CareRequest.create({
-      ownerId: req.userId, startDate, endDate,
-      note: req.body.note || "", tokenReward: Number(req.body.tokenReward),
+      ownerId: req.userId,
+      startDate,
+      endDate,
+      note: req.body.note || "",
+      tokenReward: Number(req.body.tokenReward),
     });
     const createdVisits = [];
     const createdItems = [];
     try {
       // The date range represents one planned plant-care visit per calendar day.
-      for (let dueAt = new Date(startDate); dueAt <= endDate; dueAt = new Date(dueAt.getTime() + 86_400_000)) {
+      for (
+        let dueAt = new Date(startDate);
+        dueAt <= endDate;
+        dueAt = new Date(dueAt.getTime() + 86_400_000)
+      ) {
         const visitDate = new Date(dueAt.getTime() + 12 * 60 * 60 * 1000);
-        const visit = await CareVisit.create({ requestId: request.requestId, visitDate, status: "open" });
+        const visit = await CareVisit.create({
+          requestId: request.requestId,
+          visitDate,
+          status: "open",
+        });
         createdVisits.push(visit);
         const item = await RequestItem.create({
-          visitId: visit.visitId, plantId, action: "Plant care", status: "pending",
-          originalDueAt: visitDate, dueAt: visitDate,
+          visitId: visit.visitId,
+          plantId,
+          action: "Plant care",
+          status: "pending",
+          originalDueAt: visitDate,
+          dueAt: visitDate,
         });
         createdItems.push(item);
       }
@@ -93,68 +124,137 @@ exports.create = async (req, res) => {
       throw err;
     }
     res.status(201).json({ request: { ...request.toObject(), plant } });
-  } catch (err) { handleError(err, res); }
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.mine = async (req, res) => {
   try {
-    const requests = await CareRequest.find({ ownerId: req.userId }).sort({ createdAt: -1 }).lean();
-    const visits = await CareVisit.find({ requestId: { $in: requests.map((r) => r.requestId) } }).sort({ visitDate: 1 }).lean();
+    const requests = await CareRequest.find({ ownerId: req.userId })
+      .sort({ createdAt: -1 })
+      .lean();
+    const visits = await CareVisit.find({
+      requestId: { $in: requests.map((r) => r.requestId) },
+    })
+      .sort({ visitDate: 1 })
+      .lean();
     const enriched = await enrichVisits(visits);
     const grouped = new Map();
-    for (const visit of enriched) grouped.set(visit.requestId, [...(grouped.get(visit.requestId) || []), visit]);
-    res.json({ requests: requests.map((request) => {
-      const careVisits = grouped.get(request.requestId) || [];
-      return { ...request, plant: careVisits[0]?.plant || null, visits: careVisits };
-    }) });
-  } catch (err) { handleError(err, res); }
+    for (const visit of enriched)
+      grouped.set(visit.requestId, [
+        ...(grouped.get(visit.requestId) || []),
+        visit,
+      ]);
+    res.json({
+      requests: requests.map((request) => {
+        const careVisits = grouped.get(request.requestId) || [];
+        return {
+          ...request,
+          plant: careVisits[0]?.plant || null,
+          visits: careVisits,
+        };
+      }),
+    });
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.cancel = async (req, res) => {
   try {
     const requestId = Number(req.params.requestId);
-    const request = await CareRequest.findOne({ requestId, ownerId: req.userId, status: { $in: ["open", "in_progress"] } });
+    const request = await CareRequest.findOne({
+      requestId,
+      ownerId: req.userId,
+      status: { $in: ["open", "in_progress"] },
+    });
     if (!request) throw fail(404, "Active request not found");
-    const claimed = await CareVisit.exists({ requestId, status: { $in: ["accepted"] } });
-    if (claimed) throw fail(409, "A sitter has already accepted a visit; cancel after that visit is completed");
+    const claimed = await CareVisit.exists({
+      requestId,
+      status: { $in: ["accepted"] },
+    });
+    if (claimed)
+      throw fail(
+        409,
+        "A sitter has already accepted a visit; cancel after that visit is completed",
+      );
     request.status = "cancelled";
     await request.save();
-    await CareVisit.updateMany({ requestId, status: "open" }, { $set: { status: "cancelled" } });
-    await RequestItem.updateMany({ visitId: { $in: (await CareVisit.find({ requestId }).select("visitId").lean()).map((v) => v.visitId) }, status: "pending" }, { $set: { status: "cancelled" } });
+    await CareVisit.updateMany(
+      { requestId, status: "open" },
+      { $set: { status: "cancelled" } },
+    );
+    await RequestItem.updateMany(
+      {
+        visitId: {
+          $in: (
+            await CareVisit.find({ requestId }).select("visitId").lean()
+          ).map((v) => v.visitId),
+        },
+        status: "pending",
+      },
+      { $set: { status: "cancelled" } },
+    );
     res.json({ request });
-  } catch (err) { handleError(err, res); }
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.availableVisits = async (req, res) => {
   try {
     const visits = await CareVisit.find({
-      sitterId: null, status: "open",
-    }).sort({ visitDate: 1 }).lean();
+      sitterId: null,
+      status: "open",
+    })
+      .sort({ visitDate: 1 })
+      .lean();
     const enriched = await enrichVisits(visits);
-    res.json({ visits: enriched.filter((visit) => visit.request?.ownerId !== req.userId && ["open", "in_progress"].includes(visit.request?.status)) });
-  } catch (err) { handleError(err, res); }
+    res.json({
+      visits: enriched.filter(
+        (visit) =>
+          visit.request?.ownerId !== req.userId &&
+          ["open", "in_progress"].includes(visit.request?.status),
+      ),
+    });
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.acceptVisit = async (req, res) => {
   try {
     const visitId = Number(req.params.visitId);
     if (!Number.isSafeInteger(visitId)) throw fail(404, "Visit not found");
-    const candidate = await CareVisit.findOne({ visitId, sitterId: null, status: "open" });
+    const candidate = await CareVisit.findOne({
+      visitId,
+      sitterId: null,
+      status: "open",
+    });
     if (!candidate) throw fail(409, "This visit is no longer available");
-    const request = await CareRequest.findOne({ requestId: candidate.requestId, ownerId: { $ne: req.userId }, status: { $in: ["open", "in_progress"] } });
+    const request = await CareRequest.findOne({
+      requestId: candidate.requestId,
+      ownerId: { $ne: req.userId },
+      status: { $in: ["open", "in_progress"] },
+    });
     if (!request) throw fail(404, "Request not found");
     const visit = await CareVisit.findOneAndUpdate(
       { visitId, sitterId: null, status: "open" },
-      { $set: { sitterId: req.userId, status: "accepted" } }, { new: true },
+      { $set: { sitterId: req.userId, status: "accepted" } },
+      { new: true },
     );
-    if (!visit) throw fail(409, "This visit was just accepted by another sitter");
+    if (!visit)
+      throw fail(409, "This visit was just accepted by another sitter");
     await RequestItem.updateOne({ visitId }, { $set: { status: "accepted" } });
     if (request.status === "open") {
       request.status = "in_progress";
       await request.save();
     }
     res.json({ visit });
-  } catch (err) { handleError(err, res); }
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.addVisitProof = async (req, res) => {
@@ -164,11 +264,19 @@ exports.addVisitProof = async (req, res) => {
   let itemDoc;
   try {
     const visitId = Number(req.params.visitId);
-    visitDoc = await CareVisit.findOne({ visitId, sitterId: req.userId, status: "accepted" });
+    visitDoc = await CareVisit.findOne({
+      visitId,
+      sitterId: req.userId,
+      status: "accepted",
+    });
     if (!visitDoc) throw fail(404, "Accepted visit not found");
     if (!req.file) throw fail(400, "Upload a proof photo");
-    if (!req.body.action?.trim()) throw fail(400, "Describe the action you completed");
-    const request = await CareRequest.findOne({ requestId: visitDoc.requestId, status: "in_progress" });
+    if (!req.body.action?.trim())
+      throw fail(400, "Describe the action you completed");
+    const request = await CareRequest.findOne({
+      requestId: visitDoc.requestId,
+      status: "in_progress",
+    });
     if (!request) throw fail(404, "Active care request not found");
     const visitDate = new Date();
     const { uploadImage, FOLDERS } = require("../config/cloudinary");
@@ -180,18 +288,31 @@ exports.addVisitProof = async (req, res) => {
     itemDoc.dueAt = visitDate;
     await itemDoc.save();
     proofDoc = await PhotoProof.create({
-      requestItemId: itemDoc.requestItemId, visitId: visitDoc.visitId,
-      photoUrl: uploaded.url, photoPublicId: uploaded.publicId, takenAt: visitDate,
+      requestItemId: itemDoc.requestItemId,
+      visitId: visitDoc.visitId,
+      photoUrl: uploaded.url,
+      photoPublicId: uploaded.publicId,
+      takenAt: visitDate,
     });
     visitDoc.status = "completed";
     visitDoc.doneAt = visitDate;
     await visitDoc.save();
-    const remaining = await CareVisit.exists({ requestId: request.requestId, status: { $in: ["open", "accepted"] } });
+    const remaining = await CareVisit.exists({
+      requestId: request.requestId,
+      status: { $in: ["open", "accepted"] },
+    });
     if (!remaining) {
       request.status = "completed";
       await request.save();
+
     }
-    res.status(201).json({ visit: { ...visitDoc.toObject(), action: itemDoc.action, proofUrl: proofDoc.photoUrl } });
+    res.status(201).json({
+      visit: {
+        ...visitDoc.toObject(),
+        action: itemDoc.action,
+        proofUrl: proofDoc.photoUrl,
+      },
+    });
   } catch (err) {
     if (proofDoc) await proofDoc.deleteOne();
     if (uploaded) {
@@ -204,14 +325,25 @@ exports.addVisitProof = async (req, res) => {
 
 exports.myVisits = async (req, res) => {
   try {
-    const visits = await CareVisit.find({ sitterId: req.userId }).sort({ visitDate: -1 }).lean();
+    const visits = await CareVisit.find({ sitterId: req.userId })
+      .sort({ visitDate: -1 })
+      .lean();
     res.json({ visits: await enrichVisits(visits) });
-  } catch (err) { handleError(err, res); }
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 exports.myAssignments = async (req, res) => {
   try {
-    const visits = await CareVisit.find({ sitterId: req.userId, status: "accepted" }).sort({ visitDate: 1 }).lean();
+    const visits = await CareVisit.find({
+      sitterId: req.userId,
+      status: "accepted",
+    })
+      .sort({ visitDate: 1 })
+      .lean();
     res.json({ visits: await enrichVisits(visits) });
-  } catch (err) { handleError(err, res); }
+  } catch (err) {
+    handleError(err, res);
+  }
 };

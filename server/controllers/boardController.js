@@ -23,12 +23,14 @@ exports.getLeaderboard = async (req, res) => {
     if (area && area !== "All") {
       filter.$or = [
         { neighbourhood: new RegExp(`^${area}$`, "i") },
-        { block: new RegExp(area, "i") }
+        { block: new RegExp(area, "i") },
       ];
     }
 
     const users = await User.find(filter)
-      .select("userId userName tokenBalance neighbourhood block unitNumber accountPublic")
+      .select(
+        "userId userName tokenBalance neighbourhood block unitNumber accountPublic",
+      )
       .sort({ tokenBalance: -1 })
       .lean();
 
@@ -38,25 +40,32 @@ exports.getLeaderboard = async (req, res) => {
       return {
         id: uId,
         name: name,
-        neighbourhood: u.neighbourhood || (u.block ? `Blk ${u.block}` : "Singapore"),
+        neighbourhood:
+          u.neighbourhood || (u.block ? `Blk ${u.block}` : "Singapore"),
         availableTokens: u.tokenBalance || 0,
         avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
         ratingAverage: 4.9,
         ratingCount: 12,
         badgesCount: 3,
         rank: index + 1,
-        accountPublic: u.accountPublic
+        accountPublic: u.accountPublic,
       };
     });
 
     res.json({
       success: true,
       count: formattedLeaderboard.length,
-      leaderboard: formattedLeaderboard
+      leaderboard: formattedLeaderboard,
     });
   } catch (err) {
     console.error("Error fetching leaderboard:", err);
-    res.status(500).json({ success: false, message: "Error fetching leaderboard", error: err.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching leaderboard",
+        error: err.message,
+      });
   }
 };
 
@@ -72,7 +81,9 @@ exports.toggleOptOut = async (req, res) => {
 
     const user = await User.findOne(query);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.accountPublic = !user.accountPublic;
@@ -81,11 +92,17 @@ exports.toggleOptOut = async (req, res) => {
     res.json({
       success: true,
       message: `User leaderboard visibility set to ${user.accountPublic}`,
-      accountPublic: user.accountPublic
+      accountPublic: user.accountPublic,
     });
   } catch (err) {
     console.error("Error toggling opt-out:", err);
-    res.status(500).json({ success: false, message: "Error toggling opt-out status", error: err.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error toggling opt-out status",
+        error: err.message,
+      });
   }
 };
 
@@ -101,14 +118,18 @@ exports.getUserStats = async (req, res) => {
 
     const user = await User.findOne(query).lean();
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // 1. Plants count from 'Plant' or 'plants' collection
     let totalPlantsOwned = 0;
     try {
       const plantCol = getCollection("Plant");
-      totalPlantsOwned = await plantCol.countDocuments({ ownerId: !isNaN(numUserId) ? numUserId : user.userId });
+      totalPlantsOwned = await plantCol.countDocuments({
+        ownerId: !isNaN(numUserId) ? numUserId : user.userId,
+      });
     } catch (e) {}
 
     // 2. Care Requests & Visits count
@@ -119,14 +140,18 @@ exports.getUserStats = async (req, res) => {
     try {
       const reqCol = getCollection("carerequests");
       careRequestsPosted = await reqCol.countDocuments({
-        $or: [{ requesterId: numUserId }, { ownerId: numUserId }, { userId: numUserId }]
+        $or: [
+          { requesterId: numUserId },
+          { ownerId: numUserId },
+          { userId: numUserId },
+        ],
       });
     } catch (e) {}
 
     try {
       const visitCol = getCollection("carevisits");
       visitsCompleted = await visitCol.countDocuments({
-        $or: [{ sitterId: numUserId }, { helperId: numUserId }]
+        $or: [{ sitterId: numUserId }, { helperId: numUserId }],
       });
       plantsCaredFor = visitsCompleted * 3;
     } catch (e) {}
@@ -137,14 +162,18 @@ exports.getUserStats = async (req, res) => {
 
     try {
       const tokenCol = getCollection("tokentransactions");
-      const earned = await tokenCol.aggregate([
-        { $match: { receiverId: numUserId } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-      ]).toArray();
-      const spent = await tokenCol.aggregate([
-        { $match: { senderId: numUserId } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-      ]).toArray();
+      const earned = await tokenCol
+        .aggregate([
+          { $match: { receiverId: numUserId } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ])
+        .toArray();
+      const spent = await tokenCol
+        .aggregate([
+          { $match: { senderId: numUserId } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ])
+        .toArray();
 
       if (earned.length > 0) tokensEarnedTotal = earned[0].total;
       if (spent.length > 0) tokensSpentTotal = spent[0].total;
@@ -154,36 +183,65 @@ exports.getUserStats = async (req, res) => {
     const userPayload = {
       name: userName,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userName)}`,
-      neighbourhood: user.neighbourhood || (user.block ? `Blk ${user.block}` : "Singapore"),
+      neighbourhood:
+        user.neighbourhood || (user.block ? `Blk ${user.block}` : "Singapore"),
       availableTokens: user.tokenBalance || 0,
       tokensEarnedTotal,
       tokensSpentTotal,
       ratingAverage: 4.9,
-      ratingCount: 14
+      ratingCount: 14,
     };
 
     const statsPayload = {
       totalPlantsOwned,
       careRequestsPosted,
       visitsCompleted,
-      plantsCaredFor: plantsCaredFor || totalPlantsOwned
+      plantsCaredFor: plantsCaredFor || totalPlantsOwned,
     };
 
     const badges = [
-      { id: "first_sit", name: "First Sit", description: "Completed your first plant sitting visit!", unlocked: visitsCompleted >= 1, progress: visitsCompleted >= 1 ? 100 : 0, icon: "🌱" },
-      { id: "ten_plants_saved", name: "10 Plants Saved", description: "Successfully watered and cared for 10 plants.", unlocked: plantsCaredFor >= 10, progress: Math.min(100, Math.round((plantsCaredFor / 10) * 100)), icon: "🌿" },
-      { id: "rainy_day_hero", name: "Rainy Day Hero", description: "Cared for corridor plants during an active weather alert.", unlocked: true, progress: 100, icon: "🌧️" }
+      {
+        id: "first_sit",
+        name: "First Sit",
+        description: "Completed your first plant sitting visit!",
+        unlocked: visitsCompleted >= 1,
+        progress: visitsCompleted >= 1 ? 100 : 0,
+        icon: "🌱",
+      },
+      {
+        id: "ten_plants_saved",
+        name: "10 Plants Saved",
+        description: "Successfully watered and cared for 10 plants.",
+        unlocked: plantsCaredFor >= 10,
+        progress: Math.min(100, Math.round((plantsCaredFor / 10) * 100)),
+        icon: "🌿",
+      },
+      {
+        id: "rainy_day_hero",
+        name: "Rainy Day Hero",
+        description:
+          "Cared for corridor plants during an active weather alert.",
+        unlocked: true,
+        progress: 100,
+        icon: "🌧️",
+      },
     ];
 
     res.json({
       success: true,
       user: userPayload,
       stats: statsPayload,
-      badges
+      badges,
     });
   } catch (err) {
     console.error("Error fetching user stats:", err);
-    res.status(500).json({ success: false, message: "Error fetching user stats", error: err.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching user stats",
+        error: err.message,
+      });
   }
 };
 
@@ -197,7 +255,20 @@ exports.getUserCharts = async (req, res) => {
     const numUserId = Number(userId);
 
     // Labels for the last 6 months
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const labels = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
@@ -213,10 +284,12 @@ exports.getUserCharts = async (req, res) => {
     try {
       const tokenCol = getCollection("tokentransactions");
       const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-      const txs = await tokenCol.find({
-        $or: [{ receiverId: numUserId }, { senderId: numUserId }],
-        createdAt: { $gte: sixMonthsAgo }
-      }).toArray();
+      const txs = await tokenCol
+        .find({
+          $or: [{ receiverId: numUserId }, { senderId: numUserId }],
+          createdAt: { $gte: sixMonthsAgo },
+        })
+        .toArray();
 
       txs.forEach((tx) => {
         const txMonth = new Date(tx.createdAt).getMonth();
@@ -250,9 +323,11 @@ exports.getUserCharts = async (req, res) => {
     // Check carerequests for monthly requests posted
     try {
       const reqCol = getCollection("carerequests");
-      const reqs = await reqCol.find({
-        $or: [{ requesterId: numUserId }, { ownerId: numUserId }]
-      }).toArray();
+      const reqs = await reqCol
+        .find({
+          $or: [{ requesterId: numUserId }, { ownerId: numUserId }],
+        })
+        .toArray();
       reqs.forEach((r) => {
         const rMonth = new Date(r.createdAt).getMonth();
         const monthLabel = monthNames[rMonth];
@@ -264,13 +339,15 @@ exports.getUserCharts = async (req, res) => {
     } catch (e) {}
 
     // Provide default non-zero baseline curve if no transactions in historical months yet
-    const hasTokenData = tokensEarnedData.some((v) => v > 0) || tokensSpentData.some((v) => v > 0);
+    const hasTokenData =
+      tokensEarnedData.some((v) => v > 0) || tokensSpentData.some((v) => v > 0);
     if (!hasTokenData) {
       tokensEarnedData = [20, 30, 45, 50, 35, 25];
       tokensSpentData = [15, 20, 10, 15, 10, 5];
     }
 
-    const hasActivityData = visitsData.some((v) => v > 0) || requestsData.some((v) => v > 0);
+    const hasActivityData =
+      visitsData.some((v) => v > 0) || requestsData.some((v) => v > 0);
     if (!hasActivityData) {
       visitsData = [1, 2, 4, 5, 3, 2];
       requestsData = [2, 1, 3, 2, 1, 2];
@@ -285,15 +362,15 @@ exports.getUserCharts = async (req, res) => {
             label: "Visits Completed (Helper)",
             backgroundColor: "#0ea5e9",
             borderRadius: 6,
-            data: visitsData
+            data: visitsData,
           },
           {
             label: "Requests Posted (Owner)",
             backgroundColor: "#8b5cf6",
             borderRadius: 6,
-            data: requestsData
-          }
-        ]
+            data: requestsData,
+          },
+        ],
       },
       tokenFlowChart: {
         labels,
@@ -302,19 +379,25 @@ exports.getUserCharts = async (req, res) => {
             label: "Tokens Earned",
             backgroundColor: "#22c55e",
             borderRadius: 6,
-            data: tokensEarnedData
+            data: tokensEarnedData,
           },
           {
             label: "Tokens Spent",
             backgroundColor: "#f59e0b",
             borderRadius: 6,
-            data: tokensSpentData
-          }
-        ]
-      }
+            data: tokensSpentData,
+          },
+        ],
+      },
     });
   } catch (err) {
     console.error("Error fetching user charts:", err);
-    res.status(500).json({ success: false, message: "Error fetching user charts", error: err.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching user charts",
+        error: err.message,
+      });
   }
 };
