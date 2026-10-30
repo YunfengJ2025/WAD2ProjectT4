@@ -81,7 +81,7 @@ const plantSchema = new mongoose.Schema(
             default: null,
             validate: {
                 // Allow a minute of leeway for clock differences.
-                validator: (date) => date == null || date.getTime() <= Date.now() + 60_000,
+                validator: (date) => date == null || date.getTime() <= Date.now() + 60000,
                 message: "Last watered date cannot be in the future",
             },
         },
@@ -89,7 +89,8 @@ const plantSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-// Index so "find all plants for this owner" is fast (most queries filter by ownerId).
+// Index on ownerId (then plantLocation) so "find all plants for this owner"
+// is fast. ownerId comes first, so queries on ownerId alone use it too.
 plantSchema.index({ ownerId: 1, plantLocation: 1 });
 
 // Runs automatically before every save.

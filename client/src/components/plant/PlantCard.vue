@@ -2,7 +2,6 @@
 // PlantCard: shows one plant in the My Plants grid.
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { photoSrc } from '@/api/plants'
 import { getWateringStatus } from '@/utils/wateringStatus'
 import StatusPill from './StatusPill.vue'
 
@@ -38,7 +37,7 @@ const frequency = computed(() => {
     <div class="photo">
       <img
         v-if="plant.photoUrl && !photoFailed"
-        :src="photoSrc(plant.photoUrl)"
+        :src="plant.photoUrl"
         :alt="`Photo of ${plant.plantName}`"
         loading="lazy"
         @error="photoFailed = true"

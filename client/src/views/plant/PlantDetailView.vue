@@ -1,9 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusPill from '@/components/plant/StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { photoSrc } from '@/api/plants'
 import { usePlantsStore } from '@/stores/plants'
 import { getWateringStatus, startOfDay } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
@@ -48,7 +47,9 @@ async function load() {
     loading.value = false
   }
 }
-watch(() => route.params.plantId, load, { immediate: true })
+// App.vue's <RouterView :key="route.path"> rebuilds this page for each plant,
+// so loading once on mount is enough.
+onMounted(load)
 
 const status = computed(() => plant.value && getWateringStatus(plant.value))
 
@@ -63,8 +64,9 @@ const fullDate = (date) =>
 // "250 ml, every 2 days" (older plants may have no amount saved)
 const frequency = computed(() => {
   const { frequencyDays: days, amountMl } = plant.value.wateringInfo
+  if (!amountMl) return days === 1 ? 'Every day' : `Every ${days} days`
   const often = days === 1 ? 'every day' : `every ${days} days`
-  return amountMl ? `${amountMl} ml, ${often}` : often[0].toUpperCase() + often.slice(1)
+  return `${amountMl} ml, ${often}`
 })
 
 // The next four waterings. Anything already due or overdue counts as today.
@@ -73,11 +75,13 @@ const schedule = computed(() => {
   const next = status.value.nextDate
   const start = next && next > today ? next : today
   const freq = plant.value.wateringInfo.frequencyDays
-  return Array.from({ length: 4 }, (_, i) => {
+  const dates = []
+  for (let i = 0; i < 4; i++) {
     const d = new Date(start)
     d.setDate(d.getDate() + i * freq)
-    return { date: d, isToday: d.getTime() === today.getTime() }
-  })
+    dates.push({ date: d, isToday: d.getTime() === today.getTime() })
+  }
+  return dates
 })
 
 async function onDelete() {
@@ -116,7 +120,7 @@ async function onDelete() {
       <div class="photo">
         <img
           v-if="plant.photoUrl && !photoFailed"
-          :src="photoSrc(plant.photoUrl)"
+          :src="plant.photoUrl"
           :alt="`Photo of ${plant.plantName}`"
           @error="photoFailed = true"
         />
@@ -138,24 +142,24 @@ async function onDelete() {
           <h1>{{ plant.plantName }}</h1>
         </header>
 
-        <dl class="facts">
+        <div class="facts">
           <div>
-            <dt>Where to find it</dt>
-            <dd>{{ plant.plantLocation }}</dd>
+            <p class="label">Where to find it</p>
+            <p class="value">{{ plant.plantLocation }}</p>
           </div>
           <div>
-            <dt>Rain</dt>
-            <dd>{{ plant.rainExposed ? 'Exposed to rain' : 'Sheltered' }}</dd>
+            <p class="label">Rain</p>
+            <p class="value">{{ plant.rainExposed ? 'Exposed to rain' : 'Sheltered' }}</p>
           </div>
           <div>
-            <dt>Watering</dt>
-            <dd>{{ frequency }}</dd>
+            <p class="label">Watering</p>
+            <p class="value">{{ frequency }}</p>
           </div>
           <div>
-            <dt>Last watered</dt>
-            <dd>{{ plant.lastWateredAt ? fullDate(plant.lastWateredAt) : 'Not yet' }}</dd>
+            <p class="label">Last watered</p>
+            <p class="value">{{ plant.lastWateredAt ? fullDate(plant.lastWateredAt) : 'Not yet' }}</p>
           </div>
-        </dl>
+        </div>
 
         <section class="block">
           <h2>Care notes</h2>
@@ -300,7 +304,8 @@ h1 {
   background: var(--surface);
 }
 
-dt {
+.label {
+  margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -308,7 +313,7 @@ dt {
   color: var(--muted);
 }
 
-dd {
+.value {
   margin: 0;
   font-weight: 600;
   color: var(--color-heading);
