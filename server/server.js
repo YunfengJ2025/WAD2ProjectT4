@@ -12,7 +12,9 @@ const plantRoutes = require("./routes/plantRoute");
 const cors = require("cors");
 const boardRoutes = require("./routes/boardRoute");
 const tokenRoutes = require("./routes/tokenRoute");
-const reviewRoutes = require("./routes/reviewRoute");
+const reviewRoutes = require("./routes/reviewRoute")
+const careRequestRoutes = require("./routes/careRequestRoute");
+const careVisitRoutes = require("./routes/careVisit");
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
 // Specify the path to the environment variable file '.env'
@@ -30,9 +32,9 @@ server.use(express.json());
 server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
-server.use("/review", reviewRoutes);
-server.use("/post", require("./routes/postRoute"));
-server.use("/api", boardRoutes);
+server.use("/review", reviewRoutes);server.use("/api", boardRoutes);
+server.use("/care-requests", careRequestRoutes);
+server.use("/care-visits", careVisitRoutes);
 
 async function connectDB() {
   try {

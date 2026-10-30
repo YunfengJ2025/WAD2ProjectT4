@@ -82,13 +82,9 @@ const routes = [
   },
 
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
-  { path: '/care-visits', name: 'Care Visits', component: CareVisits },
-  {
-    path: '/reviews',
-    name: 'reviews',
-    meta: { requiresAuth: true },
-    component: () => import('../views/review/ReviewsView.vue'),
-  },
+  { path: '/care-visits', name: 'Care Visits', meta: { requiresAuth: true }, component: CareVisits },
+  { path: '/care-requests', name: 'care-requests', meta: { requiresAuth: true }, component: () => import('../views/careRequest/CareRequestsView.vue') },
+  { path: '/reviews', name: 'reviews', meta: { requiresAuth: true }, component: () => import('../views/review/ReviewsView.vue') },
 
   // Dashboard route — registered as part of Step 2.1
   { path: '/dashboard', name: 'dashboard', component: DashboardView },
