@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import PlantForm from '@/components/plant/PlantForm.vue'
 import { usePlantsStore } from '@/stores/plants'
@@ -16,14 +16,12 @@ const backTo = computed(() => (isEdit.value ? `/plants/${plantId.value}` : '/pla
 
 const plantsStore = usePlantsStore()
 const plant = computed(() => isEdit.value ? plantsStore.findPlant(plantId.value) ?? null : null)
-const loading = ref(false)
+// Start in "loading" when editing so the empty form never flashes up first
+const loading = ref(isEdit.value)
 const loadError = ref('')
 
 async function load() {
-  loading.value = false
-  loadError.value = ''
   if (!isEdit.value) return
-  loading.value = true
   try {
     await plantsStore.fetchPlant(plantId.value)
   } catch (err) {
@@ -32,7 +30,9 @@ async function load() {
     loading.value = false
   }
 }
-watch(plantId, load, { immediate: true })
+// App.vue's <RouterView :key="route.path"> rebuilds this page when the URL
+// changes (e.g. edit -> add), so loading once on mount is enough.
+onMounted(load)
 
 function onSaved(saved) {
   toast(isEdit.value ? 'Changes saved' : `${saved.plantName} added`)

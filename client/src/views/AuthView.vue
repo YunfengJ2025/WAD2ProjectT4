@@ -21,17 +21,16 @@ async function submit() {
   if (submitting.value) return
   error.value = ''
   try {
-    const credentials = {
-      ...(props.createAccount ? {
-        userName: userName.value.trim(),
-        postalCode: postalCode.value.trim(),
-        block: block.value.trim(),
-        unitNumber: unitNumber.value.trim(),
-      } : {}),
-      email: email.value.trim(),
-      password: password.value,
+    const credentials = { email: email.value.trim(), password: password.value }
+    // Creating an account also needs the username and address
+    if (props.createAccount) {
+      credentials.userName = userName.value.trim()
+      credentials.postalCode = postalCode.value.trim()
+      credentials.block = block.value.trim()
+      credentials.unitNumber = unitNumber.value.trim()
     }
-    await (props.createAccount ? auth.register(credentials) : auth.login(credentials))
+    if (props.createAccount) await auth.register(credentials)
+    else await auth.login(credentials)
     const redirect = route.query.redirect
     const destination = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
       && router.resolve(redirect).meta.requiresAuth ? redirect : '/plants'

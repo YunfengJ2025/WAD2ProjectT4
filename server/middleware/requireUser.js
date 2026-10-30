@@ -3,16 +3,19 @@ const { verifyAccessToken } = require("../config/jwt");
 
 module.exports = async (req, res, next) => {
   try {
-    const match = /^Bearer ([^\s]+)$/i.exec(req.get("Authorization") || "");
-    if (!match) {
+    // The header looks like "Bearer <token>"
+    const [type, token] = (req.get("Authorization") || "").split(" ");
+    if (type !== "Bearer" || !token) {
       return res.status(401).json({ message: "Please log in first" });
     }
 
-    const payload = verifyAccessToken(match[1]);
-    if (!/^[1-9]\d*$/.test(payload.sub) || !Number.isSafeInteger(Number(payload.sub))) {
+    // The token's subject (sub) is the userId, e.g. "3"
+    const payload = verifyAccessToken(token);
+    const userId = Number(payload.sub);
+    if (!Number.isInteger(userId) || userId < 1) {
       return res.status(401).json({ message: "Invalid access token" });
     }
-    const user = await User.findOne({ userId: Number(payload.sub) });
+    const user = await User.findOne({ userId });
 
     if (!user) {
       return res.status(401).json({ message: "Please log in first" });

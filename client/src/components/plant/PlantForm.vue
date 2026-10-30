@@ -1,7 +1,6 @@
 <script setup>
 // PlantForm: one form used for BOTH adding a new plant and editing an existing one.
 import { computed, ref } from 'vue'
-import { photoSrc } from '@/api/plants'
 import { usePlantsStore } from '@/stores/plants'
 import { toDateInputValue } from '@/utils/wateringStatus'
 
@@ -28,11 +27,10 @@ const today = toDateInputValue(new Date())
 // - editing a plant that has a date -> that date
 // - editing a plant never watered   -> blank
 // - adding a new plant              -> today
-const initialLastWatered = props.plant
-  ? props.plant.lastWateredAt
-    ? toDateInputValue(props.plant.lastWateredAt)
-    : ''
-  : today
+let initialLastWatered = today
+if (props.plant) {
+  initialLastWatered = props.plant.lastWateredAt ? toDateInputValue(props.plant.lastWateredAt) : ''
+}
 
 const form = ref({
   plantName: props.plant?.plantName ?? '',
@@ -49,7 +47,7 @@ const form = ref({
 
 const photoFile = ref(null)
 // What the preview box shows: the new photo, or the plant's current photo
-const photoPreview = ref(props.plant?.photoUrl ? photoSrc(props.plant.photoUrl) : '')
+const photoPreview = ref(props.plant?.photoUrl || '')
 const photoInput = ref(null)
 
 // Error message per field, e.g. { plantName: 'Please enter a plant name' }
@@ -141,7 +139,7 @@ function onPhotoChange(event) {
 function clearNewPhoto() {
   photoFile.value = null
   delete errors.value.photo
-  photoPreview.value = props.plant?.photoUrl ? photoSrc(props.plant.photoUrl) : ''
+  photoPreview.value = props.plant?.photoUrl || ''
   if (photoInput.value) photoInput.value.value = '' //vue and html
 }
 
