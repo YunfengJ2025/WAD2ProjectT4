@@ -21,6 +21,7 @@ const navigationitems = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Leaderboard', to: '/leaderboard' },
   { label: 'My Plants', to: '/plants' },
+  { label: 'Care Requests', to: '/care-requests' },
   { label: 'Find Nearby', to: '/find-nearby' },
   { label: 'Care Visits', to: '/care-visits' },
   { label: 'Schedule', to: '/schedule' },
