@@ -9,15 +9,20 @@ const auth = useAuthStore()
 </script>
 
 <template>
-  <nav class="navbar navbar-expand bg-body-tertiary" aria-label="Main navigation">
-    <div class="container-fluid flex-wrap gap-2">
-      <RouterLink class="navbar-brand" to="/">Leaf it to us</RouterLink>
-      <ul class="navbar-nav flex-wrap me-auto mb-2 mb-lg-0">
-        <li v-for="item in navigationitems" :key="item.to" class="nav-item">
-          <RouterLink class="nav-link" active-class="active" :to="item.to">{{ item.label }}</RouterLink>
-        </li>
-      </ul>
-      <div class="d-flex align-items-center gap-2">
+
+  <nav class="navbar navbar-expand-sm bg-body-tertiary" aria-label="Main navigation">
+    
+    <div class="container-fluid flex flex-wrap gap-2">
+      <RouterLink class="navbar-brand order-sm-0" to="/">Leaf it to us</RouterLink>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav flex-wrap me-auto mb-2 mb-lg-0">
+          <li v-for="item in navigationitems" :key="item.to" class="nav-item">
+            <RouterLink class="nav-link" active-class="active" :to="item.to">{{ item.label }}</RouterLink>
+          </li>
+        </ul>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 order-sm-1">
         <template v-if="auth.isAuthenticated">
           <RouterLink class="nav-link d-flex align-items-center gap-2" active-class="active" to="/profile" aria-label="My profile">
             <UserAvatar :user="auth.user" :size="34" />
@@ -30,6 +35,11 @@ const auth = useAuthStore()
           <RouterLink class="btn btn-primary" to="/register">Create account</RouterLink>
         </template>
       </div>
+
+      <button class="navbar-toggler order-sm-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+      </button>
+    
     </div>
   </nav>
 </template>
