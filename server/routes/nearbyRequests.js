@@ -1,11 +1,10 @@
-// const express = require("express");
-// const requireUser = require("../middleware/requireUser");
+const express = require("express");
+const requireUser = require("../middleware/requireUser");
+const { findNearby } = require("../controllers/mapController");
 
-// const router = express.Router();
+const router = express.Router();
 
-// // GET 
-// router.get("/find-nearby", requireUser, async (req, res) => {
-//   // 
-// });
+// GET /find-nearby  (the browser calls it as /api/find-nearby)
+router.get("/", requireUser, findNearby);
 
-// module.exports = router;
+module.exports = router;

@@ -16,6 +16,7 @@ const reviewRoutes = require("./routes/reviewRoute");
 const careRequestRoutes = require("./routes/careRequestRoute");
 const careVisitRoutes = require("./routes/careVisitRoutes");
 const postRoutes = require("./routes/postRoute");
+const nearbyRoutes = require("./routes/nearbyRequests");
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
 // Specify the path to the environment variable file '.env'
@@ -38,6 +39,7 @@ server.use("/api", boardRoutes);
 server.use("/post", postRoutes);
 server.use("/care-requests", careRequestRoutes);
 server.use("/care-visits", careVisitRoutes);
+server.use("/find-nearby", nearbyRoutes);
 
 async function connectDB() {
   try {

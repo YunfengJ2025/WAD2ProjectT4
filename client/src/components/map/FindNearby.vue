@@ -1,50 +1,53 @@
 <script setup>
-import {ref,computed} from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import RequestMap from '../map/RequestMap.vue'
-import db from '@/data/mockDb.json'
-import plantPlaceholder from '@/assets/plant.png' // shown when a plant's photoUrl fails to load
+import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
 
-const myLocation = { lat: 1.3496, lng: 103.7195 } //to change to dynamic one later
-const pinSelected = ref(null)
+const auth = useAuthStore()
+const { show: toast } = useToast()
+
+const origin = ref(null) // the sitter's home { lat, lng }, sent by the server
+const allVisits = ref([]) // every open visit within 1 km, already sorted nearest first
+const loading = ref(true)
+const loadError = ref('')
+
+const pinSelected = ref(null) // the visit chosen from the list or the map
 const radiusKm = ref(1)
 const selectedDate = ref('')
-// join visit + request + owner into the shape the map needs
 
-const openVisits = computed(() =>
-  db.careVisits
-    .filter((v) => v.status === 'open' && v.helperId === null)
-    .map((v) => {
-      const request = db.careRequests.find((r) => r._id === v.requestId)
-      const owner = db.users.find((u) => u._id === request.ownerId)
-      const firstPlant = db.plants.find((p) => p._id === request.plantIds[0]) // photo for the card
-      return {
-        _id: v._id,
-        date: v.date,
-        tokenReward: v.tokenReward,
-        plantCount: request.plantIds.length,
-        plantName: firstPlant?.name,
-        photoUrl: firstPlant?.photoUrl,
-        notes: request.notes,
-        block: owner.block,
-        address: `Blk ${owner.block}, Singapore ${owner.postalCode}`, // card title, block-level only
-        lat: owner.location.lat,
-        lng: owner.location.lng,
-        // still no unitNumber, email or passwordHash
-      }
-    })
-)
+const acceptingId = ref(0) // visitId being accepted right now, so the button can't be double-clicked
+const acceptedNote = ref('') // shown after a successful accept
 
+const waterSourceLabels = {
+  left_out: 'Water left outside',
+  tap_available: 'Tap available',
+  sitter_brings: 'Sitter brings water',
+}
+
+// ---- load from the backend (GET /find-nearby, which the dev proxy sends to the server) ----
+async function load() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const data = await auth.authorizedRequest('/find-nearby')
+    origin.value = data.origin
+    allVisits.value = data.visits
+  } catch (err) {
+    loadError.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+
+// ---- slider and date narrow the list instantly, without asking the server again ----
 const filteredRequests = computed(() =>
-  openVisits.value
-    // attach each request's distance from the sitter
-    .map((r) => ({
-      ...r,
-      distanceKm: haversine(myLocation.lat, myLocation.lng, r.lat, r.lng),
-    }))
-    // keep only those matching the date (if chosen) and inside the radius
-    .filter((r) => (!selectedDate.value || r.date === selectedDate.value) && r.distanceKm <= radiusKm.value)
-    // nearest first
-    .sort((a, b) => a.distanceKm - b.distanceKm)
+  allVisits.value.filter(
+    (v) => (!selectedDate.value || v.date === selectedDate.value) && v.distanceKm <= radiusKm.value,
+  ),
 )
 
 // 0.45 km shows as "450 m", 1.2 km as "1.2 km"
@@ -52,176 +55,312 @@ function formatDistance(km) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
 }
 
-
-function haversine(lat1, lng1, lat2, lng2) {
-  const R = 6371
-  const toRad = (d) => (d * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+function formatDate(value) {
+  return new Date(value).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Singapore',
+  })
 }
 
+const plantCountLabel = (visit) => `${visit.plants.length} plant${visit.plants.length === 1 ? '' : 's'}`
 
+// ---- accept: uses your teammates' existing route, POST /care-visits/:visitId/accept ----
+async function acceptVisit(visit) {
+  if (acceptingId.value) return
+  acceptingId.value = visit.visitId
+  acceptedNote.value = ''
+  try {
+    await auth.authorizedRequest(`/care-visits/${visit.visitId}/accept`, { method: 'POST' })
+    allVisits.value = allVisits.value.filter((v) => v.visitId !== visit.visitId) // it is yours now
+    pinSelected.value = null
+    acceptedNote.value = `You accepted the visit on ${formatDate(visit.visitDate)}.`
+    toast('Visit accepted! It is now in My Sits.', 'success')
+  } catch (err) {
+    toast(err.message, 'error')
+    if (err.status === 409 || err.status === 404) {
+      pinSelected.value = null
+      await load() // someone else got there first, so refresh the list
+    }
+  } finally {
+    acceptingId.value = 0
+  }
+}
 </script>
 
 <template>
-    <h1>Find nearby</h1>
-    <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
-    <!-- putting the scrollbar on top -->
-    <div class="filterBar">
-        <label>
-            Distance: {{ radiusKm }} km
-            <input type="range" min="0.1" max="1" step="0.1" v-model.number="radiusKm" />
-        </label>
-        <label>
-            Date:
-            <input type="date" v-model="selectedDate" />
-        </label>
-    </div>
-    <div class="pageContent">
-        <!-- this will be the map section, taking up about 70% of the page  -->
-        
-        <RequestMap 
-            class="mapArea"
-            :center="myLocation" 
-            :radius-km="radiusKm" 
-            :requests="filteredRequests"
-            :selected="pinSelected"
-            @select="pinSelected = $event">
-        </RequestMap>
-    
-        
+  <h1>Find nearby</h1>
+  <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
 
-        <!-- class="mapArea": applies the grid-area and height from the CSS below -->
-        <!-- :center  : the colon means "pass a JS value", not plain text; gives the map its starting point -->
-        <!-- :radius-km : passes the slider value; the map's prop radiusKm becomes radius-km in templates -->
-        <!-- :requests : passes the already filtered list so the map draws only those pins -->
-        <!-- @select : listens for the map's 'select' event; $event is the request object the map sent -->
+  <div class="filterBar">
+    <label>
+      Distance: {{ radiusKm }} km
+      <input type="range" min="0.1" max="1" step="0.1" v-model.number="radiusKm" />
+    </label>
+    <label>
+      Date:
+      <input type="date" v-model="selectedDate" />
+    </label>
+  </div>
 
+  <p v-if="loading" role="status">Finding plants near you…</p>
 
-        <!-- this will be the request section (dynamic, and changes)  -->
-        <div class="requests">
-            <!-- no pin selected: scrollable list, nearest first -->
-            <div v-if="!pinSelected">
-                <p v-if="filteredRequests.length === 0">No requests within {{ radiusKm }} km. Try widening the distance
-                    or changing the date.</p>
+  <div v-else-if="loadError" class="alert alert-danger" role="alert">
+    {{ loadError }}
+    <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="load">Try again</button>
+  </div>
 
-                <ul v-else class="requestList">
-                    <li v-for="r in filteredRequests" :key="r._id" class="requestCard" @click="pinSelected = r">
-                        <img :src="r.photoUrl" :alt="r.plantName" class="plantPhoto"
-                            @error="$event.target.src = plantPlaceholder" />
-                        <div class="cardText">
-                            <h3>{{ r.address }}</h3>
-                            <p>{{ formatDistance(r.distanceKm) }} away · {{ r.date }}</p>
-                            <p>{{ r.plantCount }} plant(s) · {{ r.tokenReward }} tokens</p>
-                        </div>
-                    </li>
-                </ul>
+  <div v-else class="pageContent">
+    <!-- map section, about 70% of the page -->
+    <RequestMap
+      class="mapArea"
+      :center="origin"
+      :radius-km="radiusKm"
+      :requests="filteredRequests"
+      :selected="pinSelected"
+      @select="pinSelected = $event"
+    />
+
+    <!-- request section -->
+    <div class="requests">
+      <!-- no pin selected: scrollable list, nearest first -->
+      <div v-if="!pinSelected">
+        <p v-if="acceptedNote" class="acceptedNote" role="status">
+          {{ acceptedNote }}
+          <RouterLink :to="{ path: '/requests', query: { tab: 'sits' } }">View in My Sits →</RouterLink>
+        </p>
+
+        <p v-if="filteredRequests.length === 0">
+          No requests within {{ radiusKm }} km. Try widening the distance or changing the date.
+        </p>
+
+        <ul v-else class="requestList">
+          <li
+            v-for="(v, i) in filteredRequests"
+            :key="v.visitId"
+            class="requestCard"
+            :style="{ animationDelay: `${Math.min(i, 8) * 60}ms` }"
+            tabindex="0"
+            @click="pinSelected = v"
+            @keydown.enter="pinSelected = v"
+          >
+            <img
+              :src="v.photoUrl || plantPlaceholder"
+              :alt="v.plants[0]?.plantName || 'Plant'"
+              class="plantPhoto"
+              @error="$event.target.src = plantPlaceholder"
+            />
+            <div class="cardText">
+              <h3>{{ v.address }}</h3>
+              <p>{{ formatDistance(v.distanceKm) }} away · {{ formatDate(v.visitDate) }}</p>
+              <p>{{ plantCountLabel(v) }} · {{ v.tokenReward }} tokens</p>
             </div>
+          </li>
+        </ul>
+      </div>
 
-            <!-- pin selected: details -->
-            <div v-else>
-                <button @click="pinSelected = null">← Back to list</button>
-                <img :src="pinSelected.photoUrl" :alt="pinSelected.plantName" class="plantPhoto big"
-                    @error="$event.target.src = plantPlaceholder" />
-                <h2>{{ pinSelected.address }}</h2>
-                <p><strong>Distance:</strong> {{ formatDistance(pinSelected.distanceKm) }}</p>
-                <p><strong>Date:</strong> {{ pinSelected.date }}</p>
-                <p><strong>Plants:</strong> {{ pinSelected.plantCount }}</p>
-                <p><strong>Reward:</strong> {{ pinSelected.tokenReward }} tokens</p>
-                <p><strong>Notes:</strong> {{ pinSelected.notes }}</p>
+      <!-- pin selected: details and the accept button -->
+      <div v-else>
+        <button type="button" class="btn btn-sm btn-outline-secondary" @click="pinSelected = null">
+          ← Back to list
+        </button>
 
-                <button>Accept Request</button>
+        <h2 class="detailTitle">{{ pinSelected.address }}</h2>
+        <p class="meta">
+          {{ formatDistance(pinSelected.distanceKm) }} away · {{ formatDate(pinSelected.visitDate) }} ·
+          {{ pinSelected.tokenReward }} tokens
+        </p>
+        <p><strong>Owner:</strong> {{ pinSelected.ownerName }}</p>
+        <p><strong>Water:</strong> {{ waterSourceLabels[pinSelected.waterSource] || 'Tap available' }}</p>
+        <p v-if="pinSelected.note"><strong>Notes:</strong> {{ pinSelected.note }}</p>
+
+        <div class="plantTiles">
+          <div v-for="p in pinSelected.plants" :key="p.plantId" class="plantTile">
+            <img
+              :src="p.photoUrl || plantPlaceholder"
+              :alt="p.plantName"
+              @error="$event.target.src = plantPlaceholder"
+            />
+            <div>
+              <strong>{{ p.plantName }}</strong>
+              <span>{{ p.plantLocation }}</span>
+              <span>Water {{ p.amountToWater }} ml</span>
+              <span v-if="p.careInstructions">{{ p.careInstructions }}</span>
             </div>
+          </div>
         </div>
 
-
+        <button
+          type="button"
+          class="btn btn-primary w-100"
+          :disabled="acceptingId === pinSelected.visitId"
+          @click="acceptVisit(pinSelected)"
+        >
+          {{ acceptingId === pinSelected.visitId ? 'Accepting…' : 'Accept request' }}
+        </button>
+      </div>
     </div>
-    
+  </div>
 </template>
 
 <style scoped>
-    .filterBar {
-        display: flex;
-        gap: 1.5rem;
-        margin: 1rem 0;
-    }
+.filterBar {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
 
-    .pageContent {
-        display: grid;
-        grid-template-columns: 70% 30%;
-        grid-template-areas: "map requests"
-    }
+.pageContent {
+  display: grid;
+  grid-template-columns: 70% 30%;
+  grid-template-areas: "map requests";
+}
 
-    .mapArea {
-        grid-area: map;
-        height: 70vh;
-    }
+.mapArea {
+  grid-area: map;
+  height: 70vh;
+}
 
-    .requests {
-        grid-area: requests;
-        padding: 1rem;
-        overflow-y: auto;
-        max-height: 70vh;
-    }
-    .requestList {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
+.requests {
+  grid-area: requests;
+  padding: 1rem;
+  overflow-y: auto;
+  max-height: 70vh;
+}
 
-    .requestCard {
-        display: flex;
-        gap: 0.75rem;
-        padding: 0.5rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        cursor: pointer;
-    }
+.requestList {
+  list-style: none;
+  padding: 0.25rem; /* room so the lifted card is not clipped by the scroll area */
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
-    .requestCard:hover {
-        background: #f3f8f3;
-    }
+/* same lift-on-hover as the cards on the schedule page */
+.requestCard {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: var(--radius-lg, 1rem);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  cursor: pointer;
+  transition: transform var(--transition-bounce, 500ms cubic-bezier(0.34, 1.56, 0.64, 1)),
+    box-shadow var(--transition-base, 250ms ease);
+  animation: cardIn 0.5s var(--transition-bounce, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+}
 
-    .plantPhoto {
-        width: 64px;
-        height: 64px;
-        object-fit: cover; /* crop to fill the square instead of squashing */
-        border-radius: 6px;
-        flex-shrink: 0;
-    }
+.requestCard:hover,
+.requestCard:focus-visible {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-lg, 0 10px 25px -3px rgba(0, 0, 0, 0.12));
+}
 
-    .plantPhoto.big {
-        width: 100%;
-        height: 160px;
-    }
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
 
-    .cardText h3 {
-        margin: 0 0 0.25rem;
-        font-size: 1rem;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .requestCard {
+    transition: none;
+    animation: none;
+  }
+  .requestCard:hover,
+  .requestCard:focus-visible {
+    transform: none;
+  }
+}
 
-    .cardText p {
-        margin: 0;
-        font-size: 0.85rem;
-    }
+.plantPhoto {
+  width: 64px;
+  height: 64px;
+  object-fit: cover; /* crop to fill the square instead of squashing */
+  border-radius: 6px;
+  flex-shrink: 0;
+}
 
-    @media (max-width: 768px) {
-        .pageContent {
-            grid-template-columns: 1fr;
-            grid-template-areas:
-                "map"
-                "requests";
-        }
+.cardText h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
 
-        .mapArea {
-            height: 50vh;
-        }
-    }
+.cardText p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.acceptedNote {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: #e7f3e9;
+  color: #28623a;
+  font-size: 0.9rem;
+}
+
+.acceptedNote a {
+  display: block;
+  font-weight: 700;
+}
+
+.detailTitle {
+  margin: 0.9rem 0 0.2rem;
+  font-size: 1.2rem;
+}
+
+.meta {
+  color: #637466;
+}
+
+.plantTiles {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
+.plantTile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 10px;
+  background: #f5f8f5;
+}
+
+.plantTile img {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.plantTile div {
+  display: grid;
+  min-width: 0;
+}
+
+.plantTile span {
+  color: #718074;
+  font-size: 0.78rem;
+}
+
+
+@media (max-width: 768px) {
+  .pageContent {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "map"
+      "requests";
+  }
+
+  .mapArea {
+    height: 50vh;
+  }
+}
 </style>
