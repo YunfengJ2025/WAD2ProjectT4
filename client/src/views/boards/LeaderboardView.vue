@@ -25,35 +25,16 @@
       </header>
 
       <!--
-        NEIGHBOURHOOD TABS
-        v-for + :key — covered in WAD2 wk4 (Vue Basics I)
-        :class object binding for active state — covered in WAD2 wk4 (v-bind:class)
-        @click event — covered in WAD2 wk5 (Vue Events)
-      -->
-      <div class="tabs anim-slide-up anim-delay-1">
-        <button
-          v-for="area in areas"
-          :key="area"
-          class="tab-btn"
-          :class="{ active: selectedArea === area }"
-          @click="selectArea(area)"
-        >
-          {{ area }}
-        </button>
-      </div>
-
-      <!--
         TOP 3 PODIUM
         v-if — covered in WAD2 wk4 (Vue Basics I)
         :src prop binding for <img> — covered in WAD2 wk4
       -->
-      <div v-if="filteredLeaderboard.length >= 3" class="podium-section anim-slide-up anim-delay-2">
+      <div v-if="filteredLeaderboard.length >= 3" class="podium-section anim-slide-up anim-delay-1">
         <!-- 2nd Place -->
         <div class="podium-card glass-card silver">
           <span class="medal">🥈</span>
           <img :src="filteredLeaderboard[1].avatarUrl" alt="Avatar" class="podium-avatar" />
           <h4>{{ filteredLeaderboard[1].name }}</h4>
-          <p class="podium-area">📍 {{ filteredLeaderboard[1].neighbourhood }}</p>
           <div class="token-pill">🪙 {{ filteredLeaderboard[1].availableTokens }}</div>
         </div>
 
@@ -63,7 +44,6 @@
           <span class="medal">🥇</span>
           <img :src="filteredLeaderboard[0].avatarUrl" alt="Avatar" class="podium-avatar top" />
           <h4>{{ filteredLeaderboard[0].name }}</h4>
-          <p class="podium-area">📍 {{ filteredLeaderboard[0].neighbourhood }}</p>
           <div class="token-pill gold-pill">🪙 {{ filteredLeaderboard[0].availableTokens }}</div>
         </div>
 
@@ -72,16 +52,14 @@
           <span class="medal">🥉</span>
           <img :src="filteredLeaderboard[2].avatarUrl" alt="Avatar" class="podium-avatar" />
           <h4>{{ filteredLeaderboard[2].name }}</h4>
-          <p class="podium-area">📍 {{ filteredLeaderboard[2].neighbourhood }}</p>
           <div class="token-pill">🪙 {{ filteredLeaderboard[2].availableTokens }}</div>
         </div>
       </div>
 
       <!-- LEADERBOARD RANKINGS LIST -->
-      <div class="leaderboard-card glass-card anim-slide-up anim-delay-3">
+      <div class="leaderboard-card glass-card anim-slide-up anim-delay-2">
         <div class="lb-header-row">
-          <!-- Ternary in template — basic JS, WAD2 wk4+ -->
-          <h3 class="chart-title">Top Token Holders in {{ selectedArea === 'All' ? 'Singapore' : selectedArea }}</h3>
+          <h3 class="chart-title">Top Token Holders in Singapore</h3>
           <!-- .length computed on array — basic JS -->
           <span class="badge badge-done">{{ filteredLeaderboard.length }} Neighbours Active</span>
         </div>
@@ -98,10 +76,6 @@
             :class="{ 'lb-me': isCurrentUser(u) }"
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
-            <!--
-              :style object binding — covered in WAD2 wk4 (v-bind:style)
-              linear-gradient in :style — [NOT IN WAD2 CONTENT]
-            -->
             <div
               class="lb-avatar"
               :style="{
@@ -117,30 +91,13 @@
               <!-- v-if — covered in WAD2 wk4 -->
               <span v-if="isCurrentUser(u)" class="you-tag">You</span>
             </div>
-            <div class="lb-area">📍 {{ u.neighbourhood }}</div>
             <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}</div>
-            <!--
-              Proportional progress bar — [NOT IN WAD2 CONTENT]
-              Width computed as percentage of top user's token count
-              Optional chaining (?.) — modern JS, not explicitly in WAD2
-            -->
-            <div class="lb-bar-wrap">
-              <div
-                class="lb-bar"
-                :style="{
-                  width: `${(u.availableTokens / (filteredLeaderboard[0]?.availableTokens || 1)) * 100}%`,
-                  background: isCurrentUser(u)
-                    ? 'linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600))'
-                    : 'linear-gradient(90deg, var(--color-neutral-400), var(--color-neutral-600))'
-                }"
-              ></div>
-            </div>
             <div class="lb-tokens">🪙 {{ u.availableTokens }}</div>
           </div>
 
           <!-- v-if empty state — covered in WAD2 wk4 -->
           <div v-if="filteredLeaderboard.length === 0" class="empty-state">
-            <p>No neighbours found for "{{ selectedArea }}"!</p>
+            <p>No neighbours on the leaderboard yet!</p>
           </div>
         </div>
       </div>
@@ -157,10 +114,6 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
-const areas = ['All', 'Bishan', 'Tampines', 'Punggol', 'Jurong West', 'Ang Mo Kio', 'Bedok', 'Toa Payoh']
-
-// ref() reactive state — covered in WAD2 wk4/wk5
-const selectedArea = ref('All')
 const isOptedOut = ref(false)
 
 const CURRENT_USER_ID = computed(() => auth.user?.userId || auth.user?.id || null)
@@ -179,9 +132,6 @@ const leaderboard = ref([])
 // computed() with .filter() and .map() — covered in WAD2 wk4/wk5 (Vue + JS arrays)
 const filteredLeaderboard = computed(() => {
   let list = leaderboard.value
-  if (selectedArea.value !== 'All') {
-    list = list.filter((u) => u.neighbourhood === selectedArea.value)
-  }
   if (isOptedOut.value) {
     list = list.filter((u) => !isCurrentUser(u))
   }
@@ -192,13 +142,8 @@ const filteredLeaderboard = computed(() => {
 // async/await + axios.get() — covered in WAD2 wk5
 async function fetchLeaderboard() {
   try {
-    const url =
-      selectedArea.value === 'All'
-        ? 'http://localhost:8000/api/leaderboard'
-        : `http://localhost:8000/api/leaderboard?area=${selectedArea.value}`
-
-    const res = await axios.get(url)
-    if (res.data && res.data.leaderboard && res.data.leaderboard.length > 0) {
+    const res = await axios.get('http://localhost:8000/api/leaderboard')
+    if (res.data && res.data.leaderboard) {
       leaderboard.value = res.data.leaderboard
     }
   } catch (err) {
@@ -206,22 +151,49 @@ async function fetchLeaderboard() {
   }
 }
 
-function selectArea(area) {
-  selectedArea.value = area
-  fetchLeaderboard()
+// Fetch user's saved opt-out status from backend
+async function fetchOptOutStatus() {
+  const targetId = CURRENT_USER_ID.value
+  if (!targetId) {
+    if (auth.user?.hideFromLeaderboard !== undefined) {
+      isOptedOut.value = Boolean(auth.user.hideFromLeaderboard)
+    }
+    return
+  }
+  try {
+    const res = await axios.get(`http://localhost:8000/api/leaderboard/status/${targetId}`)
+    if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
+      isOptedOut.value = res.data.hideFromLeaderboard
+      if (auth.user) {
+        auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
+      }
+    }
+  } catch (err) {
+    if (auth.user?.hideFromLeaderboard !== undefined) {
+      isOptedOut.value = Boolean(auth.user.hideFromLeaderboard)
+    }
+  }
 }
 
 // axios.patch() — covered in WAD2 wk5 (HTTP methods)
 async function toggleOptOut() {
+  const targetId = CURRENT_USER_ID.value
   isOptedOut.value = !isOptedOut.value
-  try {
-    const targetId = CURRENT_USER_ID.value || leaderboard.value.find(isCurrentUser)?.id
-    if (targetId) {
-      await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
-      fetchLeaderboard()
+
+  if (targetId) {
+    try {
+      const res = await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
+      if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
+        isOptedOut.value = res.data.hideFromLeaderboard
+        if (auth.user) {
+          auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
+        }
+      }
+      await fetchLeaderboard()
+    } catch (err) {
+      console.error('Error toggling opt-out:', err)
+      isOptedOut.value = !isOptedOut.value
     }
-  } catch (err) {
-    console.info('Toggled opt-out locally in frontend preview.')
   }
 }
 
@@ -229,8 +201,9 @@ async function toggleOptOut() {
 const rankMedal = (rank) => ({ 1: '🥇', 2: '🥈', 3: '🥉' }[rank] || `#${rank}`)
 
 // onMounted() lifecycle hook — covered in WAD2 wk5
-onMounted(() => {
-  fetchLeaderboard()
+onMounted(async () => {
+  await fetchOptOutStatus()
+  await fetchLeaderboard()
 })
 </script>
 
@@ -597,6 +570,7 @@ onMounted(() => {
   color: #92400e;
   min-width: 80px;
   text-align: right;
+  margin-left: auto;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

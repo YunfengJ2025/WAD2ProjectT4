@@ -9,6 +9,8 @@ const careVisitSchema = new mongoose.Schema(
     visitDate: { type: Date, required: true, default: Date.now },
     status: { type: String, enum: ["open", "accepted", "completed", "cancelled"], default: "open" },
     doneAt: { type: Date, default: null },
+    weatherAlert: { type: String, default: null },
+    corridorCared: { type: Boolean, default: false },
   },
   { timestamps: false },
 );
