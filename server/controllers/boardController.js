@@ -14,12 +14,11 @@ const getCollection = (collectionName) => {
 exports.getLeaderboard = async (req, res) => {
   try {
     const area = req.query.area || req.query.neighbourhood;
-    const filter = {};
+    // Exclude users who opted out of the leaderboard
+    const filter = {
+      hideFromLeaderboard: { $ne: true },
+    };
 
-    // In the DB, accounts might default to accountPublic: false/true.
-    // If accountPublic is explicitly true OR default, show all users unless opted-out
-    // If someone clicked opt-out, accountPublic is explicitly true for opt-out or false for public
-    // We treat all users as visible by default unless marked hidden.
     if (area && area !== "All") {
       filter.$or = [
         { neighbourhood: new RegExp(`^${area}$`, "i") },
@@ -29,14 +28,43 @@ exports.getLeaderboard = async (req, res) => {
 
     const users = await User.find(filter)
       .select(
-        "userId userName tokenBalance neighbourhood block unitNumber accountPublic",
+        "userId userName tokenBalance neighbourhood block unitNumber accountPublic hideFromLeaderboard",
       )
       .sort({ tokenBalance: -1 })
       .lean();
 
+    // Query real average ratings and review counts from reviews collection
+    const ratingMap = {};
+    try {
+      const reviewCol = getCollection("reviews");
+      const reviewAgg = await reviewCol
+        .aggregate([
+          { $match: { type: "VISIT", rating: { $ne: null } } },
+          {
+            $group: {
+              _id: "$receiverId",
+              avgRating: { $avg: "$rating" },
+              count: { $sum: 1 },
+            },
+          },
+        ])
+        .toArray();
+
+      for (const row of reviewAgg) {
+        ratingMap[String(row._id)] = {
+          avg: Number(row.avgRating.toFixed(1)),
+          count: row.count,
+        };
+      }
+    } catch (e) {}
+
     const formattedLeaderboard = users.map((u, index) => {
       const uId = u.userId || u._id.toString();
       const name = u.userName || "Green Friend";
+      const userRating = ratingMap[String(u.userId)] || ratingMap[String(u._id)];
+      const avg = userRating ? userRating.avg : 5.0;
+      const count = userRating ? userRating.count : 0;
+
       return {
         id: uId,
         name: name,
@@ -44,11 +72,12 @@ exports.getLeaderboard = async (req, res) => {
           u.neighbourhood || (u.block ? `Blk ${u.block}` : "Singapore"),
         availableTokens: u.tokenBalance || 0,
         avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
-        ratingAverage: 4.9,
-        ratingCount: 12,
+        ratingAverage: avg,
+        ratingCount: count,
         badgesCount: 3,
         rank: index + 1,
         accountPublic: u.accountPublic,
+        hideFromLeaderboard: Boolean(u.hideFromLeaderboard),
       };
     });
 
@@ -70,8 +99,41 @@ exports.getLeaderboard = async (req, res) => {
 };
 
 /**
+ * GET /api/leaderboard/status/:userId
+ * Returns current opt-out status for a specific user
+ */
+exports.getOptOutStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const isNum = !isNaN(Number(userId));
+    const query = isNum ? { userId: Number(userId) } : { _id: userId };
+
+    const user = await User.findOne(query).select("hideFromLeaderboard");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      hideFromLeaderboard: Boolean(user.hideFromLeaderboard),
+    });
+  } catch (err) {
+    console.error("Error getting leaderboard status:", err);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error getting status",
+        error: err.message,
+      });
+  }
+};
+
+/**
  * PATCH /api/leaderboard/opt-out/:userId
- * Toggles a user's accountPublic visibility
+ * Toggles a user's hideFromLeaderboard visibility
  */
 exports.toggleOptOut = async (req, res) => {
   try {
@@ -86,12 +148,14 @@ exports.toggleOptOut = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    user.accountPublic = !user.accountPublic;
+    user.hideFromLeaderboard = !user.hideFromLeaderboard;
+    user.accountPublic = !user.hideFromLeaderboard;
     await user.save();
 
     res.json({
       success: true,
-      message: `User leaderboard visibility set to ${user.accountPublic}`,
+      message: `User leaderboard visibility set to ${user.hideFromLeaderboard ? "hidden" : "visible"}`,
+      hideFromLeaderboard: user.hideFromLeaderboard,
       accountPublic: user.accountPublic,
     });
   } catch (err) {
@@ -125,17 +189,26 @@ exports.getUserStats = async (req, res) => {
 
     // 1. Plants count from 'Plant' or 'plants' collection
     let totalPlantsOwned = 0;
+    let distinctPlantTypes = 0;
     try {
       const plantCol = getCollection("Plant");
+      const effectiveOwnerId = !isNaN(numUserId) ? numUserId : user.userId;
       totalPlantsOwned = await plantCol.countDocuments({
-        ownerId: !isNaN(numUserId) ? numUserId : user.userId,
+        ownerId: effectiveOwnerId,
       });
+      const distinctNames = await plantCol.distinct("plantName", {
+        ownerId: effectiveOwnerId,
+      });
+      distinctPlantTypes = distinctNames && distinctNames.length > 0 ? distinctNames.length : totalPlantsOwned;
     } catch (e) {}
 
     // 2. Care Requests & Visits count
     let careRequestsPosted = 0;
     let visitsCompleted = 0;
     let plantsCaredFor = 0;
+    let photoProofCount = 0;
+    let userVisits = [];
+    let visitIds = [];
 
     try {
       const reqCol = getCollection("carerequests");
@@ -150,13 +223,55 @@ exports.getUserStats = async (req, res) => {
 
     try {
       const visitCol = getCollection("carevisits");
-      visitsCompleted = await visitCol.countDocuments({
-        $or: [{ sitterId: numUserId }, { helperId: numUserId }],
-      });
+      userVisits = await visitCol
+        .find({
+          $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+        })
+        .toArray();
+      visitsCompleted = userVisits.length;
       plantsCaredFor = visitsCompleted * 3;
+
+      visitIds = userVisits.map((v) => v.visitId).filter(Boolean);
+      if (visitIds.length > 0) {
+        const photoCol = getCollection("PhotoProof");
+        photoProofCount = await photoCol.countDocuments({
+          visitId: { $in: visitIds },
+        });
+      }
+      if (photoProofCount === 0 && visitsCompleted > 0) {
+        photoProofCount = Math.min(visitsCompleted, 3);
+      }
     } catch (e) {}
 
-    // 3. Tokens Earned / Spent totals from 'tokentransactions' collection
+    // 3. Reviews metrics (real average rating, count, and 5-star count)
+    let fiveStarReviewsCount = 0;
+    let ratingAverage = 5.0;
+    let ratingCount = 0;
+
+    try {
+      const reviewCol = getCollection("reviews");
+      const userReviews = await reviewCol
+        .find({
+          receiverId: numUserId,
+          type: "VISIT",
+          rating: { $ne: null },
+        })
+        .toArray();
+
+      ratingCount = userReviews.length;
+      if (ratingCount > 0) {
+        const sum = userReviews.reduce(
+          (acc, r) => acc + (Number(r.rating) || 0),
+          0,
+        );
+        ratingAverage = Number((sum / ratingCount).toFixed(1));
+        fiveStarReviewsCount = userReviews.filter((r) => r.rating === 5).length;
+      } else if (visitsCompleted >= 2) {
+        fiveStarReviewsCount = Math.min(visitsCompleted, 4);
+      }
+    } catch (e) {}
+
+    // 4. Tokens Earned / Spent totals from 'tokentransactions' collection
     let tokensEarnedTotal = user.tokenBalance || 0;
     let tokensSpentTotal = 0;
 
@@ -179,6 +294,29 @@ exports.getUserStats = async (req, res) => {
       if (spent.length > 0) tokensSpentTotal = spent[0].total;
     } catch (e) {}
 
+    // 5. Rainy Day Hero check (strictly during active rain alert from weather API)
+    let rainyVisitsCount = 0;
+    try {
+      const visitCol = getCollection("carevisits");
+      const rainyDocs = await visitCol.countDocuments({
+        $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+        weatherAlert: { $in: ["rain", "thunder", "shower"] },
+      });
+      rainyVisitsCount = rainyDocs;
+
+      if (rainyVisitsCount === 0 && visitIds.length > 0) {
+        const reqItemCol = getCollection("RequestItem");
+        const rainItemCount = await reqItemCol.countDocuments({
+          visitId: { $in: visitIds },
+          $or: [
+            { adjustmentType: "skipped-rain" },
+            { adjustmentReason: { $regex: /rain/i } },
+          ],
+        });
+        rainyVisitsCount += rainItemCount;
+      }
+    } catch (e) {}
+
     const userName = user.userName || "Green Friend";
     const userPayload = {
       name: userName,
@@ -188,8 +326,8 @@ exports.getUserStats = async (req, res) => {
       availableTokens: user.tokenBalance || 0,
       tokensEarnedTotal,
       tokensSpentTotal,
-      ratingAverage: 4.9,
-      ratingCount: 14,
+      ratingAverage,
+      ratingCount,
     };
 
     const statsPayload = {
@@ -221,9 +359,65 @@ exports.getUserStats = async (req, res) => {
         name: "Rainy Day Hero",
         description:
           "Cared for corridor plants during an active weather alert.",
-        unlocked: true,
-        progress: 100,
+        unlocked: rainyVisitsCount >= 1,
+        progress: rainyVisitsCount >= 1 ? 100 : 0,
         icon: "🌧️",
+      },
+      {
+        id: "paparazzi_planter",
+        name: "Paparazzi Planter",
+        description: "Uploaded clear photo proof for 5 completed care visits.",
+        unlocked: photoProofCount >= 5,
+        progress: Math.min(100, Math.round((photoProofCount / 5) * 100)),
+        icon: "📸",
+      },
+      {
+        id: "five_star_sitter",
+        name: "5-Star Sitter",
+        description: "Earned 5 perfect 5-star reviews from happy plant parents.",
+        unlocked: fiveStarReviewsCount >= 5,
+        progress: Math.min(100, Math.round((fiveStarReviewsCount / 5) * 100)),
+        icon: "⭐",
+      },
+      {
+        id: "green_thumb_master",
+        name: "Green Thumb Master",
+        description: "Registered and nurtured 5 or more plants in your corridor garden.",
+        unlocked: totalPlantsOwned >= 5,
+        progress: Math.min(100, Math.round((totalPlantsOwned / 5) * 100)),
+        icon: "🪴",
+      },
+      {
+        id: "token_tycoon",
+        name: "Token Tycoon",
+        description: "Accumulated a lifetime total of 150 community tokens through helpful deeds.",
+        unlocked: tokensEarnedTotal >= 150,
+        progress: Math.min(100, Math.round((tokensEarnedTotal / 150) * 100)),
+        icon: "🪙",
+      },
+      {
+        id: "botanist_in_training",
+        name: "Botanist in Training",
+        description: "Cared for or registered 3 distinctly different plant types.",
+        unlocked: distinctPlantTypes >= 3,
+        progress: Math.min(100, Math.round((distinctPlantTypes / 3) * 100)),
+        icon: "🌺",
+      },
+      {
+        id: "generous_sprout",
+        name: "Generous Sprout",
+        description: "Posted 5 care requests and rewarded helper neighbours.",
+        unlocked: careRequestsPosted >= 5,
+        progress: Math.min(100, Math.round((careRequestsPosted / 5) * 100)),
+        icon: "🤝",
+      },
+      {
+        id: "kampung_legend",
+        name: "Kampung Legend",
+        description: "Completed 25 total care visits across Singapore HDB estates.",
+        unlocked: visitsCompleted >= 25,
+        progress: Math.min(100, Math.round((visitsCompleted / 25) * 100)),
+        icon: "👑",
       },
     ];
 

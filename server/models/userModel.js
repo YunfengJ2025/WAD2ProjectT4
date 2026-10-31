@@ -76,6 +76,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    hideFromLeaderboard: {
+      type: Boolean,
+      default: false,
+    },
     userRole: {
       type: String,
       enum: ["user", "admin"],
@@ -422,6 +426,7 @@ function toAuthJSON(user) {
     photoUrl: user.photoUrl || "",
     bio: user.bio || "",
     createdAt: user.createdAt,
+    hideFromLeaderboard: Boolean(user.hideFromLeaderboard),
   };
 }
 

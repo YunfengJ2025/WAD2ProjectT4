@@ -315,6 +315,35 @@ exports.addVisitProof = async (req, res) => {
     });
     visitDoc.status = "completed";
     visitDoc.doneAt = visitDate;
+
+    // Check NEA 2-hour weather alert for rain at completion time
+    try {
+      const weatherRes = await fetch("https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast", {
+        signal: AbortSignal.timeout(3000),
+      });
+      const weatherData = await weatherRes.json();
+      const forecasts = weatherData?.data?.items?.[0]?.forecasts || [];
+      const isRainingInSG = forecasts.some((f) =>
+        /rain|shower|thunder/i.test(f.forecast),
+      );
+      if (isRainingInSG) {
+        visitDoc.weatherAlert = "rain";
+      }
+
+      // Check if plant is in corridor / balcony / exposed to rain
+      const plant = await Plant.findOne({ plantId: itemDoc.plantId });
+      if (
+        plant &&
+        (plant.rainExposed ||
+          plant.weatherAdjustmentEnabled ||
+          /corridor|balcony|outside|open/i.test(plant.plantLocation || ""))
+      ) {
+        visitDoc.corridorCared = true;
+      }
+    } catch (weatherErr) {
+      console.warn("Weather check during visit completion skipped:", weatherErr.message);
+    }
+
     await visitDoc.save();
     const remaining = await CareVisit.exists({
       requestId: request.requestId,

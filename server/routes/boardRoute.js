@@ -4,6 +4,7 @@ const boardController = require("../controllers/boardController");
 
 // Leaderboard routes
 router.get("/leaderboard", boardController.getLeaderboard);
+router.get("/leaderboard/status/:userId", boardController.getOptOutStatus);
 router.patch("/leaderboard/opt-out/:userId", boardController.toggleOptOut);
 
 // Dashboard routes
