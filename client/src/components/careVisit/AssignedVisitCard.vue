@@ -70,8 +70,8 @@ function date(value) {
           <input v-model="actions[item.plantId]" maxlength="100" required placeholder="e.g. Watered and checked the soil" />
         </label>
         <label>
-          Take or choose a proof photo
-          <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required @change="choosePhoto($event, item.plantId)" />
+          Proof photo for this plant
+          <input type="file" accept="image/jpeg,image/png,image/webp" required @change="choosePhoto($event, item.plantId)" />
         </label>
       </div>
     </div>
