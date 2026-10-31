@@ -4,6 +4,7 @@ const reviewController = require("../controllers/reviewController");
 const router = express.Router();
 const requireUser = require("../middleware/requireUser");
 
+// These routes use the authenticated user's identity for profile reviews and replies.
 router.get("/me", requireUser, reviewController.getMyReviews);
 router.post("/me/replies", requireUser, reviewController.replyAsUser);
 

@@ -61,6 +61,27 @@ export const useAuthStore = defineStore('auth', () => {
     return restoring
   }
 
+  async function refreshUser() {
+    // Reload balances and reservations after payments, request creation or cancellation.
+    // Ignore a late response if the user signed out or changed sessions while it loaded.
+    const token = accessToken.value
+    const data = await authorizedRequest('/user/me')
+    if (accessToken.value === token) user.value = data.user
+  }
+
+  async function updateProfile(details) {
+    const token = accessToken.value
+    const multipart = details instanceof FormData
+    const data = await authorizedRequest('/user/me', {
+      method: 'PATCH',
+      ...(multipart ? {} : { headers: { 'Content-Type': 'application/json' } }),
+      body: multipart ? details : JSON.stringify(details),
+    })
+    if (accessToken.value !== token) throw new Error('Your session changed. Please sign in again.')
+    user.value = data.user
+    return data.user
+  }
+
   async function logout() {
     try {
       if (accessToken.value) await authorizedRequest('/user/logout', { method: 'POST' })
@@ -72,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     accessToken, user, submitting, error, isAuthenticated, clearSession,
-    authorizedRequest, restoreSession, logout,
+    authorizedRequest, restoreSession, refreshUser, updateProfile, logout,
     login: (credentials) => authenticate('login', credentials),
     register: (credentials) => authenticate('register', credentials),
   }

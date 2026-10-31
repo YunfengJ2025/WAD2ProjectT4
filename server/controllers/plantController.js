@@ -23,8 +23,11 @@ const handleError = (err, res) => {
     const errors = {};
     for (const [key, detail] of Object.entries(err.errors)) {
       const field = FIELD_NAMES[key] || key;
-      errors[field] ??=
-        detail.name === "CastError" ? "Please enter a valid value" : detail.message;
+      // Keep the first message for each field
+      if (!errors[field]) {
+        errors[field] =
+          detail.name === "CastError" ? "Please enter a valid value" : detail.message;
+      }
     }
     return res
       .status(400)

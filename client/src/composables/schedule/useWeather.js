@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import axios from 'axios'
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -20,31 +21,44 @@ export function findNearestStation(stations, userLat, userLng) {
 
 export function useWeather(userLat, userLng) {
   const condition = ref(null)   // 'rain' | 'sunny' | 'cloudy'
+  const tempHigh = ref(null) // today's forecast high in celcius
   const stationName = ref(null)
   const loading = ref(true)
   const error = ref(null)
+  const forecastText = ref(null)
 
   async function fetchForecast() {
     loading.value = true
     error.value = null
     try {
-      const res = await fetch('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast')
-      if (!res.ok) throw new Error('Weather service unavailable')
-      const json = await res.json()
+      const response = await axios.get('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast')
+      const json = response.data
+
       const areas = json.data.area_metadata
       const forecasts = json.data.items[0].forecasts
-
       const nearestArea = findNearestStation(
         areas.map(a => ({ ...a, location: a.label_location })),
         userLat, userLng
       )
+
       const match = forecasts.find(f => f.area === nearestArea.name)
+      forecastText.value = match?.forecast ?? null // i forgot what this does
       stationName.value = nearestArea.name
       condition.value = classifyForecast(match?.forecast ?? '')
+
     } catch (e) {
       error.value = e.message
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchTemperature() {
+    try {
+      const response = await axios.get('https://api-open.data.gov.sg/v2/real-time/api/twenty-four-hr-forecast') // returns data.records[0].general.temperature.high
+      tempHigh.value = response.data.data.records[0].general.temperature.high
+    } catch (error) {
+      tempHigh.value = null
     }
   }
 
@@ -55,5 +69,5 @@ export function useWeather(userLat, userLng) {
     return 'sunny'
   }
 
-  return { condition, stationName, loading, error, fetchForecast }
+  return { condition, stationName, forecastText, tempHigh, loading, error, fetchForecast, fetchTemperature }
 }

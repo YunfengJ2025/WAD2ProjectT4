@@ -8,11 +8,11 @@ const counterSchema = new mongoose.Schema({
 const Counter = mongoose.model("Counter", counterSchema, "Counter");
 
 // Atomically increments the named counter and returns the new value
-async function getNextSequence(name) {
+async function getNextSequence(name, session = null) {
   const counter = await Counter.findOneAndUpdate(
     { _id: name },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true },
+    { new: true, upsert: true, ...(session ? { session } : {}) },
   );
   return counter.seq;
 }

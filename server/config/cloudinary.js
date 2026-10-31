@@ -1,9 +1,15 @@
 const { v2: cloudinary } = require("cloudinary");
 
-const FOLDER = "plant-sitting/plants";
+// Pass one of these to uploadImage so each kind of photo gets its own folder.
+// Cloudinary creates a folder the first time something is uploaded to it.
+const FOLDERS = {
+  plants: "plant-sitting/plants",
+  userIcon: "plant-sitting/userIcon",
+  postImage: "plant-sitting/postImage",
+  shopImage: "plant-sitting/shopImage",
+};
 
 // Reads CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
-// from .env (CLOUDINARY_URL also works, the SDK picks that up by itself).
 function configure() {
   if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
@@ -21,12 +27,13 @@ function configure() {
 }
 
 // Uploads an in-memory file (multer memoryStorage) and returns { url, publicId }.
-async function uploadImage(buffer) {
+// folder defaults to plants so existing plant code keeps working.
+async function uploadImage(buffer, folder = FOLDERS.plants) {
   configure();
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: FOLDER,
+        folder,
         resource_type: "image",
         // Shrinks big phone photos; cards never show them larger than this.
         transformation: [{ width: 1200, height: 1200, crop: "limit" }],
@@ -56,4 +63,4 @@ async function deleteImage(publicId) {
   }
 }
 
-module.exports = { uploadImage, deleteImage };
+module.exports = { uploadImage, deleteImage, FOLDERS };

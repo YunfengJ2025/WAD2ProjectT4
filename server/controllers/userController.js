@@ -2,12 +2,16 @@ const {
   registerUser,
   loginUser,
   toAuthJSON,
+  updateProfile,
   getAllUsers,
   applyTransactionToBalances,
+  getPublicProfile,
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const STARTER_TOKENS = 50;
 const { createAccessToken } = require("../config/jwt");
+
+
 
 function authResponse(user) {
   return { user: toAuthJSON(user), accessToken: createAccessToken(user), tokenType: "Bearer", expiresIn: 3600 };
@@ -38,9 +42,27 @@ const handleError = (err, res) => {
     return res.status(409).json({ message: `That ${field} is already taken` });
   }
   if (err.name === "ValidationError") {
-    return res.status(400).json({ message: err.message });
+    const errors = Object.fromEntries(Object.entries(err.errors).map(([field, detail]) => [field, detail.message]));
+    return res.status(400).json({ message: "Please fix the highlighted fields", errors });
   }
   res.status(500).json({ message: "Server error" });
+};
+
+// Get /:userId/profile
+exports.getPublicProfile = async (req, res) => {
+  if (
+    !/^[1-9]\d*$/.test(req.params.userId) ||
+    !Number.isSafeInteger(Number(req.params.userId))
+  ) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+  try {
+    const profile = await getPublicProfile(Number(req.params.userId));
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    res.json(profile);
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 // GET /user
@@ -57,7 +79,14 @@ exports.register = async (req, res) => {
   try {
     const body = req.body || {};
     // Check required fields before touching the model
-    const requiredFields = ["userName", "email", "password"];
+    const requiredFields = [
+      "userName",
+      "email",
+      "password",
+      "postalCode",
+      "block",
+      "unitNumber",
+    ];
     const missing = requiredFields.filter(
       (field) => typeof body[field] !== "string" || body[field].trim() === "",
     );
@@ -113,6 +142,16 @@ exports.logout = (req, res) => {
   res.status(204).end();
 };
 exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
+
+// PATCH /user/me
+exports.updateMe = async (req, res) => {
+  try {
+    const user = await updateProfile(req.user, req.body || {}, req.file);
+    res.json({ user: toAuthJSON(user) });
+  } catch (err) {
+    handleError(err, res);
+  }
+};
 exports.updateTokenBalance = async (req, res) => {
   try {
     const result = await applyTransactionToBalances(

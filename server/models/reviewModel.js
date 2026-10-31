@@ -3,6 +3,8 @@ const { getNextSequence } = require("./counterModel");
 // import httpError the same way you do in userModel.js, e.g.:
 // const { httpError } = require("../utils/httpError");
 
+// One collection stores care-visit reviews, post comments and replies.
+// type determines which target ID is used: visitId, postId or parentReviewId.
 const reviewSchema = new mongoose.Schema({
   // assigned after the insert succeeds, so it can't be required here
   reviewId: { type: Number, unique: true, sparse: true },
@@ -23,8 +25,8 @@ const httpError = (status, message) => {
   err.status = status;
   return err;
 };
-// exactly one target id, matching the type
-// exactly one target id, matching the type
+// Require exactly one target ID matching the review type.
+// Care-visit reviews also require a rating.
 reviewSchema.pre("validate", function () {
   const targets = {
     VISIT: this.visitId,
@@ -131,11 +133,14 @@ async function getProfileReviews(userId) {
   const reviews = [...new Map([...own, ...context].map((review) => [review.reviewId, review])).values()];
   const ids = [...new Set(reviews.flatMap((review) => [review.creatorId, review.receiverId]))];
   const { User } = require("./userModel");
-  const users = await User.find({ userId: { $in: ids } }).select("userId userName -_id").lean();
+  // Read public profile fields only; photos belong to the author, not the receiver.
+  const users = await User.find({ userId: { $in: ids } }).select("userId userName photoUrl -_id").lean();
   const names = new Map(users.map((user) => [user.userId, user.userName]));
+  const photos = new Map(users.map((user) => [user.userId, user.photoUrl || ""]));
   return reviews.map((review) => ({
     ...review,
     creatorName: names.get(review.creatorId) || `User #${review.creatorId}`,
+    creatorPhotoUrl: photos.get(review.creatorId) || "",
     receiverName: names.get(review.receiverId) || `User #${review.receiverId}`,
   }));
 }

@@ -9,6 +9,9 @@ const router = useRouter()
 const userName = ref('')
 const email = ref('')
 const password = ref('')
+const postalCode = ref('')
+const block = ref('')
+const unitNumber = ref('')
 const auth = useAuthStore()
 const { error, submitting } = storeToRefs(auth)
 const route = useRoute()
@@ -18,14 +21,20 @@ async function submit() {
   if (submitting.value) return
   error.value = ''
   try {
-    const credentials = {
-      ...(props.createAccount ? { userName: userName.value.trim() } : {}),
-      email: email.value.trim(),
-      password: password.value,
+    const credentials = { email: email.value.trim(), password: password.value }
+    // Creating an account also needs the username and address
+    if (props.createAccount) {
+      credentials.userName = userName.value.trim()
+      credentials.postalCode = postalCode.value.trim()
+      credentials.block = block.value.trim()
+      credentials.unitNumber = unitNumber.value.trim()
     }
-    await (props.createAccount ? auth.register(credentials) : auth.login(credentials))
+    if (props.createAccount) await auth.register(credentials)
+    else await auth.login(credentials)
     const redirect = route.query.redirect
-    await router.push(typeof redirect === 'string' && redirect.startsWith('/plants') ? redirect : '/plants')
+    const destination = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+      && router.resolve(redirect).meta.requiresAuth ? redirect : '/plants'
+    await router.push(destination)
   } catch {
     // The store exposes the API error to the form.
   }
@@ -55,6 +64,23 @@ async function submit() {
             :autocomplete="createAccount ? 'new-password' : 'current-password'"
             :minlength="createAccount ? 8 : undefined" required />
         </div>
+        <template v-if="createAccount">
+          <div class="field">
+            <label for="postal-code">Postal code</label>
+            <input id="postal-code" v-model="postalCode" name="postal-code" autocomplete="postal-code"
+              inputmode="numeric" pattern="\d{6}" maxlength="6" title="6-digit postal code" required />
+          </div>
+          <div class="address-row">
+            <div class="field">
+              <label for="block">Block</label>
+              <input id="block" v-model="block" name="block" placeholder="e.g. 123A" required />
+            </div>
+            <div class="field">
+              <label for="unit-number">Unit number</label>
+              <input id="unit-number" v-model="unitNumber" name="unit-number" placeholder="e.g. #05-12" required />
+            </div>
+          </div>
+        </template>
         <button type="submit" class="btn btn-primary" :disabled="submitting">
           {{ submitting ? (createAccount ? 'Creating account...' : 'Signing in...') :
             (createAccount ? 'Create account' : 'Sign in') }}
@@ -95,6 +121,12 @@ fieldset {
 .field {
   display: grid;
   gap: 0.4rem;
+}
+
+.address-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 label {

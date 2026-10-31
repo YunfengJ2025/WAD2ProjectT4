@@ -1,0 +1,55 @@
+/* Shared interaction tokens keep post and review cards visually consistent. */
+.post-card,
+.review-card {
+  --card-highlight: #7ba88a;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+/* Only pointer devices get a lift; touch scrolling must not leave cards hovered. */
+@media (hover: hover) and (pointer: fine) {
+  .post-card:hover,
+  .review-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--card-highlight);
+    box-shadow: 0 8px 22px rgba(35, 80, 49, 0.14);
+  }
+
+  /* Thread comments stay in place so reading and replying do not shift the layout. */
+  .review-card-post:hover {
+    transform: none;
+    box-shadow: none;
+    background-color: #f4f9f4;
+  }
+}
+
+/* Keyboard navigation gets the same selected treatment without relying on hover. */
+.post-card:focus-within,
+.review-card:focus-within,
+.review-card:focus-visible {
+  border-color: var(--card-highlight);
+  box-shadow: 0 0 0 3px rgba(47, 125, 74, 0.18);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Press feedback is limited to actual navigation links, not reply forms or avatars. */
+.post-card-link:active {
+  opacity: 0.85;
+}
+
+/* Remove movement for users who request reduced motion while retaining focus cues. */
+@media (prefers-reduced-motion: reduce) {
+  .post-card,
+  .review-card {
+    transition: none;
+    animation: none;
+  }
+  .post-card:hover,
+  .review-card:hover {
+    transform: none;
+  }
+}

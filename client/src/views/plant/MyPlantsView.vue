@@ -168,9 +168,9 @@ async function confirmDelete() {
       </section>
 
       <TransitionGroup v-else tag="ul" name="card" class="grid">
-        <li v-for="{ plant } in visible" :key="plant.plantId">
+        <li v-for="item in visible" :key="item.plant.plantId">
           <PlantCard
-            :plant="plant"
+            :plant="item.plant"
             @delete="pendingDelete = $event"
           />
         </li>

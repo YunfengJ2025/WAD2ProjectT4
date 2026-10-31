@@ -1,14 +1,16 @@
 const mongoose = require("mongoose");
 const Counter = require("./counterModel");
 
-const TRANSACTION_TYPES = ["SYSTEM_GIFT", "CARE", "SHOP_PURCHASE"];
+// Gifts create a credit; care rewards transfer tokens already reserved by the owner.
+const TRANSACTION_TYPES = ["SYSTEM_GIFT", "CARE"];
 
 const tokenTransactionSchema = new mongoose.Schema({
   transactionId: { type: Number, unique: true, sparse: true }, // PK, auto-incremented
   visitId: { type: Number, ref: "Visit", default: null }, // FK (optional)
+  requestId: { type: Number, default: null }, // Links a care payout to the owner's reservation.
   reason: { type: String, required: true, trim: true },
   senderId: { type: Number, ref: "User", default: null }, // FK (optional)
-  receiverId: { type: Number, ref: "User", default: null }, // FK (null for shop purchases)
+  receiverId: { type: Number, ref: "User", default: null },
   amount: {
     type: Number,
     required: true,
@@ -26,6 +28,13 @@ const tokenTransactionSchema = new mongoose.Schema({
   createdAt: { type: Date, required: true, default: Date.now },
 });
 
+// MongoDB enforces one care transaction per visit, even for simultaneous claims.
+// Exclude system gifts because they do not belong to a visit.
+tokenTransactionSchema.index(
+  { visitId: 1 },
+  { unique: true, partialFilterExpression: { type: "CARE" } },
+);
+
 const TokenTransaction = mongoose.model(
   "TokenTransaction",
   tokenTransactionSchema,
@@ -40,6 +49,7 @@ function badRequest(message) {
 
 async function createTransaction({
   visitId,
+  requestId,
   reason,
   type,
   senderId,
@@ -52,17 +62,19 @@ async function createTransaction({
   if (type === "SYSTEM_GIFT" && (senderId || !receiverId)) {
     throw badRequest("System gifts need a receiver and cannot have a sender");
   }
-  if (type === "CARE" && (!senderId || !receiverId || !visitId)) {
+  if (!TRANSACTION_TYPES.includes(type))
+    throw badRequest("Invalid transaction type");
+  if (!Number.isSafeInteger(amount) || amount < 1)
+    throw badRequest("Amount must be a positive whole number");
+  if (type === "CARE" && (!senderId || !receiverId || !visitId || !requestId)) {
     throw badRequest(
-      "Care transactions need a sender, a receiver and a visitId",
+      "Care transactions need a sender, a receiver, a visitId and a requestId",
     );
-  }
-  if (type === "SHOP_PURCHASE" && (!senderId || receiverId)) {
-    throw badRequest("Shop purchases need a sender and cannot have a receiver");
   }
 
   const token = await TokenTransaction.create({
     visitId,
+    requestId,
     reason,
     type,
     senderId,

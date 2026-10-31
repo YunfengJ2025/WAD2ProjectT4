@@ -1,0 +1,852 @@
+/* Constrain the section width and separate it from surrounding content. */
+.community-page {
+  max-width: 820px;
+  margin: 2.5rem auto;
+}
+
+/* Style page headings and supporting text using the app palette. */
+
+.community-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Style page headings and supporting text using the app palette. */
+
+.community-eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.65rem;
+}
+
+/* Style page headings and supporting text using the app palette. */
+
+.community-heading h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.6rem;
+}
+
+/* Style page headings and supporting text using the app palette. */
+
+.community-heading h1 span {
+  color: var(--accent);
+}
+
+/* Use subdued text for secondary information and field guidance. */
+
+.community-muted {
+  color: var(--muted);
+}
+
+/* Style page headings and supporting text using the app palette. */
+
+.community-heading p:last-child {
+  margin-bottom: 0;
+}
+
+/* Make create, back and sign-in navigation easy to discover. */
+
+.community-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 2rem;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+
+/* Highlight the control under the pointer without changing its layout. */
+
+.community-plus:hover {
+  background: var(--accent-hover);
+  color: white;
+}
+
+/* Keep keyboard focus visible for accessible navigation. */
+
+.community-page a:focus-visible,
+.community-page button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Set typography, spacing and alignment for this component element. */
+
+.community-feed-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Set typography, spacing and alignment for this component element. */
+
+.community-feed-heading h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Set typography, spacing and alignment for this component element. */
+
+.community-feed-heading > span {
+  font-size: 0.8rem;
+}
+
+/* Define the panel surface, border and spacing. */
+
+.community-panel {
+  background: var(--surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+/* Arrange equal-sized community cards in reading order across rows. */
+
+.community-posts {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post {
+  padding: clamp(1.2rem, 4vw, 2rem);
+  min-width: 0;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-author {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-author-name {
+  color: var(--color-heading);
+  font-weight: 600;
+  padding: 0;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-author p {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post-image {
+  width: 100%;
+  max-height: 540px;
+  object-fit: contain;
+  background: var(--color-background-soft);
+  border-radius: 12px;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post-footer {
+  border-top: 1px solid var(--color-border);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post-footer > span {
+  font-size: 1.35rem;
+  color: var(--accent);
+}
+
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
+
+.community-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
+
+.community-state h2 {
+  font-size: 1.4rem;
+}
+
+/* Set typography, spacing and alignment for this component element. */
+
+.community-sprout {
+  display: block;
+  color: var(--accent);
+  font-size: 3rem;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-create {
+  max-width: 700px;
+}
+
+/* Make create, back and sign-in navigation easy to discover. */
+
+.community-back {
+  display: inline-block;
+  margin-bottom: 1.75rem;
+  color: var(--muted);
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form {
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form label {
+  display: block;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form label span {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form textarea,
+.community-form input {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  background: white;
+  color: var(--color-text);
+  font: inherit;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form textarea {
+  resize: vertical;
+  min-height: 160px;
+}
+
+/* Keep keyboard focus visible for accessible navigation. */
+
+.community-form textarea:focus,
+.community-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Use subdued text for secondary information and field guidance. */
+
+.community-help {
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-preview {
+  margin-top: 1rem;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-preview img {
+  max-height: 300px;
+  border-radius: 10px;
+  margin: auto;
+}
+
+/* Lay out post creation and editing fields and actions. */
+
+.community-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* Give loading, empty and error feedback clear spacing and readable emphasis. */
+
+.community-error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+/* Adjust layout and spacing for this viewport size. */
+
+@media (max-width: 575px) {
+  /* Constrain the section width and separate it from surrounding content. */
+  .community-page {
+    margin-top: 1.5rem;
+  }
+
+  /* Style page headings and supporting text using the app palette. */
+
+  .community-heading {
+    align-items: flex-start;
+  }
+
+  /* Make create, back and sign-in navigation easy to discover. */
+
+  .community-plus {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* Photo-first community cards */
+/* Lay out post creation and editing fields and actions. */
+.community-page:not(.community-create) {
+  max-width: 1160px;
+}
+
+/* Arrange equal-sized community cards in reading order across rows. */
+
+.community-posts {
+  display: block;
+  columns: 3;
+  column-gap: 1.4rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post {
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 1.4rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post > .community-author {
+  padding: 1rem 1rem 0;
+  margin-bottom: 0.8rem;
+}
+
+/* Style the community card cover and its navigation link. */
+
+.community-card-link {
+  display: block;
+  padding: 0;
+  color: inherit;
+}
+
+/* Highlight the control under the pointer without changing its layout. */
+
+.community-card-link:hover {
+  background: transparent;
+  color: inherit;
+}
+
+/* Style the community card cover and its navigation link. */
+
+.community-cover {
+  position: relative;
+}
+
+/* Style the community card cover and its navigation link. */
+
+.community-cover .community-post-image {
+  max-height: none;
+  height: auto;
+  border-radius: 0;
+}
+
+/* Style the community card cover and its navigation link. */
+
+.community-card-link .community-content {
+  padding: 1rem 1rem 0;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Style the community card cover and its navigation link. */
+
+.community-text-cover {
+  padding: 2rem 1.25rem;
+  margin: 0;
+  background: var(--accent-soft);
+  color: var(--color-heading);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-count {
+  position: absolute;
+  right: 0.6rem;
+  top: 0.6rem;
+  color: white;
+  background: #0009;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+/* Present post identity, body text and image content. */
+
+.community-post-footer {
+  margin: 1rem;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-upload {
+  background: var(--color-background-soft);
+  border: 1px dashed var(--color-border-hover);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-upload > span {
+  font-size: 1.8rem;
+  color: var(--accent);
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-form .community-upload input {
+  background: transparent;
+  border: 0;
+  padding: 0.5rem 0;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-previews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-preview {
+  position: relative;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-preview img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-preview button {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  border: 0;
+  background: #000a;
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+}
+
+/* Arrange photo uploads, previews and image-selection controls. */
+
+.community-photo-preview > span {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  border-radius: 8px;
+  padding: 0.15rem 0.4rem;
+  background: #000a;
+  color: white;
+  font-size: 0.7rem;
+}
+
+/* Arrange the post gallery and discussion, including text-only posts. */
+
+.community-detail {
+  max-width: 1200px;
+  margin: 1.5rem auto;
+}
+
+/* Arrange the post gallery and discussion, including text-only posts. */
+
+.community-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  overflow: hidden;
+  align-items: start;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery {
+  background: #eff2ec;
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-stage {
+  position: relative;
+  min-height: 480px;
+  height: min(74vh, 800px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-count {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #0009;
+  color: white;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: #0008;
+  color: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-arrow.previous {
+  left: 0.8rem;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-arrow.next {
+  right: 0.8rem;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-dots {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  overflow-x: auto;
+  justify-content: center;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-dots button {
+  flex-shrink: 0;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-dots button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+/* Position the large post gallery and its carousel controls. */
+
+.community-gallery-dots img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Arrange the post gallery and discussion, including text-only posts. */
+
+.community-detail-discussion {
+  padding: clamp(1rem, 3vw, 2rem);
+  min-width: 0;
+}
+
+/* Arrange the post gallery and discussion, including text-only posts. */
+
+.community-detail-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review-thread {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review-thread h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review > div {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review p {
+  margin: 0.35rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review time {
+  font-size: 0.7rem;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-reply {
+  margin: 1rem 0 0;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review-form {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review-form textarea {
+  border: 1px solid var(--color-border-hover);
+  border-radius: 10px;
+  padding: 0.8rem;
+  font: inherit;
+  width: 100%;
+  resize: vertical;
+}
+
+/* Space the review discussion and form within post details. */
+
+.community-review-form button {
+  justify-self: end;
+}
+
+/* Make create, back and sign-in navigation easy to discover. */
+
+.community-signin {
+  margin-top: 1rem;
+}
+
+/* Arrange the post gallery and discussion, including text-only posts. */
+
+.community-no-images {
+  grid-template-columns: 1fr;
+  max-width: 720px;
+  margin: auto;
+}
+
+/* Adjust layout and spacing for this viewport size. */
+
+@media (max-width: 900px) {
+  /* Arrange equal-sized community cards in reading order across rows. */
+  .community-posts {
+    columns: 2;
+  }
+
+  /* Arrange the post gallery and discussion, including text-only posts. */
+
+  .community-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Position the large post gallery and its carousel controls. */
+
+  .community-gallery {
+    position: static;
+  }
+
+  /* Position the large post gallery and its carousel controls. */
+
+  .community-gallery-stage {
+    height: 65vh;
+    min-height: 280px;
+  }
+}
+
+/* Adjust layout and spacing for this viewport size. */
+
+@media (max-width: 500px) {
+  /* Arrange equal-sized community cards in reading order across rows. */
+  .community-posts {
+    columns: 1;
+  }
+} /* Equal-sized cards flow across each row before starting the next row. */
+/* Arrange equal-sized community cards in reading order across rows. */
+.community-posts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.4rem;
+  columns: auto;
+}
+/* Keep keyboard focus visible for accessible navigation. */
+.community-detail a,
+.community-detail a:hover,
+.community-detail a:focus {
+  text-decoration: none;
+}
+/* Adjust layout and spacing for this viewport size. */
+@media (max-width: 900px) {
+  .community-posts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Adjust layout and spacing for this viewport size. */
+@media (max-width: 500px) {
+  .community-posts {
+    grid-template-columns: 1fr;
+  }
+}
+/* Keep keyboard focus visible for accessible navigation. */
+.community-page a,
+.community-page a:hover,
+.community-page a:focus {
+  text-decoration: none;
+}
+
+/* Back navigation uses a button because it follows history rather than a fixed URL. */
+.community-back-button {
+  border: 0;
+  background: transparent;
+  padding: 3px;
+  font: inherit;
+  cursor: pointer;
+}
+/* Keep the history action discoverable by pointer and keyboard. */
+.community-back-button:hover { color: var(--accent); }
+.community-back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Horizontal swipes change photos while vertical gestures still scroll the page. */
+.community-gallery-stage { touch-action: pan-y; cursor: grab; user-select: none; overflow: hidden; }
+.community-gallery-stage.photo-dragging { cursor: grabbing; }
+/* Snap the photo back gently after a short drag, without cropping the full image. */
+.post-gallery-photo { transition: transform 220ms ease; }
+.photo-dragging .post-gallery-photo { transition: none; }
+/* Keyed photos fade out and in rather than abruptly swapping their source. */
+.post-photo-enter-active, .post-photo-leave-active { transition: opacity 160ms ease; }
+.post-photo-enter-from, .post-photo-leave-to { opacity: 0; }
+/* Keep navigation immediate for users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .post-gallery-photo, .post-photo-enter-active, .post-photo-leave-active { transition: none; }
+}
