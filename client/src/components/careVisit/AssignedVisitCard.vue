@@ -55,7 +55,7 @@ function date(value) {
       </div>
       <span class="status">{{ visit.status }}</span>
     </div>
-    <p class="water-source">Water: {{ waterSourceLabels[visit.request?.waterSource] || 'Tap available' }}</p>
+    <p class="water-source">Water Source: {{ waterSourceLabels[visit.request?.waterSource] || 'Tap available' }}</p>
     <form class="visit-form" @submit.prevent="submit">
     <div class="plant-care-list">
       <div v-for="item in items" :key="item.plantId" class="plant-care-card">
