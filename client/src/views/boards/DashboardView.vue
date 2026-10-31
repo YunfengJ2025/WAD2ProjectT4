@@ -112,6 +112,9 @@ import { ref, computed, onMounted } from 'vue'
 
 // axios — covered in WAD2 wk5 (server/client communication)
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 // Component imports — covered in WAD2 wk6 (<script setup> imports)
 import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
@@ -160,18 +163,16 @@ const timeOfDay = computed(() => {
 async function fetchDashboard() {
   try {
     const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
-    if (leadRes.data.leaderboard && leadRes.data.leaderboard.length > 0) {
-      // Pick the primary demo user ID from the leaderboard response
-      const demoUserId = leadRes.data.leaderboard[0].id
-
+    const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
+    if (activeUserId) {
       // Fetch user profile metrics and milestone badges
-      const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${demoUserId}`)
+      const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${activeUserId}`)
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
       // Fetch monthly visualisations data for Chart.js
-      const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${demoUserId}`)
+      const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${activeUserId}`)
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
     }

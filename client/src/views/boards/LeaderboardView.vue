@@ -95,7 +95,7 @@
             v-for="u in filteredLeaderboard"
             :key="u.id"
             class="lb-row"
-            :class="{ 'lb-me': u.id === CURRENT_USER_ID }"
+            :class="{ 'lb-me': isCurrentUser(u) }"
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
             <!--
@@ -105,7 +105,7 @@
             <div
               class="lb-avatar"
               :style="{
-                background: u.id === CURRENT_USER_ID
+                background: isCurrentUser(u)
                   ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
                   : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
               }"
@@ -115,7 +115,7 @@
             <div class="lb-name">
               {{ u.name }}
               <!-- v-if — covered in WAD2 wk4 -->
-              <span v-if="u.id === CURRENT_USER_ID" class="you-tag">You</span>
+              <span v-if="isCurrentUser(u)" class="you-tag">You</span>
             </div>
             <div class="lb-area">📍 {{ u.neighbourhood }}</div>
             <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}</div>
@@ -129,7 +129,7 @@
                 class="lb-bar"
                 :style="{
                   width: `${(u.availableTokens / (filteredLeaderboard[0]?.availableTokens || 1)) * 100}%`,
-                  background: u.id === CURRENT_USER_ID
+                  background: isCurrentUser(u)
                     ? 'linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600))'
                     : 'linear-gradient(90deg, var(--color-neutral-400), var(--color-neutral-600))'
                 }"
@@ -154,13 +154,23 @@ import { ref, computed, onMounted } from 'vue'
 
 // axios — covered in WAD2 wk5 (server/client communication)
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const areas = ['All', 'Bishan', 'Tampines', 'Punggol', 'Jurong West', 'Ang Mo Kio', 'Bedok', 'Toa Payoh']
 
 // ref() reactive state — covered in WAD2 wk4/wk5
 const selectedArea = ref('All')
 const isOptedOut = ref(false)
-const CURRENT_USER_ID = ref(null)
+
+const CURRENT_USER_ID = computed(() => auth.user?.userId || auth.user?.id || null)
+
+function isCurrentUser(u) {
+  if (!auth.user) return false
+  if (CURRENT_USER_ID.value && String(u.id) === String(CURRENT_USER_ID.value)) return true
+  if (auth.user.userName && u.name && u.name.toLowerCase() === auth.user.userName.toLowerCase()) return true
+  return false
+}
 
 // Initial empty leaderboard array.
 // Will be dynamically populated via fetchLeaderboard() from GET /api/leaderboard
@@ -173,7 +183,7 @@ const filteredLeaderboard = computed(() => {
     list = list.filter((u) => u.neighbourhood === selectedArea.value)
   }
   if (isOptedOut.value) {
-    list = list.filter((u) => u.id !== CURRENT_USER_ID.value)
+    list = list.filter((u) => !isCurrentUser(u))
   }
   // spread operator (...) with map — modern JS, not explicitly in WAD2
   return list.map((u, i) => ({ ...u, rank: i + 1 }))
@@ -190,7 +200,6 @@ async function fetchLeaderboard() {
     const res = await axios.get(url)
     if (res.data && res.data.leaderboard && res.data.leaderboard.length > 0) {
       leaderboard.value = res.data.leaderboard
-      CURRENT_USER_ID.value = leaderboard.value[0].id
     }
   } catch (err) {
     console.error('Failed to fetch leaderboard from server:', err)
@@ -206,8 +215,9 @@ function selectArea(area) {
 async function toggleOptOut() {
   isOptedOut.value = !isOptedOut.value
   try {
-    if (CURRENT_USER_ID.value) {
-      await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${CURRENT_USER_ID.value}`)
+    const targetId = CURRENT_USER_ID.value || leaderboard.value.find(isCurrentUser)?.id
+    if (targetId) {
+      await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
       fetchLeaderboard()
     }
   } catch (err) {
