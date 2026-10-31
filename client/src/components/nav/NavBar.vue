@@ -29,8 +29,7 @@ watch(() => route.fullPath, () => {
 <template>
   <nav class="navbar navbar-expand-sm bg-body-tertiary" aria-label="Main navigation">
     <div class="container-fluid flex-wrap gap-2">
-      <RouterLink class="navbar-brand order-0" to="/">Leaf it to us</RouterLink>
-
+      <RouterLink class="navbar-brand order-0" to="/"><img src="../../assets/Leaf It to Us Logo.png" height="40px"></RouterLink>
       <!-- Main links: below the bar on phones (order-3), beside the logo from sm up -->
       <div v-if="auth.isAuthenticated" id="mainNav" ref="menu" class="collapse navbar-collapse order-3 order-sm-1">
         <ul class="navbar-nav flex-wrap me-auto">
