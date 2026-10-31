@@ -42,33 +42,64 @@ async function enrichVisits(visits) {
       .lean(),
   ]);
   const requestById = new Map(requests.map((r) => [r.requestId, r]));
-  const itemByVisit = new Map(items.map((i) => [i.visitId, i]));
-  const proofByVisit = new Map(proofs.map((p) => [p.visitId, p]));
+  const itemsByVisit = new Map();
+  for (const item of items) {
+    itemsByVisit.set(item.visitId, [...(itemsByVisit.get(item.visitId) || []), item]);
+  }
+  const proofsByItem = new Map(proofs.map((proof) => [proof.requestItemId, proof]));
   const plantById = new Map(plants.map((p) => [p.plantId, p]));
   const ownerById = new Map(owners.map((u) => [u.userId, u]));
   return visits.map((visit) => {
     const request = requestById.get(visit.requestId) || null;
-    const item = itemByVisit.get(visit.visitId) || null;
-    const proof = proofByVisit.get(visit.visitId) || null;
+    const visitItems = itemsByVisit.get(visit.visitId) || [];
+    const detailedItems = visitItems.map((item) => {
+      const proof = proofsByItem.get(item.requestItemId) || null;
+      return {
+        ...item,
+        plant: plantById.get(item.plantId) || null,
+        proofUrl: proof?.photoUrl || "",
+        photoProofId: proof?.photoProofId || null,
+      };
+    });
+    const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
       request,
-      item,
-      plant: item ? plantById.get(item.plantId) || null : null,
+      items: detailedItems,
+      plants: visitPlants,
+      plant: visitPlants[0] || null,
       owner: request ? ownerById.get(request.ownerId) || null : null,
-      action: item?.action || "",
-      proofUrl: proof?.photoUrl || "",
+      action: detailedItems[0]?.action || "",
+      proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
     };
   });
 }
 
 exports.create = async (req, res) => {
   try {
-    const plantId = Number(req.body.plantId);
-    if (!Number.isSafeInteger(plantId) || plantId < 1)
-      throw fail(400, "Choose one of your plants");
-    const plant = await Plant.findOne({ plantId, ownerId: req.userId });
-    if (!plant) throw fail(404, "Plant not found in your collection");
+    const selectedPlantIds = Array.isArray(req.body.plantIds)
+      ? req.body.plantIds.map(Number)
+      : [Number(req.body.plantId)];
+    const plantIds = [...new Set(selectedPlantIds)];
+    if (!plantIds.length || plantIds.some((id) => !Number.isSafeInteger(id) || id < 1))
+      throw fail(400, "Choose at least one of your plants");
+    const plants = await Plant.find({ ownerId: req.userId, plantId: { $in: plantIds } });
+    if (plants.length !== plantIds.length)
+      throw fail(404, "One or more selected plants were not found in your collection");
+    const plantDetails = new Map();
+    for (const detail of Array.isArray(req.body.plantDetails) ? req.body.plantDetails : []) {
+      const plantId = Number(detail.plantId);
+      if (detail.amountToWater === "" || detail.amountToWater == null)
+        throw fail(400, "Enter a watering amount for each selected plant");
+      const amountToWater = Number(detail.amountToWater);
+      if (!plantIds.includes(plantId)) throw fail(400, "Care details must match selected plants");
+      if (!Number.isFinite(amountToWater) || amountToWater < 0 || amountToWater > 10000)
+        throw fail(400, "Water amount must be between 0 and 10000 ml per visit");
+      plantDetails.set(plantId, {
+        amountToWater,
+        careInstructions: String(detail.careInstructions || "").trim(),
+      });
+    }
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
     const startDate = datePattern.test(req.body.startDate || "")
       ? dateInSingapore(req.body.startDate)
@@ -88,6 +119,7 @@ exports.create = async (req, res) => {
       startDate,
       endDate,
       note: req.body.note || "",
+      waterSource: req.body.waterSource || "tap_available",
       tokenReward: Number(req.body.tokenReward),
       status: "funding", // Keep the request unavailable until funding and setup succeed.
     });
@@ -114,15 +146,19 @@ exports.create = async (req, res) => {
           status: "open",
         });
         createdVisits.push(visit);
-        const item = await RequestItem.create({
-          visitId: visit.visitId,
-          plantId,
-          action: "Plant care",
-          status: "pending",
-          originalDueAt: visitDate,
-          dueAt: visitDate,
-        });
-        createdItems.push(item);
+        for (const plantId of plantIds) {
+          const item = await RequestItem.create({
+            visitId: visit.visitId,
+            plantId,
+            action: "Plant care",
+            amountToWater: plantDetails.get(plantId)?.amountToWater ?? 0,
+            careInstructions: plantDetails.get(plantId)?.careInstructions || "",
+            status: "pending",
+            originalDueAt: visitDate,
+            dueAt: visitDate,
+          });
+          createdItems.push(item);
+        }
       }
       // Publish only after funds are reserved and all daily visits have been created.
       request.status = "open";
@@ -135,7 +171,7 @@ exports.create = async (req, res) => {
       await releaseTokens(req.userId, request.requestId);
       throw err;
     }
-    res.status(201).json({ request: { ...request.toObject(), plant } });
+    res.status(201).json({ request: { ...request.toObject(), plants } });
   } catch (err) {
     handleError(err, res);
   }
@@ -161,9 +197,24 @@ exports.mine = async (req, res) => {
     res.json({
       requests: requests.map((request) => {
         const careVisits = grouped.get(request.requestId) || [];
+        const plants = [];
+        const plantDetails = new Map();
+        for (const visit of careVisits) {
+          for (const item of visit.items || []) {
+            const plant = item.plant;
+            if (!plant) continue;
+            if (!plants.some((item) => item.plantId === plant.plantId)) plants.push(plant);
+            if (!plantDetails.has(plant.plantId)) plantDetails.set(plant.plantId, {
+              ...plant,
+              amountToWater: item.amountToWater ?? 0,
+              careInstructions: item.careInstructions || "",
+            });
+          }
+        }
         return {
           ...request,
-          plant: careVisits[0]?.plant || null,
+          plants,
+          plantDetails: [...plantDetails.values()],
           visits: careVisits,
         };
       }),
@@ -265,7 +316,7 @@ exports.acceptVisit = async (req, res) => {
     );
     if (!visit)
       throw fail(409, "This visit was just accepted by another sitter");
-    await RequestItem.updateOne({ visitId }, { $set: { status: "accepted" } });
+    await RequestItem.updateMany({ visitId }, { $set: { status: "accepted" } });
     if (request.status === "open") {
       request.status = "in_progress";
       await request.save();
@@ -277,10 +328,11 @@ exports.acceptVisit = async (req, res) => {
 };
 
 exports.addVisitProof = async (req, res) => {
-  let uploaded;
+  const uploadedPhotos = [];
   let visitDoc;
-  let proofDoc;
-  let itemDoc;
+  const proofDocs = [];
+  let itemDocs = [];
+  let originalItemStates = [];
   try {
     const visitId = Number(req.params.visitId);
     visitDoc = await CareVisit.findOne({
@@ -289,30 +341,54 @@ exports.addVisitProof = async (req, res) => {
       status: "accepted",
     });
     if (!visitDoc) throw fail(404, "Accepted visit not found");
-    if (!req.file) throw fail(400, "Upload a proof photo");
-    if (!req.body.action?.trim())
-      throw fail(400, "Describe the action you completed");
     const request = await CareRequest.findOne({
       requestId: visitDoc.requestId,
       status: "in_progress",
     });
     if (!request) throw fail(404, "Active care request not found");
+    itemDocs = await RequestItem.find({ visitId: visitDoc.visitId });
+    if (!itemDocs.length) throw fail(404, "Visit plant items not found");
+    originalItemStates = itemDocs.map((item) => ({
+      action: item.action,
+      status: item.status,
+      dueAt: item.dueAt,
+    }));
+    const filesByPlant = new Map((req.files || []).map((file) => [
+      /^photo_\d+$/.test(file.fieldname) ? Number(file.fieldname.slice(6)) : NaN, file,
+    ]));
+    let actions;
+    try {
+      actions = JSON.parse(req.body.actions || "{}");
+    } catch {
+      throw fail(400, "Care actions were not submitted correctly");
+    }
+    if (!actions || typeof actions !== "object" || Array.isArray(actions))
+      throw fail(400, "Care actions were not submitted correctly");
+    for (const item of itemDocs) {
+      const action = String(actions[item.plantId] || "").trim();
+      if (!action) throw fail(400, `Describe the completed care for plant #${item.plantId}`);
+      if (!filesByPlant.has(item.plantId)) throw fail(400, `Upload a proof photo for plant #${item.plantId}`);
+    }
+    if (filesByPlant.size !== itemDocs.length)
+      throw fail(400, "Upload exactly one proof photo for each plant in this visit");
     const visitDate = new Date();
     const { uploadImage, FOLDERS } = require("../config/cloudinary");
-    uploaded = await uploadImage(req.file.buffer, FOLDERS.postImage);
-    itemDoc = await RequestItem.findOne({ visitId: visitDoc.visitId });
-    if (!itemDoc) throw fail(404, "Visit plant item not found");
-    itemDoc.action = req.body.action.trim();
-    itemDoc.status = "completed";
-    itemDoc.dueAt = visitDate;
-    await itemDoc.save();
-    proofDoc = await PhotoProof.create({
-      requestItemId: itemDoc.requestItemId,
-      visitId: visitDoc.visitId,
-      photoUrl: uploaded.url,
-      photoPublicId: uploaded.publicId,
-      takenAt: visitDate,
-    });
+    for (const item of itemDocs) {
+      const uploaded = await uploadImage(filesByPlant.get(item.plantId).buffer, FOLDERS.postImage);
+      uploadedPhotos.push(uploaded);
+      const proof = await PhotoProof.create({
+        requestItemId: item.requestItemId,
+        visitId: visitDoc.visitId,
+        photoUrl: uploaded.url,
+        photoPublicId: uploaded.publicId,
+        takenAt: visitDate,
+      });
+      proofDocs.push(proof);
+      item.action = String(actions[item.plantId]).trim();
+      item.status = "completed";
+      item.dueAt = visitDate;
+      await item.save();
+    }
     visitDoc.status = "completed";
     visitDoc.doneAt = visitDate;
 
@@ -331,13 +407,8 @@ exports.addVisitProof = async (req, res) => {
       }
 
       // Check if plant is in corridor / balcony / exposed to rain
-      const plant = await Plant.findOne({ plantId: itemDoc.plantId });
-      if (
-        plant &&
-        (plant.rainExposed ||
-          plant.weatherAdjustmentEnabled ||
-          /corridor|balcony|outside|open/i.test(plant.plantLocation || ""))
-      ) {
+      const plants = await Plant.find({ plantId: { $in: itemDocs.map((item) => item.plantId) } });
+      if (plants.some((plant) => plant.rainExposed || plant.weatherAdjustmentEnabled || /corridor|balcony|outside|open/i.test(plant.plantLocation || ""))) {
         visitDoc.corridorCared = true;
       }
     } catch (weatherErr) {
@@ -356,15 +427,35 @@ exports.addVisitProof = async (req, res) => {
     res.status(201).json({
       visit: {
         ...visitDoc.toObject(),
-        action: itemDoc.action,
-        proofUrl: proofDoc.photoUrl,
+        items: itemDocs.map((item, index) => ({
+          ...item.toObject(),
+          proofUrl: proofDocs[index].photoUrl,
+        })),
+        action: itemDocs[0]?.action || "",
+        plants: (await Plant.find({ plantId: { $in: itemDocs.map((item) => item.plantId) } }))
+          .map((plant) => ({ plantId: plant.plantId, plantName: plant.plantName, photoUrl: plant.photoUrl, plantLocation: plant.plantLocation })),
+        proofs: proofDocs.map((proof) => ({ requestItemId: proof.requestItemId, photoUrl: proof.photoUrl })),
+        proofUrl: proofDocs[0]?.photoUrl || "",
       },
     });
   } catch (err) {
-    if (proofDoc) await proofDoc.deleteOne();
-    if (uploaded) {
+    await Promise.allSettled(itemDocs.map(async (item, index) => {
+      const original = originalItemStates[index];
+      if (!original) return;
+      item.action = original.action;
+      item.status = original.status;
+      item.dueAt = original.dueAt;
+      await item.save();
+    }));
+    if (visitDoc?.status === "completed") {
+      visitDoc.status = "accepted";
+      visitDoc.doneAt = null;
+      await visitDoc.save().catch(() => {});
+    }
+    await Promise.allSettled(proofDocs.map((proof) => proof.deleteOne()));
+    if (uploadedPhotos.length) {
       const { deleteImage } = require("../config/cloudinary");
-      await deleteImage(uploaded.publicId);
+      await Promise.allSettled(uploadedPhotos.map((photo) => deleteImage(photo.publicId)));
     }
     handleError(err, res);
   }

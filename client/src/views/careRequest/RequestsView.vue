@@ -4,7 +4,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import CareRequestsView from './CareRequestsView.vue'
-import CareVisits from '@/components/careVisit/CareVisits.vue'
+import CareVisitsView from '@/views/careVisit/CareVisitsView.vue'
 
 const route = useRoute()
 const tab = computed(() => (route.query.tab === 'sits' ? 'sits' : 'requests'))
@@ -32,7 +32,7 @@ const tab = computed(() => (route.query.tab === 'sits' ? 'sits' : 'requests'))
     </ul>
 
     <CareRequestsView v-if="tab === 'requests'" />
-    <CareVisits v-else />
+    <CareVisitsView v-else />
   </div>
 </template>
 

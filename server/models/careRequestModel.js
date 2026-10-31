@@ -13,6 +13,11 @@ const careRequestSchema = new mongoose.Schema(
       maxlength: [1000, "Note cannot exceed 1000 characters"],
       default: "",
     },
+    waterSource: {
+      type: String,
+      enum: ["left_out", "tap_available", "sitter_brings"],
+      default: "tap_available",
+    },
     tokenReward: {
       type: Number,
       required: [true, "Reward is required"],
