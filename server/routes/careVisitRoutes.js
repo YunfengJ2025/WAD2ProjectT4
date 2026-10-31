@@ -1,6 +1,6 @@
 const express = require("express");
 const requireUser = require("../middleware/requireUser");
-const { uploadPhoto } = require("../middleware/uploadPhoto");
+const { uploadPlantPhotos } = require("../middleware/uploadPhoto");
 const controller = require("../controllers/careRequestController");
 const router = express.Router();
 router.use(requireUser);
@@ -8,5 +8,5 @@ router.get("/", controller.myVisits);
 router.get("/available", controller.availableVisits);
 router.get("/assignments", controller.myAssignments);
 router.post("/:visitId/accept", controller.acceptVisit);
-router.post("/:visitId/proof", uploadPhoto, controller.addVisitProof);
+router.post("/:visitId/proof", uploadPlantPhotos, controller.addVisitProof);
 module.exports = router;

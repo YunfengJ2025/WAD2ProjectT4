@@ -6,6 +6,8 @@ const requestItemSchema = new mongoose.Schema({
   visitId: { type: Number, required: true, immutable: true },
   plantId: { type: Number, required: true, immutable: true },
   action: { type: String, required: true, trim: true, maxlength: 100 },
+  amountToWater: { type: Number, min: 0, default: 0 },
+  careInstructions: { type: String, trim: true, maxlength: 500, default: "" },
   status: {
     type: String,
     enum: ["pending", "accepted", "completed", "cancelled"],

@@ -16,6 +16,17 @@ const upload = multer({
   },
 }).single("photo");
 
+const uploadPhotos = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (PHOTO_TYPES.includes(file.mimetype)) return cb(null, true);
+    const err = new Error("Photo must be a JPG, PNG or WebP image");
+    err.code = "INVALID_TYPE";
+    cb(err);
+  },
+}).any();
+
 // Turns upload errors into { errors: { photo } } responses the form can show
 // next to the field.
 function uploadPhoto(req, res, next) {
@@ -31,4 +42,15 @@ function uploadPhoto(req, res, next) {
   });
 }
 
-module.exports = { uploadPhoto };
+function uploadPlantPhotos(req, res, next) {
+  uploadPhotos(req, res, (err) => {
+    if (!err) return next();
+    let message = "Photo upload failed";
+    if (err.code === "LIMIT_FILE_SIZE") message = "Each photo must be 2MB or smaller";
+    else if (err.code === "INVALID_TYPE") message = err.message;
+    else console.log(err);
+    res.status(400).json({ message, errors: { photos: message } });
+  });
+}
+
+module.exports = { uploadPhoto, uploadPlantPhotos };
