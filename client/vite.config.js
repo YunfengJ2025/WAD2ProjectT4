@@ -12,6 +12,7 @@ export default defineConfig({
   ],
   // /api/plants -> http://localhost:8000/plants; stores send JWT Bearer headers.
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

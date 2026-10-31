@@ -70,13 +70,13 @@ function date(value) {
           <input v-model="actions[item.plantId]" maxlength="100" required placeholder="e.g. Watered and checked the soil" />
         </label>
         <label>
-          Proof photo for this plant
-          <input type="file" accept="image/jpeg,image/png,image/webp" required @change="choosePhoto($event, item.plantId)" />
+          Take or choose a proof photo
+          <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required @change="choosePhoto($event, item.plantId)" />
         </label>
       </div>
     </div>
     <p class="upload-hint">Upload one JPG, PNG or WebP photo per plant (up to 2 MB each).</p>
-    <p v-if="visit.request?.note">{{ visit.request.note }}</p>
+    <p v-if="visit.request?.note">Notes from owner: {{ visit.request.note }}</p>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <button class="btn btn-primary" :disabled="busy">
         {{ busy ? 'Saving…' : 'Submit visit proof' }}
