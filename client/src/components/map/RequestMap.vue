@@ -172,7 +172,7 @@ onMounted(() => {
     container: mapEl.value,
     style: mapStyle,
     center: [103.8198, 1.3521], // start on the whole island
-    zoom: 9.4,
+    zoom: 6,
     pitch: 55,
     bearing: -15,
     minZoom: 8.5,
@@ -193,7 +193,7 @@ onMounted(() => {
         source: 'areas',
         maxzoom: 14,
         paint: {
-          'fill-extrusion-color': '#dfe3e1',
+          'fill-extrusion-color': '#a8d5ba',
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 10, 1500, 12.5, 400, 13.5, 0],
           'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 1, 14, 0],
         },
