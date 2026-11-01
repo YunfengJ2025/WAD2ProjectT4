@@ -54,7 +54,9 @@ const average = computed(() =>
           <UserAvatar :user="store.profile.user" :size="128" />
           <h2 class="profile-name">{{ store.profile.user.userName }}</h2>
           <p class="member-label">Plant-loving neighbour</p>
-          <p v-if="store.profile.user.bio" class="bio profile-bio-text">{{ store.profile.user.bio }}</p>
+          <p v-if="store.profile.user.bio" class="bio profile-bio-text">
+            {{ store.profile.user.bio }}
+          </p>
           <p v-else class="no-bio">This neighbour hasn't added a bio yet.</p>
           <dl class="joined profile-meta">
             <dt>Member since</dt>
@@ -146,7 +148,9 @@ h1 {
   color: var(--muted);
   font-size: 0.8rem;
 }
-.member-label { font-size: 0.8rem; }
+.member-label {
+  font-size: 0.8rem;
+}
 .bio {
   font-size: 0.9rem;
   line-height: 1.8;

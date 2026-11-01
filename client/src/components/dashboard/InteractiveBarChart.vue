@@ -29,7 +29,7 @@ import {
   Legend,
   BarElement,
   CategoryScale,
-  LinearScale
+  LinearScale,
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 
@@ -54,8 +54,8 @@ const chartOptions = computed(() => ({
         font: { family: "'Outfit', 'Inter', sans-serif", size: 12, weight: '600' },
         usePointStyle: true,
         padding: 16,
-        color: '#292524'
-      }
+        color: '#292524',
+      },
     },
     tooltip: {
       backgroundColor: 'rgba(28, 25, 23, 0.92)',
@@ -64,19 +64,19 @@ const chartOptions = computed(() => ({
       padding: 12,
       cornerRadius: 10,
       boxPadding: 4,
-    }
+    },
   },
   scales: {
     x: {
       grid: { display: false },
-      ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#78716c' }
+      ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#78716c' },
     },
     y: {
       beginAtZero: true,
       ticks: { precision: 0, font: { family: "'Inter', sans-serif", size: 11 }, color: '#78716c' },
-      grid: { color: 'rgba(0, 0, 0, 0.04)' }
-    }
-  }
+      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+    },
+  },
 }))
 </script>
 
