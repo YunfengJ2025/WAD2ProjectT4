@@ -15,12 +15,16 @@
           glass-card = glassmorphism CSS class [NOT IN WAD2 CONTENT]
           @change event binding — covered in WAD2 wk5 (Vue Events)
           :checked prop binding — covered in WAD2 wk4 (v-bind)
+          <router-link> — covered in WAD2 wk6 (Vue Router)
         -->
-        <div class="opt-out-box glass-card">
-          <label class="switch-label">
-            <input type="checkbox" :checked="isOptedOut" @change="toggleOptOut" class="styled-checkbox" />
-            <span class="switch-text">Hide my profile from Leaderboard</span>
-          </label>
+        <div class="header-actions">
+          <router-link to="/dashboard" class="btn btn-primary btn-sm">🌱 View Dashboard</router-link>
+          <div class="opt-out-box glass-card">
+            <label class="switch-label">
+              <input type="checkbox" :checked="isOptedOut" @change="toggleOptOut" class="styled-checkbox" />
+              <span class="switch-text">Hide my profile from Leaderboard</span>
+            </label>
+          </div>
         </div>
       </header>
 
@@ -248,6 +252,13 @@ onMounted(async () => {
   margin: 4px 0 0;
   color: var(--color-neutral-500);
   font-size: 0.88rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .opt-out-box {
