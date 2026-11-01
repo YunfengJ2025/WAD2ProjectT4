@@ -117,11 +117,24 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+// useAuthStore() is a Pinia store — global reactive state for auth [NOT IN WAD2 CONTENT]
+// Holds the logged-in user's data so all components share the same auth state.
 const auth = useAuthStore()
+
+// isOptedOut tracks whether the current user has chosen to hide their profile.
+// Starts as false; updated by fetchOptOutStatus() on mount.
 const isOptedOut = ref(false)
 
+// computed() — covered in WAD2 wk4/wk5
+// Optional chaining (?.) safely reads nested properties without crashing if auth.user is null.
+// This is modern JS — not WAD2-specific. It's equivalent to:
+//   auth.user !== null && auth.user !== undefined ? auth.user.userId : null
 const CURRENT_USER_ID = computed(() => auth.user?.userId || auth.user?.id || null)
 
+// isCurrentUser() — defensive dual-match logic:
+// First tries to match by numeric userId (from DB), then falls back to matching by
+// userName string (case-insensitive). This guards against the auth store returning
+// slightly different user object shapes depending on how/when the user logged in.
 function isCurrentUser(u) {
   if (!auth.user) return false
   if (CURRENT_USER_ID.value && String(u.id) === String(CURRENT_USER_ID.value)) return true
@@ -129,21 +142,31 @@ function isCurrentUser(u) {
   return false
 }
 
-// Initial empty leaderboard array.
-// Will be dynamically populated via fetchLeaderboard() from GET /api/leaderboard
+// Initial empty leaderboard array — starts as [] so v-for renders nothing.
+// Populated reactively once fetchLeaderboard() resolves.
 const leaderboard = ref([])
 
 // computed() with .filter() and .map() — covered in WAD2 wk4/wk5 (Vue + JS arrays)
+// filteredLeaderboard is derived state — it recalculates automatically whenever
+// leaderboard or isOptedOut changes (Vue tracks these dependencies).
+// Steps:
+//   1. .filter() removes the current user from the list if they've opted out.
+//   2. .map() with spread (...u) creates a new object for each user with rank attached.
+//      Spread operator — modern JS, not explicitly in WAD2.
+//      rank is recalculated from the current array index so if #1 opts out,
+//      everyone below automatically moves up without any server call.
 const filteredLeaderboard = computed(() => {
   let list = leaderboard.value
   if (isOptedOut.value) {
     list = list.filter((u) => !isCurrentUser(u))
   }
-  // spread operator (...) with map — modern JS, not explicitly in WAD2
   return list.map((u, i) => ({ ...u, rank: i + 1 }))
 })
 
 // async/await + axios.get() — covered in WAD2 wk5
+// Calls GET /api/leaderboard which returns users sorted by availableTokens descending.
+// The backend already excludes opted-out users at the DB level (hideFromLeaderboard: {$ne: true})
+// so we never even receive their data — a second line of privacy protection.
 async function fetchLeaderboard() {
   try {
     const res = await axios.get('http://localhost:8000/api/leaderboard')
@@ -155,7 +178,10 @@ async function fetchLeaderboard() {
   }
 }
 
-// Fetch user's saved opt-out status from backend
+// Calls GET /api/leaderboard/status/:userId to retrieve the user's saved opt-out preference.
+// This is needed because if the user opted out in a previous session, the checkbox
+// must already appear ticked when they open the page — we cannot rely on in-memory state.
+// Falls back to auth.user.hideFromLeaderboard if the API call fails (e.g. no connection).
 async function fetchOptOutStatus() {
   const targetId = CURRENT_USER_ID.value
   if (!targetId) {
@@ -180,31 +206,40 @@ async function fetchOptOutStatus() {
 }
 
 // axios.patch() — covered in WAD2 wk5 (HTTP methods)
+// PATCH = partial update. We're only changing one field (hideFromLeaderboard) on the user,
+// not replacing the entire user document. Using the correct HTTP verb is REST best practice.
+// Pattern: Optimistic UI — we flip isOptedOut.value immediately (instant feedback),
+// then confirm with the server. If the server fails, we flip it back (the catch block).
 async function toggleOptOut() {
   const targetId = CURRENT_USER_ID.value
-  isOptedOut.value = !isOptedOut.value
+  isOptedOut.value = !isOptedOut.value // immediate UI update (optimistic)
 
   if (targetId) {
     try {
       const res = await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
       if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
-        isOptedOut.value = res.data.hideFromLeaderboard
+        isOptedOut.value = res.data.hideFromLeaderboard // confirm with server's actual value
         if (auth.user) {
           auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
         }
       }
-      await fetchLeaderboard()
+      await fetchLeaderboard() // re-fetch so the list reflects the change immediately
     } catch (err) {
       console.error('Error toggling opt-out:', err)
-      isOptedOut.value = !isOptedOut.value
+      isOptedOut.value = !isOptedOut.value // revert on failure
     }
   }
 }
 
-// Arrow function returning object lookup — basic JS
+// Object lookup with fallback — concise alternative to a switch/if-else chain.
+// { 1: '🥇', 2: '🥈', 3: '🥉' }[rank] looks up the rank as a key.
+// If rank > 3, the lookup returns undefined, so || `#${rank}` gives '#4', '#5', etc.
 const rankMedal = (rank) => ({ 1: '🥇', 2: '🥈', 3: '🥉' }[rank] || `#${rank}`)
 
 // onMounted() lifecycle hook — covered in WAD2 wk5
+// We await fetchOptOutStatus() FIRST so the checkbox is in the correct state
+// before the leaderboard list renders — otherwise the user might see a flicker
+// where they briefly appear on the list even though they've opted out.
 onMounted(async () => {
   await fetchOptOutStatus()
   await fetchLeaderboard()
