@@ -93,7 +93,7 @@
           <h2>🏅 Milestone Badges</h2>
           <span class="badge badge-progress">Community Achievements</span>
         </div>
-        <p class="section-sub">Unlock milestone badges by completing plant care visits for corridor &amp; balcony plants</p>
+        <p class="section-sub">Unlock milestone badges by completing plant care visits</p>
         <div class="badges-grid">
           <!--
             v-for with :key — covered in WAD2 wk4 (Vue Basics I)
@@ -114,16 +114,21 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+// useAuthStore() is a Pinia store — a global reactive state manager [NOT IN WAD2 CONTENT]
+// It holds the currently logged-in user's data (userId, name, tokens, etc.)
+// across all components without prop-drilling. WAD2 wk6 introduces Vuex/Pinia conceptually.
 const auth = useAuthStore()
 
 // Component imports — covered in WAD2 wk6 (<script setup> imports)
+// These are locally registered child components — they do NOT need app.component() registration
+// because <script setup> automatically makes imported components available in the template.
 import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
 import BadgeCard from '../../components/dashboard/BadgeCard.vue'
 
 // ref() reactive state — covered in WAD2 wk4/wk5
-// Initial empty state before fetching live data from MongoDB via backend API.
-// Setting default object properties prevents Vue runtime errors (e.g. Cannot read property of null)
-// while waiting for axios.get() to respond.
+// We initialise userData and stats with empty/zero defaults so Vue never tries to
+// render {{ undefined }} while waiting for the API. Without defaults, accessing
+// userData.name before the API responds would throw "Cannot read property of null".
 const userData = ref({
   name: "",
   avatarUrl: "",
@@ -142,15 +147,19 @@ const stats = ref({
   plantsCaredFor: 0,
 })
 
-// Empty badges list populated dynamically from GET /api/dashboard/stats/:userId
+// badges starts as [] so v-for renders nothing (empty grid) until data arrives.
 const badges = ref([])
 
-// Chart data starts as null so <InteractiveBarChart> displays its clean loading spinner
-// until live data arrives from GET /api/dashboard/charts/:userId
+// activityChartData and tokenChartData start as null — NOT empty {}.
+// <InteractiveBarChart> uses v-if="chartData && chartData.labels" to guard rendering.
+// null = spinner shows; {} = Chart.js tries to render with missing data and crashes.
 const activityChartData = ref(null)
 const tokenChartData = ref(null)
 
 // computed() — covered in WAD2 wk4/wk5
+// Reads the current hour once at mount time and returns a greeting string.
+// Using computed() instead of a plain variable means Vue memoises the result —
+// it won't recompute every render if the hour hasn't changed.
 const timeOfDay = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return 'morning'
@@ -159,19 +168,23 @@ const timeOfDay = computed(() => {
 })
 
 // async/await + axios.get() — covered in WAD2 wk5 (Express + Axios)
-// Fetches live user statistics, badges, and chart metrics from the backend API
+// We chain three sequential API calls:
+// 1. GET /api/leaderboard   — to resolve the logged-in user's userId
+// 2. GET /api/dashboard/stats/:id — returns stats, user object, and badge array
+// 3. GET /api/dashboard/charts/:id — returns 6-month activity & token datasets
+// All three are awaited so data flows in order: no chart rendering before userId is known.
 async function fetchDashboard() {
   try {
     const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
+    // Optional chaining (?.) — modern JS, not WAD2-specific.
+    // Safely reads nested properties without throwing if auth.user is null.
     const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
     if (activeUserId) {
-      // Fetch user profile metrics and milestone badges
       const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${activeUserId}`)
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
-      // Fetch monthly visualisations data for Chart.js
       const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${activeUserId}`)
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
@@ -182,6 +195,9 @@ async function fetchDashboard() {
 }
 
 // onMounted() lifecycle hook — covered in WAD2 wk5 (Vue lifecycle)
+// Fires once after the component's DOM is inserted into the page.
+// We call fetchDashboard() here rather than at the top level so that
+// the API call only runs when this component is actually rendered, not on import.
 onMounted(() => {
   fetchDashboard()
 })
