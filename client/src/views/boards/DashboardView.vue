@@ -33,7 +33,7 @@
           <div>
             <!-- || 0 fallback — basic JS short-circuit, WAD2 wk4+ -->
             <div class="stat-val">{{ stats.totalPlantsOwned || 0 }}</div>
-            <div class="stat-label">Plants Owned</div>
+            <div class="stat-label">Total Plants Owned</div>
           </div>
         </div>
 
@@ -41,7 +41,7 @@
           <span class="stat-icon">📋</span>
           <div>
             <div class="stat-val">{{ stats.careRequestsPosted || 0 }}</div>
-            <div class="stat-label">Requests Posted</div>
+            <div class="stat-label">Total Requests Posted</div>
           </div>
         </div>
 
@@ -49,7 +49,7 @@
           <span class="stat-icon">🤝</span>
           <div>
             <div class="stat-val">{{ stats.visitsCompleted || 0 }}</div>
-            <div class="stat-label">Visits as Helper</div>
+            <div class="stat-label">Total Visits as Helper</div>
           </div>
         </div>
 
