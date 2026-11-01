@@ -532,21 +532,6 @@ exports.getUserCharts = async (req, res) => {
       });
     } catch (e) {}
 
-    // Provide default non-zero baseline curve if no transactions in historical months yet
-    const hasTokenData =
-      tokensEarnedData.some((v) => v > 0) || tokensSpentData.some((v) => v > 0);
-    if (!hasTokenData) {
-      tokensEarnedData = [20, 30, 45, 50, 35, 25];
-      tokensSpentData = [15, 20, 10, 15, 10, 5];
-    }
-
-    const hasActivityData =
-      visitsData.some((v) => v > 0) || requestsData.some((v) => v > 0);
-    if (!hasActivityData) {
-      visitsData = [1, 2, 4, 5, 3, 2];
-      requestsData = [2, 1, 3, 2, 1, 2];
-    }
-
     res.json({
       success: true,
       activityChart: {
