@@ -35,6 +35,7 @@ async function open(initial = []) {
 it('loads persisted likes and toggles full and empty hearts using server counts', async () => {
   await open([{ ...post, liked: true }])
   expect(wrapper.get('button').attributes('aria-pressed')).toBe('true')
+  expect(wrapper.get('button').classes()).not.toContain('celebrating')
   fetch.mockResolvedValueOnce(response({ postId: 5, liked: false, likedCount: 1 }))
   await wrapper.get('button').trigger('click')
   await flushPromises()
@@ -45,6 +46,9 @@ it('loads persisted likes and toggles full and empty hearts using server counts'
   await wrapper.get('button').trigger('click')
   await flushPromises()
   expect(fetch.mock.calls[2][1].method).toBe('POST')
+  expect(wrapper.get('button').classes()).toContain('celebrating')
+  await wrapper.get('svg').trigger('animationend')
+  expect(wrapper.get('button').classes()).not.toContain('celebrating')
   expect(wrapper.get('button').attributes('aria-pressed')).toBe('true')
 })
 it('blocks duplicate clicks and keeps state unchanged when a request fails', async () => {
@@ -62,6 +66,7 @@ it('blocks duplicate clicks and keeps state unchanged when a request fails', asy
   reject(new Error('Offline'))
   await flushPromises()
   expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
+  expect(wrapper.get('button').classes()).not.toContain('celebrating')
   expect(wrapper.get('[role="alert"]').text()).toContain('Could not reach the server')
 })
 it('clears liked posts on logout and sends guest clicks to sign in', async () => {

@@ -7,7 +7,11 @@ import CreatePostView from './CreatePostView.vue'
 import PostDetailView from './PostDetailView.vue'
 import RecentlyLikedView from './RecentlyLikedView.vue'
 import ProfilePosts from '@/components/user/ProfilePosts.vue'
+import { useLikesStore } from '@/stores/likes'
 import { useAuthStore } from '@/stores/auth'
+
+// Keep leaderboard requests separate from feed interaction fixtures.
+vi.mock('axios', () => ({ default: { get: vi.fn(async () => ({ data: { leaderboard: [] } })) } }))
 
 let wrapper
 const emptyPage = { template: '<p>Page</p>' }
@@ -53,7 +57,8 @@ it('loads all posts newest first and links the plus button to create post', asyn
           postId: 2,
           creatorId: 3,
           content: 'A new leaf!',
-          title: 'Leaf', postImages: ['https://example.com/leaf.jpg'],
+          title: 'Leaf',
+          postImages: ['https://example.com/leaf.jpg'],
           likedCount: 1,
         },
       ]),
@@ -80,7 +85,7 @@ it('offers retry after a feed error and then shows the empty state', async () =>
   )
   await open(CommunityView)
   expect(wrapper.get('[role="alert"]').text()).toContain('Unavailable')
-  await wrapper.get('button').trigger('click')
+  await wrapper.get('[role="alert"] button').trigger('click')
   await flushPromises()
   expect(wrapper.text()).toContain('Every community starts with a hello')
 })
@@ -181,11 +186,17 @@ it('shows a large carousel, reviews and replies, and publishes a review', async 
   await open(PostDetailView, '/community/5')
   expect(wrapper.text()).toContain('Beautiful!')
   expect(wrapper.text()).toContain('Thank you!')
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[0])
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe(post.postImages[0])
   await wrapper.get('[aria-label="Next photo"]').trigger('click')
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[1])
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe(post.postImages[1])
   await wrapper.get('[aria-label="Next photo"]').trigger('click')
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(post.postImages[0])
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe(post.postImages[0])
   await wrapper.get('#new-review').setValue('Love this')
   await wrapper.get('form').trigger('submit')
   await flushPromises()
@@ -211,31 +222,63 @@ it('supports single-photo posts without carousel controls', async () => {
       .mockResolvedValueOnce(reply([])),
   )
   await open(PostDetailView, '/community/5')
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe(
-    'https://example.com/old.jpg',
-  )
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe('https://example.com/old.jpg')
   expect(wrapper.find('[aria-label="Next photo"]').exists()).toBe(false)
 })
 
 it('shows the title in a card without photos and links avatars to profiles', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => reply([{ postId: 7, creatorId: 2, title: 'Growing without a photo', postImages: [], content: 'Body', likedCount: 0 }])))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      reply([
+        {
+          postId: 7,
+          creatorId: 2,
+          title: 'Growing without a photo',
+          postImages: [],
+          content: 'Body',
+          likedCount: 0,
+        },
+      ]),
+    ),
+  )
   await open(CommunityView)
   expect(wrapper.get('.post-card-text').text()).toBe('Growing without a photo')
   expect(wrapper.get('.post-card-link').attributes('href')).toBe('/community/7')
   expect(wrapper.get('.post-card-author').attributes('href')).toBe('/profile/2')
 })
 
-
 it('shows recent own posts on the profile and links to all posts', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => reply([{ postId: 5, creatorId: 3, title: 'My fern', content: 'Hello', postImages: [] }])))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      reply([{ postId: 5, creatorId: 3, title: 'My fern', content: 'Hello', postImages: [] }]),
+    ),
+  )
   await open(ProfilePosts)
   expect(fetch.mock.calls[0][0]).toBe('/api/post/me')
   expect(wrapper.text()).toContain('My fern')
-  expect(wrapper.findAll('a').some(link => link.attributes('href') === '/my-posts')).toBe(true)
+  expect(wrapper.findAll('a').some((link) => link.attributes('href') === '/my-posts')).toBe(true)
 })
 
 it('edits own post, removes a retained photo and saves without changing the creator', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply({ postId: 5, creatorId: 3, title: 'Original', content: 'Hello', postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] })).mockResolvedValueOnce(reply({ postId: 5 })))
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(
+        reply({
+          postId: 5,
+          creatorId: 3,
+          title: 'Original',
+          content: 'Hello',
+          postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+        }),
+      )
+      .mockResolvedValueOnce(reply({ postId: 5 })),
+  )
   const router = await open(CreatePostView, '/community/5/edit')
   expect(wrapper.get('#post-title').element.value).toBe('Original')
   await wrapper.get('[aria-label="Remove current photo 1"]').trigger('click')
@@ -250,9 +293,22 @@ it('edits own post, removes a retained photo and saves without changing the crea
   expect(router.currentRoute.value.path).toBe('/my-posts')
 })
 
-
 it('swipes photos horizontally and ignores a primarily vertical gesture', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply({ postId: 5, creatorId: 2, title: 'Garden', content: 'Hello', postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'] })).mockResolvedValueOnce(reply([])))
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(
+        reply({
+          postId: 5,
+          creatorId: 2,
+          title: 'Garden',
+          content: 'Hello',
+          postImages: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+        }),
+      )
+      .mockResolvedValueOnce(reply([])),
+  )
   await open(PostDetailView, '/community/5')
   const stage = wrapper.get('.community-gallery-stage')
   Object.defineProperty(stage.element, 'clientWidth', { value: 500 })
@@ -264,21 +320,91 @@ it('swipes photos horizontally and ignores a primarily vertical gesture', async 
   }
   await pointer('pointerdown', { pointerId: 1, clientX: 200, clientY: 20, button: 0 })
   await pointer('pointermove', { pointerId: 1, clientX: 50, clientY: 25 })
+  // Both photos are already rendered; the track follows the pointer before release.
+  expect(wrapper.findAll('.post-gallery-photo')).toHaveLength(4)
+  expect(wrapper.get('.post-gallery-track').attributes('style')).toContain('-150px')
+  expect(wrapper.get('.community-gallery-stage').classes()).toContain('photo-dragging')
   await pointer('pointerup', { pointerId: 1, clientX: 50, clientY: 25 })
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe('https://example.com/2.jpg')
+  expect(wrapper.get('.post-gallery-track').attributes('style')).toContain('-200%')
+  expect(wrapper.get('.post-gallery-track').attributes('style')).toContain('0px')
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe('https://example.com/2.jpg')
   await pointer('pointerdown', { pointerId: 2, clientX: 200, clientY: 20, button: 0 })
   await pointer('pointermove', { pointerId: 2, clientX: 210, clientY: 120 })
   await pointer('pointerup', { pointerId: 2, clientX: 210, clientY: 120 })
-  expect(wrapper.get('.post-gallery-photo').attributes('src')).toBe('https://example.com/2.jpg')
+  expect(
+    wrapper.get('.post-gallery-slide[aria-hidden="false"] .post-gallery-photo').attributes('src'),
+  ).toBe('https://example.com/2.jpg')
 })
 
-
 it('shows recently liked posts in server order and provides an empty state', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => reply([
-    { postId: 2, title: 'Most recent like', creatorId: 2, postImages: [], likedCount: 1 },
-    { postId: 9, title: 'Earlier like', creatorId: 2, postImages: [], likedCount: 1 },
-  ])))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      reply([
+        { postId: 2, title: 'Most recent like', creatorId: 2, postImages: [], likedCount: 1 },
+        { postId: 9, title: 'Earlier like', creatorId: 2, postImages: [], likedCount: 1 },
+      ]),
+    ),
+  )
   await open(RecentlyLikedView)
   expect(fetch.mock.calls[0][0]).toBe('/api/post/liked/me')
-  expect(wrapper.findAll('.post-card-title').map(node => node.text())).toEqual(['Most recent like', 'Earlier like'])
+  expect(wrapper.findAll('.post-card-title').map((node) => node.text())).toEqual([
+    'Most recent like',
+    'Earlier like',
+  ])
+})
+
+it('combines case-insensitive search with own and liked filters, then clears them', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      reply([
+        { postId: 3, creatorId: 3, title: 'Fern care', content: 'Watering advice', postImages: [] },
+        {
+          postId: 2,
+          creatorId: 2,
+          title: 'New leaves',
+          content: 'My FERN is growing',
+          postImages: [],
+        },
+        { postId: 1, creatorId: 2, title: 'Orchid', content: 'Flowers', postImages: [] },
+      ]),
+    ),
+  )
+  await open(CommunityView)
+  await wrapper.get('#community-search').setValue(' FERN ')
+  expect(wrapper.findAll('.post-card')).toHaveLength(2)
+  const filter = (label) =>
+    wrapper.findAll('.community-filters button').find((button) => button.text() === label)
+  await filter('My posts').trigger('click')
+  expect(wrapper.findAll('.post-card')).toHaveLength(1)
+  expect(wrapper.get('.post-card-title').text()).toBe('Fern care')
+  const likes = useLikesStore()
+  likes.loaded = true
+  likes.states = { 2: { liked: true, likedCount: 1 } }
+  await filter('Liked').trigger('click')
+  expect(wrapper.get('.post-card-title').text()).toBe('New leaves')
+  likes.states[2] = { liked: false, likedCount: 0 }
+  await flushPromises()
+  expect(wrapper.text()).toContain('No matching posts')
+  await wrapper.get('.community-clear').trigger('click')
+  expect(wrapper.get('#community-search').element.value).toBe('')
+  expect(wrapper.findAll('.post-card')).toHaveLength(3)
+})
+
+it('disables personal filters for guests and resets private selection on logout', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => reply([{ postId: 1, creatorId: 3, title: 'Fern', content: 'Hello' }])),
+  )
+  await open(CommunityView)
+  const buttons = wrapper.findAll('.community-filters button')
+  await buttons[1].trigger('click')
+  useAuthStore().clearSession()
+  await flushPromises()
+  expect(buttons[0].attributes('aria-pressed')).toBe('true')
+  expect(buttons[1].element.disabled).toBe(true)
+  expect(buttons[2].element.disabled).toBe(true)
 })

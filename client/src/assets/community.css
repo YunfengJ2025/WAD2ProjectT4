@@ -834,19 +834,180 @@
   cursor: pointer;
 }
 /* Keep the history action discoverable by pointer and keyboard. */
-.community-back-button:hover { color: var(--accent); }
-.community-back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.community-back-button:hover {
+  color: var(--accent);
+}
+.community-back-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 
 /* Horizontal swipes change photos while vertical gestures still scroll the page. */
-.community-gallery-stage { touch-action: pan-y; cursor: grab; user-select: none; overflow: hidden; }
-.community-gallery-stage.photo-dragging { cursor: grabbing; }
-/* Snap the photo back gently after a short drag, without cropping the full image. */
-.post-gallery-photo { transition: transform 220ms ease; }
-.photo-dragging .post-gallery-photo { transition: none; }
-/* Keyed photos fade out and in rather than abruptly swapping their source. */
-.post-photo-enter-active, .post-photo-leave-active { transition: opacity 160ms ease; }
-.post-photo-enter-from, .post-photo-leave-to { opacity: 0; }
+.community-gallery-stage {
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  overflow: hidden;
+}
+.community-gallery-stage.photo-dragging {
+  cursor: grabbing;
+}
+/* All photos live side-by-side so the neighbouring slide appears during the drag. */
+.post-gallery-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+/* Each slide occupies exactly one viewport; full photos remain uncropped. */
+.post-gallery-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.post-gallery-slide .post-gallery-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* Follow the pointer directly, then animate to the nearest complete slide on release. */
+.photo-dragging .post-gallery-track,
+.post-gallery-track.track-reset {
+  transition: none;
+}
 /* Keep navigation immediate for users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .post-gallery-photo, .post-photo-enter-active, .post-photo-leave-active { transition: none; }
+  .post-gallery-track {
+    transition: none;
+  }
+}
+
+/* Search and filters share one responsive toolbar, with visible keyboard focus. */
+.community-tools {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.community-search {
+  flex: 1 1 260px;
+}
+.community-search label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.community-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--color-text);
+  font: inherit;
+}
+.community-filters {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.community-filters button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+.community-filters button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.community-filters button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.community-filters button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.community-search input:focus-visible,
+.community-filters button:focus-visible,
+.community-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* Keep the result count and reset action aligned without affecting the card grid. */
+.community-results {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0.5rem 0 1rem;
+  gap: 1rem;
+}
+.community-results p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.community-clear {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+/* Vue measures keyed card positions and applies FLIP transforms through the move class. */
+.community-filter-move {
+  transition: transform 260ms ease;
+}
+.community-filter-enter-active,
+.community-filter-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.community-filter-enter-from,
+.community-filter-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+/* Mobile filters remain reachable without horizontal page overflow. */
+@media (max-width: 575px) {
+  .community-filters {
+    width: 100%;
+  }
+  .community-filters button {
+    flex: 1;
+  }
+}
+/* Filtering remains immediate when motion is reduced. */
+@media (prefers-reduced-motion: reduce) {
+  .community-filter-move,
+  .community-filter-enter-active,
+  .community-filter-leave-active,
+  .community-filters button {
+    transition: none;
+  }
+  .community-filter-enter-from,
+  .community-filter-leave-to {
+    transform: none;
+  }
 }
