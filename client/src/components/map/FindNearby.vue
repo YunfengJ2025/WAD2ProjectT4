@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import RequestMap from '../map/RequestMap.vue'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
 
 const auth = useAuthStore()
@@ -62,6 +63,30 @@ function formatDate(value) {
     month: 'short',
     timeZone: 'Asia/Singapore',
   })
+}
+
+// the server sends plain Singapore dates like "2026-11-01"
+function formatDay(ymd) {
+  if (!ymd) return ''
+  return new Date(`${ymd}T00:00:00+08:00`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Singapore',
+  })
+}
+
+function formatPeriod(visit) {
+  if (!visit.startDate || !visit.endDate) return ''
+  return visit.startDate === visit.endDate
+    ? formatDay(visit.startDate)
+    : `${formatDay(visit.startDate)} – ${formatDay(visit.endDate)}`
+}
+
+// owners often leave the amount at 0, so fall back to the plant's own usual amount
+function waterText(plant) {
+  if (plant.amountToWater > 0) return `Water ${plant.amountToWater} ml`
+  if (plant.usualAmountMl > 0) return `Usual ${plant.usualAmountMl} ml`
+  return ''
 }
 
 const plantCountLabel = (visit) => `${visit.plants.length} plant${visit.plants.length === 1 ? '' : 's'}`
@@ -161,44 +186,95 @@ async function acceptVisit(visit) {
       </div>
 
       <!-- pin selected: details and the accept button -->
-      <div v-else>
-        <button type="button" class="btn btn-sm btn-outline-secondary" @click="pinSelected = null">
+      <div v-else class="detail">
+        <button type="button" class="btn btn-sm btn-outline-secondary backBtn" @click="pinSelected = null">
           ← Back to list
         </button>
 
-        <h2 class="detailTitle">{{ pinSelected.address }}</h2>
-        <p class="meta">
-          {{ formatDistance(pinSelected.distanceKm) }} away · {{ formatDate(pinSelected.visitDate) }} ·
-          {{ pinSelected.tokenReward }} tokens
-        </p>
-        <p><strong>Owner:</strong> {{ pinSelected.ownerName }}</p>
-        <p><strong>Water:</strong> {{ waterSourceLabels[pinSelected.waterSource] || 'Tap available' }}</p>
-        <p v-if="pinSelected.note"><strong>Notes:</strong> {{ pinSelected.note }}</p>
-
-        <div class="plantTiles">
-          <div v-for="p in pinSelected.plants" :key="p.plantId" class="plantTile">
-            <img
-              :src="p.photoUrl || plantPlaceholder"
-              :alt="p.plantName"
-              @error="$event.target.src = plantPlaceholder"
-            />
-            <div>
-              <strong>{{ p.plantName }}</strong>
-              <span>{{ p.plantLocation }}</span>
-              <span>Water {{ p.amountToWater }} ml</span>
-              <span v-if="p.careInstructions">{{ p.careInstructions }}</span>
-            </div>
+        <header class="detailHead">
+          <h2>{{ pinSelected.address }}</h2>
+          <div class="chips">
+            <span class="chip">{{ formatDistance(pinSelected.distanceKm) }} away</span>
+            <span v-if="pinSelected.totalDays > 1" class="chip">
+              Day {{ pinSelected.dayNumber }} of {{ pinSelected.totalDays }}
+            </span>
+            <span class="chip chipReward">{{ pinSelected.tokenReward }} tokens</span>
           </div>
-        </div>
+        </header>
 
-        <button
-          type="button"
-          class="btn btn-primary w-100"
-          :disabled="acceptingId === pinSelected.visitId"
-          @click="acceptVisit(pinSelected)"
+        <!-- the owner, as a button that opens their public profile -->
+        <RouterLink
+          class="ownerBtn"
+          :to="{ name: 'public-profile', params: { userId: pinSelected.ownerId } }"
+          :aria-label="`View ${pinSelected.ownerName}'s profile`"
         >
-          {{ acceptingId === pinSelected.visitId ? 'Accepting…' : 'Accept request' }}
-        </button>
+          <UserAvatar :user="{ userName: pinSelected.ownerName, photoUrl: pinSelected.ownerPhotoUrl }" :size="46" />
+          <span class="ownerText">
+            <small>Posted by</small>
+            <strong>{{ pinSelected.ownerName }}</strong>
+          </span>
+          <span class="ownerGo">View profile ›</span>
+        </RouterLink>
+
+        <dl class="facts">
+          <div>
+            <dt>Visit date</dt>
+            <dd>{{ formatDate(pinSelected.visitDate) }}</dd>
+          </div>
+          <div>
+            <dt>Request period</dt>
+            <dd>{{ formatPeriod(pinSelected) || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Water</dt>
+            <dd>{{ waterSourceLabels[pinSelected.waterSource] || 'Tap available' }}</dd>
+          </div>
+          <div>
+            <dt>Still open</dt>
+            <dd>{{ pinSelected.daysStillOpen }} of {{ pinSelected.totalDays }} day{{ pinSelected.totalDays === 1 ? '' : 's' }}</dd>
+          </div>
+        </dl>
+
+        <section v-if="pinSelected.note" class="noteBox">
+          <h3>Note from {{ pinSelected.ownerName }}</h3>
+          <p>{{ pinSelected.note }}</p>
+        </section>
+
+        <section>
+          <h3 class="sectionTitle">Plants to care for · {{ pinSelected.plants.length }}</h3>
+          <div class="plantTiles">
+            <article v-for="p in pinSelected.plants" :key="p.plantId" class="plantTile">
+              <img
+                :src="p.photoUrl || plantPlaceholder"
+                :alt="p.plantName"
+                @error="$event.target.src = plantPlaceholder"
+              />
+              <div class="plantBody">
+                <strong>{{ p.plantName }}</strong>
+                <span v-if="p.plantLocation" class="plantWhere">{{ p.plantLocation }}</span>
+                <div class="tags">
+                  <span v-if="waterText(p)" class="tag tagWater">{{ waterText(p) }}</span>
+                  <span v-if="p.rainExposed" class="tag tagRain">Rain-exposed</span>
+                </div>
+                <p v-if="p.careInstructions" class="instructions">{{ p.careInstructions }}</p>
+                <p v-if="p.weatherNote" class="weatherNote">{{ p.weatherNote }}</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- stays visible at the bottom while the panel scrolls -->
+        <div class="acceptBar">
+          <p>Accepting covers {{ formatDate(pinSelected.visitDate) }} only.</p>
+          <button
+            type="button"
+            class="btn btn-primary w-100"
+            :disabled="acceptingId === pinSelected.visitId"
+            @click="acceptVisit(pinSelected)"
+          >
+            {{ acceptingId === pinSelected.visitId ? 'Accepting…' : 'Accept request' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -308,48 +384,237 @@ async function acceptVisit(visit) {
   font-weight: 700;
 }
 
-.detailTitle {
-  margin: 0.9rem 0 0.2rem;
-  font-size: 1.2rem;
+/* ---------- detail card ---------- */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.meta {
-  color: #637466;
+.backBtn {
+  align-self: flex-start;
 }
 
+.detailHead h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #d5ded8;
+  color: #46584c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chipReward {
+  background: var(--accent, #2f7d4f);
+  border-color: var(--accent, #2f7d4f);
+  color: #fff;
+}
+
+/* owner button */
+.ownerBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d5ded8;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--transition-bounce, 500ms cubic-bezier(0.34, 1.56, 0.64, 1)),
+    box-shadow var(--transition-base, 250ms ease), border-color 0.2s;
+}
+
+.ownerBtn:hover,
+.ownerBtn:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent, #2f7d4f);
+  box-shadow: var(--shadow-md, 0 4px 10px rgba(0, 0, 0, 0.1));
+}
+
+.ownerText {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.2;
+}
+
+.ownerText small {
+  color: #718074;
+  font-size: 0.72rem;
+}
+
+.ownerText strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ownerGo {
+  color: var(--accent, #2f7d4f);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* key facts */
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.facts > div {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.facts dt {
+  color: #718074;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* owner's note */
+.noteBox {
+  padding: 0.7rem 0.9rem;
+  border-left: 4px solid var(--accent, #2f7d4f);
+  border-radius: 0 12px 12px 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.noteBox h3,
+.sectionTitle {
+  margin: 0 0 0.3rem;
+  color: #718074;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.noteBox p {
+  margin: 0;
+  font-size: 0.92rem;
+  white-space: pre-line;
+}
+
+/* plants */
 .plantTiles {
   display: grid;
   gap: 0.5rem;
-  margin: 0.8rem 0;
 }
 
 .plantTile {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem;
-  border-radius: 10px;
-  background: #f5f8f5;
+  gap: 0.65rem;
+  padding: 0.55rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .plantTile img {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   object-fit: cover;
 }
 
-.plantTile div {
+.plantBody {
   display: grid;
+  gap: 0.2rem;
   min-width: 0;
 }
 
-.plantTile span {
+.plantWhere {
   color: #718074;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
 }
 
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tag {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.tagWater {
+  background: #e3f0fb;
+  color: #1d5f94;
+}
+
+.tagRain {
+  background: #eee9fb;
+  color: #5a43a6;
+}
+
+.instructions,
+.weatherNote {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.weatherNote {
+  color: #9a5a00;
+}
+
+/* accept button stays in view while the panel scrolls */
+.acceptBar {
+  position: sticky;
+  bottom: -1rem; /* the scroll panel has 1rem padding, so this puts the bar flush at its bottom edge */
+  margin: 0 -1rem -1rem;
+  padding: 0.7rem 1rem 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  border-top: 1px solid #d5ded8;
+  backdrop-filter: blur(6px);
+}
+
+.acceptBar p {
+  margin: 0 0 0.4rem;
+  color: #637466;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ownerBtn {
+    transition: none;
+  }
+  .ownerBtn:hover,
+  .ownerBtn:focus-visible {
+    transform: none;
+  }
+}
 
 @media (max-width: 768px) {
   .pageContent {
