@@ -19,43 +19,75 @@ const handleError = (err, res) => {
 
 exports.createTokenTran = async (req, res) => {
   try {
-    // Public claims are for care rewards; registration issues system gifts internally.
-    if (req.body.type !== "CARE") {
+    const body = req.body || {};
+    if (!["CARE", "SYSTEM_GIFT"].includes(body.type)) {
       return res
         .status(400)
-        .json({ message: "Only care rewards can be created here" });
+        .json({ message: "Transaction type must be CARE or SYSTEM_GIFT" });
     }
-    const CareVisit = require("../models/careVisitModel");
-    const CareRequest = require("../models/careRequestModel");
-    const PhotoProof = require("../models/photoProofModel");
-    // Only the authenticated sitter can claim a completed visit with saved photo proof.
-    const visit = await CareVisit.findOne({
-      visitId: Number(req.body.visitId),
-      sitterId: req.userId,
-      status: "completed",
-    });
-    if (!visit || !(await PhotoProof.exists({ visitId: visit.visitId }))) {
-      return res
-        .status(400)
-        .json({
+    let txn;
+    if (body.type === "SYSTEM_GIFT") {
+      // System gifts intentionally require no authentication; validate the reward payload only.
+      if (
+        !Number.isSafeInteger(body.receiverId) ||
+        body.receiverId < 1 ||
+        !Number.isSafeInteger(body.amount) ||
+        body.amount < 1 ||
+        typeof body.reason !== "string" ||
+        !body.reason.trim()
+      ) {
+        return res.status(400).json({
+          message:
+            "System gifts require a positive integer receiverId and amount, and a reason",
+        });
+      }
+      if (
+        body.senderId != null ||
+        body.visitId != null ||
+        body.requestId != null
+      ) {
+        return res.status(400).json({
+          message: "System gifts cannot have a sender, visit or care request",
+        });
+      }
+      txn = await tokenTransaction.createTransaction({
+        type: "SYSTEM_GIFT",
+        receiverId: body.receiverId,
+        amount: body.amount,
+        reason: body.reason.trim(),
+      });
+    } else {
+      const CareVisit = require("../models/careVisitModel");
+      const CareRequest = require("../models/careRequestModel");
+      const PhotoProof = require("../models/photoProofModel");
+      // Only the authenticated sitter can claim a completed visit with saved photo proof.
+      const visit = await CareVisit.findOne({
+        visitId: Number(req.body.visitId),
+        sitterId: req.userId,
+        status: "completed",
+      });
+      if (!visit || !(await PhotoProof.exists({ visitId: visit.visitId }))) {
+        return res.status(400).json({
           message:
             "Complete your visit with photo proof before claiming the reward",
         });
+      }
+      const request = await CareRequest.findOne({ requestId: visit.requestId });
+      if (!request)
+        return res.status(404).json({ message: "Care request not found" });
+      // Derive the amount and participants from stored records, never client-supplied
+      // values that could increase the reward or charge a different owner.
+      txn = await tokenTransaction.createTransaction({
+        type: "CARE",
+        visitId: visit.visitId,
+        requestId: request.requestId,
+        senderId: request.ownerId,
+        receiverId: visit.sitterId,
+        amount: request.tokenReward,
+        reason: `Reward for care visit #${visit.visitId} for request #${request.requestId}`,
+      });
     }
-    const request = await CareRequest.findOne({ requestId: visit.requestId });
-    if (!request)
-      return res.status(404).json({ message: "Care request not found" });
-    // Derive the amount and participants from stored records, never client-supplied
-    // values that could increase the reward or charge a different owner.
-    const txn = await tokenTransaction.createTransaction({
-      type: "CARE",
-      visitId: visit.visitId,
-      requestId: request.requestId,
-      senderId: request.ownerId,
-      receiverId: visit.sitterId,
-      amount: request.tokenReward,
-      reason: `Reward for care visit #${visit.visitId} for request #${request.requestId}`,
-    });
+    // Both types use the same balance application and failed-transaction cleanup.
     try {
       const result = await userModel.applyTransactionToBalances(
         txn.transactionId,
@@ -73,7 +105,9 @@ exports.createTokenTran = async (req, res) => {
 
 exports.getTranHistoryByUser = async (req, res) => {
   try {
-    res.json(await tokenTransaction.getTransactionsByUser(Number(req.params.userId)));
+    res.json(
+      await tokenTransaction.getTransactionsByUser(Number(req.params.userId)),
+    );
   } catch (err) {
     handleError(err, res);
   }
@@ -89,7 +123,11 @@ exports.getAllTokenTran = async (req, res) => {
 exports.getTranByType = async (req, res) => {
   try {
     // uppercase so /type/care and /type/CARE both work
-    res.json(await tokenTransaction.getTransactionsByType(req.params.type.toUpperCase()));
+    res.json(
+      await tokenTransaction.getTransactionsByType(
+        req.params.type.toUpperCase(),
+      ),
+    );
   } catch (err) {
     handleError(err, res);
   }

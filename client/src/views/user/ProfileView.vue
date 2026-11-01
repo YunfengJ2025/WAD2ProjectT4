@@ -15,20 +15,21 @@ const profilePage = ref(null)
 const sidebar = ref(null)
 const activeSection = ref('about-me')
 const scrollOffset = ref(32)
-const sections = [
+const sections = computed(() => [
   { id: 'about-me', label: 'About me', icon: '◉' },
   { id: 'personal-details', label: 'Personal details', icon: '☷' },
   { id: 'address', label: 'My address', icon: '⌂' },
   { id: 'profile-reviews', label: 'My reviews', icon: '☆' },
   { id: 'profile-posts', label: 'My posts', icon: '▧' },
-]
+  ...(user.value?.badges?.length ? [{ id: 'profile-badges', label: 'My badges', icon: '✦' }] : []),
+])
 let scrollFrame = null
 let resizeObserver
 
 function updateActiveSection() {
   scrollFrame = null
   scrollOffset.value = window.innerWidth <= 600 ? (sidebar.value?.offsetHeight || 0) + 16 : 32
-  const available = sections.map((section) => profilePage.value?.querySelector(`#${section.id}`)).filter(Boolean)
+  const available = sections.value.map((section) => profilePage.value?.querySelector(`#${section.id}`)).filter(Boolean)
   if (!available.length) return
   let current = available[0].id
   for (const section of available) {
@@ -220,7 +221,7 @@ async function save() {
 
       <!--
         Badges Showcase in Sidebar:
-        Positioned below "My posts" navigation link and right above the leafy note.
+        Positioned below the profile navigation links.
         v-if="user.badges && user.badges.length" ensures the box only renders if user has earned badges (WAD2 wk4).
         v-for with :key loops over user.badges (WAD2 wk4).
         Hovering shows title tooltip with name and description.
@@ -239,22 +240,6 @@ async function save() {
         </div>
       </div>
 
-      <div class="sidebar-note">
-        <svg
-          class="leaf"
-          width="30"
-          height="30"
-          viewBox="0 0 32 32"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
-        >
-          <path d="M7 25C5 13 13 6 26 5c1 13-7 20-19 20Zm0 0L22 10" />
-        </svg>
-        <p>A little care goes a long way.</p>
-        <span>Make yourself at home in your plant-loving community.</span>
-      </div>
     </aside>
 
     <div class="profile-content">
@@ -438,7 +423,7 @@ async function save() {
           v-for loop rendering cards for each achieved badge — covered in WAD2 wk4.
           <RouterLink> provides quick access to DashboardView where all 10 badges & progress bars live — covered in WAD2 wk6.
         -->
-        <section v-if="user.badges && user.badges.length" class="profile-badges-content-section">
+        <section id="profile-badges" v-if="user.badges && user.badges.length" class="profile-badges-content-section">
           <div class="section-heading">
             <div>
               <h2>Unlocked Milestone Badges</h2>
@@ -550,19 +535,20 @@ h1 {
 .sidebar-badges-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .sidebar-badge-item {
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   border-radius: 50%;
   background: rgba(34, 197, 94, 0.1);
   border: 1.5px solid rgba(34, 197, 94, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.5rem;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -651,27 +637,6 @@ h1 {
   line-height: 1.35;
 }
 
-.sidebar-note {
-  border-top: 1px solid var(--color-border);
-  padding: 1.5rem 0.75rem 0;
-  margin-top: 3.5rem;
-}
-.sidebar-note .leaf {
-  font-size: 2rem;
-  color: var(--accent);
-}
-.sidebar-note p {
-  font-weight: 600;
-  font-size: 0.85rem;
-  margin: 0.25rem 0 0.5rem;
-  color: var(--color-heading);
-}
-.sidebar-note > span:last-child {
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.7;
-  display: block;
-}
 .profile-content {
   padding: 1.5rem 0 0 clamp(1.5rem, 5vw, 4.5rem);
   min-width: 0;
@@ -950,7 +915,6 @@ h2 {
   .profile-sidebar nav a span {
     display: none;
   }
-  .sidebar-note,
   .profile-sidebar > .eyebrow {
     display: none;
   }

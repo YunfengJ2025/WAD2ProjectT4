@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { request } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
@@ -24,34 +24,67 @@ const reviewError = ref('')
 const comment = ref('')
 const saving = ref(false)
 const replying = ref(null)
-const active = ref(0)
+// End clones make the last-to-first and first-to-last swipe continuous.
+const slideIndex = ref(1)
+const trackReady = ref(true)
+const active = computed(() =>
+  images.value.length ? (slideIndex.value - 1 + images.value.length) % images.value.length : 0,
+)
+const slides = computed(() =>
+  images.value.length > 1
+    ? [images.value.length - 1, ...images.value.map((_, index) => index), 0]
+    : images.value.map((_, index) => index),
+)
+// After reaching a clone, jump to the identical real slide without animating that reset.
+async function settleTrack() {
+  if (slideIndex.value > 0 && slideIndex.value <= images.value.length) return
+  trackReady.value = false
+  slideIndex.value = active.value + 1
+  await nextTick()
+  requestAnimationFrame(() => {
+    trackReady.value = true
+  })
+}
+function selectPhoto(index) {
+  cancelPhotoDrag()
+  slideIndex.value = images.value.length > 1 ? index + 1 : 0
+}
 const photoOffset = ref(0)
 const photoDragging = ref(false)
 let photoGesture = null
 // Preserve vertical page scrolling; capture only gestures that are predominantly horizontal.
 function startPhotoDrag(event) {
   if (images.value.length < 2 || event.target.closest('button') || event.button > 0) return
+  if (slideIndex.value === 0 || slideIndex.value > images.value.length) settleTrack()
   photoGesture = { id: event.pointerId, x: event.clientX, y: event.clientY }
 }
 function movePhotoDrag(event) {
   if (!photoGesture || photoGesture.id !== event.pointerId) return
   const dx = event.clientX - photoGesture.x
   const dy = event.clientY - photoGesture.y
-  if (!photoDragging.value && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { photoGesture = null; return }
+  if (!photoDragging.value && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+    photoGesture = null
+    return
+  }
   if (Math.abs(dx) > 8) {
     photoDragging.value = true
     event.currentTarget.setPointerCapture?.(event.pointerId)
-    photoOffset.value = dx * .6
+    const width = event.currentTarget.clientWidth
+    photoOffset.value = Math.max(-width, Math.min(width, dx))
   }
 }
 function endPhotoDrag(event) {
   if (!photoGesture) return
   const dx = event.clientX - photoGesture.x
-  const threshold = Math.min(70, event.currentTarget.clientWidth * .15)
+  const threshold = Math.min(70, event.currentTarget.clientWidth * 0.15)
   if (photoDragging.value && Math.abs(dx) > threshold) move(dx < 0 ? 1 : -1)
   cancelPhotoDrag()
 }
-function cancelPhotoDrag() { photoGesture = null; photoDragging.value = false; photoOffset.value = 0 }
+function cancelPhotoDrag() {
+  photoGesture = null
+  photoDragging.value = false
+  photoOffset.value = 0
+}
 const failedImages = ref(new Set())
 const images = computed(() => post.value?.postImages || [])
 const comments = computed(() => reviews.value.filter((review) => review.type === 'POST'))
@@ -60,7 +93,12 @@ const author = (record) => ({
   photoUrl: record.creatorPhoto,
 })
 function move(amount) {
-  active.value = (active.value + amount + images.value.length) % images.value.length
+  if (images.value.length < 2) return
+  // Normalize a completed wrap before accepting another arrow or keyboard action.
+  if (slideIndex.value === 0 || slideIndex.value > images.value.length) {
+    slideIndex.value = active.value + 1
+  }
+  slideIndex.value += amount
 }
 // Load post comments and their replies through the existing review endpoint.
 async function loadReviews() {
@@ -77,7 +115,8 @@ async function load() {
   error.value = ''
   post.value = null
   reviews.value = []
-  active.value = 0
+  slideIndex.value = 1
+  cancelPhotoDrag()
   failedImages.value = new Set()
   try {
     post.value = await request(`/post/${route.params.postId}`)
@@ -134,7 +173,9 @@ async function shareReview() {
 
 <template>
   <main class="community-detail">
-    <button type="button" class="community-back community-back-button" @click="goBack">← Back</button>
+    <button type="button" class="community-back community-back-button" @click="goBack">
+      ← Back
+    </button>
     <p v-if="loading" role="status" class="community-state">Loading post…</p>
     <div v-else-if="error" role="alert" class="community-panel community-state">
       <h1>Couldn't load this post</h1>
@@ -155,20 +196,41 @@ async function shareReview() {
         @keydown.left.prevent="move(-1)"
         @keydown.right.prevent="move(1)"
       >
-        <div class="community-gallery-stage" :class="{ 'photo-dragging': photoDragging }" @pointerdown="startPhotoDrag" @pointermove="movePhotoDrag" @pointerup="endPhotoDrag" @pointercancel="cancelPhotoDrag" @lostpointercapture="cancelPhotoDrag" @dragstart.prevent>
-          <Transition name="post-photo" mode="out-in">
-          <img
-            v-if="!failedImages.has(active)"
-            :key="images[active]"
-            class="post-gallery-photo"
-            :style="{ transform: `translateX(${photoOffset}px)` }"
-            draggable="false"
-            :src="images[active]"
-            :alt="`Post photo ${active + 1} of ${images.length}`"
-            @error="failedImages.add(active)"
-          />
-          <p v-else :key="`failed-${active}`" class="community-muted">This photo is unavailable.</p>
-          </Transition>
+        <div
+          class="community-gallery-stage"
+          :class="{ 'photo-dragging': photoDragging }"
+          @pointerdown="startPhotoDrag"
+          @pointermove="movePhotoDrag"
+          @pointerup="endPhotoDrag"
+          @pointercancel="cancelPhotoDrag"
+          @lostpointercapture="cancelPhotoDrag"
+          @dragstart.prevent
+        >
+          <div
+            class="post-gallery-track"
+            :class="{ 'track-reset': !trackReady }"
+            :style="{
+              transform: `translate3d(calc(${images.length > 1 ? -slideIndex * 100 : 0}% + ${photoOffset}px), 0, 0)`,
+            }"
+            @transitionend.self="settleTrack"
+          >
+            <div
+              v-for="(imageIndex, position) in slides"
+              :key="position"
+              class="post-gallery-slide"
+              :aria-hidden="position !== (images.length > 1 ? slideIndex : 0)"
+            >
+              <img
+                v-if="!failedImages.has(imageIndex)"
+                class="post-gallery-photo"
+                :src="images[imageIndex]"
+                :alt="`Post photo ${imageIndex + 1} of ${images.length}`"
+                draggable="false"
+                @error="failedImages.add(imageIndex)"
+              />
+              <p v-else class="community-muted">This photo is unavailable.</p>
+            </div>
+          </div>
           <template v-if="images.length > 1">
             <span class="community-gallery-count" aria-live="polite"
               >{{ active + 1 }} / {{ images.length }}</span
@@ -191,7 +253,7 @@ async function shareReview() {
             :key="index"
             :aria-label="`Show photo ${index + 1}`"
             :aria-pressed="active === index"
-            @click="active = index"
+            @click="selectPhoto(index)"
           >
             <img :src="image" alt="" />
           </button>
