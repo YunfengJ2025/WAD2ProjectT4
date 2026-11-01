@@ -1,3 +1,4 @@
+const { runHealthChecks } = require("../services/plantHealth"); // added import
 const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
@@ -438,6 +439,17 @@ exports.addVisitProof = async (req, res) => {
         proofUrl: proofDocs[0]?.photoUrl || "",
       },
     });
+
+    // added for checking plant health
+    if (req.body.healthCheck === "true") {
+      runHealthChecks({
+        items: itemDocs,
+        filesByPlant,
+        ownerId: request.ownerId,
+        visitId: visitDoc.visitId,
+      }).catch((e) => console.warn("Health checks skipped:", e.message));
+    }
+
   } catch (err) {
     await Promise.allSettled(itemDocs.map(async (item, index) => {
       const original = originalItemStates[index];
