@@ -80,15 +80,31 @@
             :class="{ 'lb-me': isCurrentUser(u) }"
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
-            <div
-              class="lb-avatar"
-              :style="{
-                background: isCurrentUser(u)
-                  ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
-                  : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
-              }"
-            >
-              {{ u.name ? u.name[0] : '🌱' }}
+            <!--
+              User Avatar with Profile Photo or Fallback Initial:
+              v-if checks if u.photoUrl exists (uploaded image from Cloudinary).
+              If true, renders <img> with .lb-avatar-img.
+              Otherwise, renders fallback colored circle with the first initial u.name[0].
+              v-if / v-else — covered in WAD2 wk4 (Vue Basics I)
+            -->
+            <div class="lb-avatar-wrap">
+              <img
+                v-if="u.photoUrl"
+                :src="u.photoUrl"
+                :alt="`${u.name}'s profile photo`"
+                class="lb-avatar-img"
+              />
+              <div
+                v-else
+                class="lb-avatar"
+                :style="{
+                  background: isCurrentUser(u)
+                    ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
+                    : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
+                }"
+              >
+                {{ u.name ? u.name[0] : '🌱' }}
+              </div>
             </div>
             <div class="lb-name">
               {{ u.name }}
@@ -525,6 +541,24 @@ onMounted(async () => {
   min-width: 36px;
   text-align: center;
   font-weight: 800;
+}
+
+.lb-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lb-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
 }
 
 .lb-avatar {

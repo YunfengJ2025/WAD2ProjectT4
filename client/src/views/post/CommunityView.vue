@@ -1,13 +1,16 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import axios from 'axios'
 import { request } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/post/PostCard.vue'
+import CommunityPodium from '@/components/dashboard/CommunityPodium.vue'
 import '@/assets/community.css'
 
 const auth = useAuthStore()
 const posts = ref([])
+const leaders = ref([])
 const loading = ref(true)
 const error = ref('')
 
@@ -16,6 +19,18 @@ const error = ref('')
 function author(post) {
   if (auth.user?.userId === post.creatorId) return auth.user
   return { userName: post.creatorName || `User #${post.creatorId}`, photoUrl: post.creatorPhoto }
+}
+
+// Fetch top leaders for the community podium
+async function loadLeaders() {
+  try {
+    const res = await axios.get('http://localhost:8000/api/leaderboard')
+    if (res.data && res.data.leaderboard) {
+      leaders.value = res.data.leaderboard.slice(0, 3)
+    }
+  } catch (err) {
+    console.error('Failed to load leaderboard for community podium:', err)
+  }
 }
 
 // Fetch the public feed and sort by the generated ID so the newest posts appear first.
@@ -32,7 +47,11 @@ async function loadPosts() {
     loading.value = false
   }
 }
-onMounted(loadPosts)
+
+onMounted(() => {
+  loadPosts()
+  loadLeaders()
+})
 </script>
 
 <template>
@@ -51,6 +70,9 @@ onMounted(loadPosts)
         >+</RouterLink
       >
     </header>
+
+    <!-- Top 3 Caregivers Podium in Community -->
+    <CommunityPodium :leaders="leaders" />
 
     <section class="community-feed" aria-labelledby="feed-title" :aria-busy="loading">
       <div class="community-feed-heading">
