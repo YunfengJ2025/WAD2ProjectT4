@@ -28,7 +28,7 @@ exports.getLeaderboard = async (req, res) => {
 
     const users = await User.find(filter)
       .select(
-        "userId userName tokenBalance neighbourhood block unitNumber accountPublic hideFromLeaderboard",
+        "userId userName photoUrl tokenBalance neighbourhood block unitNumber accountPublic hideFromLeaderboard",
       )
       .sort({ tokenBalance: -1 })
       .lean();
@@ -65,13 +65,15 @@ exports.getLeaderboard = async (req, res) => {
       const avg = userRating ? userRating.avg : 5.0;
       const count = userRating ? userRating.count : 0;
 
+      const fallbackAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
       return {
         id: uId,
         name: name,
+        photoUrl: u.photoUrl || "",
         neighbourhood:
           u.neighbourhood || (u.block ? `Blk ${u.block}` : "Singapore"),
         availableTokens: u.tokenBalance || 0,
-        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+        avatarUrl: u.photoUrl && u.photoUrl.trim() !== "" ? u.photoUrl : fallbackAvatar,
         ratingAverage: avg,
         ratingCount: count,
         badgesCount: 3,
@@ -487,6 +489,27 @@ exports.getUserStats = async (req, res) => {
         icon: "👑",
       },
     ];
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PERSIST UNLOCKED BADGES TO DATABASE
+    // Ensure badges array in the user document contains all currently unlocked badges.
+    // ─────────────────────────────────────────────────────────────────────────
+    const unlockedBadges = badges
+      .filter((b) => b.unlocked)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+      }));
+
+    try {
+      await User.updateOne(query, {
+        $set: { badges: unlockedBadges },
+      });
+    } catch (dbErr) {
+      console.error("Error updating user badges in DB:", dbErr);
+    }
 
     res.json({
       success: true,

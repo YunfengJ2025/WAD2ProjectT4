@@ -217,6 +217,28 @@ async function save() {
           <span aria-hidden="true">{{ section.icon }}</span> {{ section.label }}
         </a>
       </nav>
+
+      <!--
+        Badges Showcase in Sidebar:
+        Positioned below "My posts" navigation link and right above the leafy note.
+        v-if="user.badges && user.badges.length" ensures the box only renders if user has earned badges (WAD2 wk4).
+        v-for with :key loops over user.badges (WAD2 wk4).
+        Hovering shows title tooltip with name and description.
+      -->
+      <div v-if="user.badges && user.badges.length" class="sidebar-badges-section">
+        <p class="sidebar-badges-title">ACHIEVED BADGES</p>
+        <div class="sidebar-badges-grid">
+          <div
+            v-for="b in user.badges"
+            :key="b.id"
+            class="sidebar-badge-item"
+            :title="`${b.name}: ${b.description}`"
+          >
+            <span class="sidebar-badge-icon">{{ b.icon }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="sidebar-note">
         <svg
           class="leaf"
@@ -408,8 +430,42 @@ async function save() {
       </form>
       <ProfileReviews />
         <ProfilePosts />
-    </div>
-  </main>
+
+        <!--
+          Completed Badges in Profile Content Area:
+          Positioned in bottom right, below the My Posts section.
+          v-if conditional check — covered in WAD2 wk4.
+          v-for loop rendering cards for each achieved badge — covered in WAD2 wk4.
+          <RouterLink> provides quick access to DashboardView where all 10 badges & progress bars live — covered in WAD2 wk6.
+        -->
+        <section v-if="user.badges && user.badges.length" class="profile-badges-content-section">
+          <div class="section-heading">
+            <div>
+              <h2>Unlocked Milestone Badges</h2>
+              <p>Badges you've earned from your plant care journey.</p>
+            </div>
+            <RouterLink to="/dashboard" class="btn btn-sm">View all on Dashboard ↗</RouterLink>
+          </div>
+          <div class="profile-completed-badges-grid">
+            <div
+              v-for="b in user.badges"
+              :key="b.id"
+              class="profile-completed-badge-card"
+            >
+              <div class="profile-badge-icon-wrap">
+                <span class="profile-badge-icon">{{ b.icon }}</span>
+                <!-- Green tick overlay on unlocked badges [NOT IN WAD2 CONTENT] -->
+                <span class="profile-badge-check">✓</span>
+              </div>
+              <div class="profile-badge-meta">
+                <h4>{{ b.name }}</h4>
+                <p>{{ b.description }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
 </template>
 
 <style scoped>
@@ -475,6 +531,126 @@ h1 {
 .profile-sidebar nav a:hover:not(.selected) {
   background: var(--color-background-soft);
 }
+
+/* Sidebar Badges Showcase */
+.sidebar-badges-section {
+  margin-top: 1.75rem;
+  padding: 1.25rem 0.5rem 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar-badges-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-badges-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sidebar-badge-item {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-badge-item:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+/* Bottom Profile Badges Section */
+.profile-badges-content-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 2rem;
+  margin-top: 2rem;
+}
+
+.profile-completed-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.profile-completed-badge-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1.5px solid rgba(74, 222, 128, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(20, 83, 45, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-completed-badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(20, 83, 45, 0.08);
+}
+
+.profile-badge-icon-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-badge-icon {
+  font-size: 1.4rem;
+}
+
+.profile-badge-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.profile-badge-meta h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+.profile-badge-meta p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .sidebar-note {
   border-top: 1px solid var(--color-border);
   padding: 1.5rem 0.75rem 0;

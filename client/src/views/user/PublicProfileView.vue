@@ -56,6 +56,28 @@ const average = computed(() =>
           <p class="member-label">Plant-loving neighbour</p>
           <p v-if="store.profile.user.bio" class="bio profile-bio-text">{{ store.profile.user.bio }}</p>
           <p v-else class="no-bio">This neighbour hasn't added a bio yet.</p>
+
+          <!--
+            Public Badges Showcase (Above "Member since"):
+            Displays unlocked badges for this neighbour so visitors can see their verified achievements.
+            v-if="store.profile.user.badges && store.profile.user.badges.length" — covered in WAD2 wk4
+            v-for="b in store.profile.user.badges" :key="b.id" — covered in WAD2 wk4
+            Hovering over the emoji pill reveals badge title + description via HTML title attribute.
+          -->
+          <div v-if="store.profile.user.badges && store.profile.user.badges.length" class="public-badges-box">
+            <span class="public-badges-label">EARNED BADGES</span>
+            <div class="public-badges-row">
+              <span
+                v-for="b in store.profile.user.badges"
+                :key="b.id"
+                class="public-badge-pill"
+                :title="`${b.name}: ${b.description}`"
+              >
+                {{ b.icon }}
+              </span>
+            </div>
+          </div>
+
           <dl class="joined profile-meta">
             <dt>Member since</dt>
             <dd>{{ joined }}</dd>
@@ -136,6 +158,51 @@ h1 {
   padding: 2rem 1.5rem;
   position: sticky;
   top: 1.5rem;
+}
+
+.public-badges-box {
+  margin: 1.25rem 0 1rem;
+  padding: 0.85rem 0.5rem;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 12px;
+}
+
+.public-badges-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.public-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.public-badge-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 6px rgba(20, 83, 45, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.public-badge-pill:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.8);
 }
 .public-identity h2 {
   font-size: 1.6rem;
