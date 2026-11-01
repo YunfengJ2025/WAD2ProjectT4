@@ -3,7 +3,7 @@ const HealthCheck = require("../models/healthCheckModel");
 
 // UNCONFIRMED: confirm this URL and the request shape in your Kindwise dashboard docs
 // before using live mode. It is the only place that needs to change.
-const API_URL = "https://api.plant.id/v3/health_assessment";
+const API_URL = "https://plant.id/api/v3/health_assessment";
 const DETAILS = "description,treatment,cause";
 const MIN_ISSUE_PROBABILITY = 0.2;   // ignore very unlikely diseases
 const cache = new Map();             // same photo twice -> one paid call
@@ -81,7 +81,7 @@ async function callPlantId(buffer, mimetype) {
   const res = await fetch(`${API_URL}?details=${DETAILS}`, {
     method: "POST",
     headers: { "Api-Key": process.env.PLANT_ID_API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ images: [buffer.toString("base64")] }),
+    body: JSON.stringify({ images: [`data:${mimetype};base64,${buffer.toString("base64")}`] }),
     signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) throw new Error(`Plant.id responded ${res.status}`);
