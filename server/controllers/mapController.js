@@ -26,8 +26,10 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 // "YYYY-MM-DD" in Singapore time, so a visit at noon SGT never slips to another day
-const sgDate = (value) =>
-  new Date(value).toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+const sgDate = (value) => {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+};
 const startOfTodaySg = () => new Date(`${sgDate(Date.now())}T00:00:00+08:00`);
 
 // Teammates' signup never saves coordinates, so look them up with OneMap the
@@ -67,13 +69,23 @@ exports.findNearby = async (req, res) => {
     }).lean();
     const requestById = new Map(requests.map((r) => [r.requestId, r]));
 
+    // every visit of those requests (any status), so a card can say "day 2 of 3, 2 still need a sitter"
+    const siblings = await CareVisit.find({ requestId: { $in: requests.map((r) => r.requestId) } })
+      .sort({ visitDate: 1 })
+      .select("visitId requestId status")
+      .lean();
+    const daysByRequest = new Map();
+    for (const day of siblings) {
+      daysByRequest.set(day.requestId, [...(daysByRequest.get(day.requestId) || []), day]);
+    }
+
     // 4. plants to care for in each visit
     const visitIds = visits.map((v) => v.visitId);
     const items = await RequestItem.find({ visitId: { $in: visitIds } })
       .sort({ requestItemId: 1 })
       .lean();
     const plants = await Plant.find({ plantId: { $in: [...new Set(items.map((i) => i.plantId))] } })
-      .select("plantId plantName photoUrl plantLocation")
+      .select("plantId plantName photoUrl plantLocation wateringInfo rainExposed")
       .lean();
     const plantById = new Map(plants.map((p) => [p.plantId, p]));
     const itemsByVisit = new Map();
@@ -84,7 +96,7 @@ exports.findNearby = async (req, res) => {
     // 5. owners. select() is a whitelist, so unitNumber, email and passwordHash
     //    are never loaded and can never leak to the map.
     const owners = await User.find({ userId: { $in: [...new Set(requests.map((r) => r.ownerId))] } })
-      .select("userId userName block postalCode lat lng")
+      .select("userId userName photoUrl block postalCode lat lng")
       .lean();
     const ownerPos = new Map();
     for (const owner of owners) {
@@ -110,20 +122,32 @@ exports.findNearby = async (req, res) => {
           plantName: plant?.plantName || "Plant",
           photoUrl: plant?.photoUrl || "",
           plantLocation: plant?.plantLocation || "",
-          amountToWater: item.amountToWater ?? 0,
+          amountToWater: item.amountToWater ?? 0, // 0 means the owner left it blank
+          usualAmountMl: plant?.wateringInfo?.amountMl ?? 0, // the plant's own usual amount
+          rainExposed: Boolean(plant?.rainExposed),
           careInstructions: item.careInstructions || "",
+          weatherNote: item.adjustmentType && item.adjustmentType !== "none" ? item.adjustmentReason || "" : "",
         };
       });
+
+      const days = daysByRequest.get(visit.requestId) || [];
 
       result.push({
         visitId: visit.visitId,
         requestId: visit.requestId,
         visitDate: visit.visitDate,
         date: sgDate(visit.visitDate),
+        startDate: sgDate(request.startDate),
+        endDate: sgDate(request.endDate),
+        dayNumber: days.findIndex((d) => d.visitId === visit.visitId) + 1,
+        totalDays: days.length,
+        daysStillOpen: days.filter((d) => d.status === "open").length,
         tokenReward: request.tokenReward,
         waterSource: request.waterSource,
         note: request.note,
+        ownerId: owner.userId, // for the link to the public profile
         ownerName: owner.userName,
+        ownerPhotoUrl: owner.photoUrl || "",
         block: owner.block,
         postalCode: owner.postalCode,
         address: `Blk ${owner.block}, Singapore ${owner.postalCode}`, // block level only
