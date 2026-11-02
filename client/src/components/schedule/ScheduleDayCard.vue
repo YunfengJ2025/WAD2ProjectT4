@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Tooltip } from 'bootstrap'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
     item: {
@@ -42,7 +43,8 @@ onBeforeUnmount(() => tip?.dispose())
 </script>
 
 <template>
-  <div
+  <RouterLink
+    :to="{ name: 'plant-detail', params: { plantId: item.plantId } }"
     class="plant-card h-100"
     :class="[`is-${item.status}`, `layout-${layout}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
   >
@@ -64,14 +66,16 @@ onBeforeUnmount(() => tip?.dispose())
           role="img"
           aria-label="Weather adjusted. Hover or tap for the reason"
           class="adjust-icon"
-      >{{ icon }}</span>
+          @click.prevent.stop 
+      >{{ icon }}</span> <!-- tapping the icon to read the tooltip on a phone would also open the plant page. 
+                              with @click.prevent.stop, the icon still shows its tooltip and the rest of the card navigates -->
     </div>
 
     <div class="plant-info">
         <strong class="plant-name">{{ item.plantName }}</strong>       
         <span class="badge text-capitalize" :class="statusClass">{{ item.status }}</span>
     </div>
-  </div>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -87,6 +91,13 @@ onBeforeUnmount(() => tip?.dispose())
   background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--shadow-md);
   transition: transform var(--transition-bounce), box-shadow var(--transition-base);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.plant-card:focus-visible {
+  outline: 2px solid #0d6efd;      /* keyboard users can see which card is focused */
+  outline-offset: 2px;
 }
 .plant-card.layout-row {        /* row layout: photo on the left */
   flex-direction: row;
