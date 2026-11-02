@@ -5,6 +5,7 @@ const RequestItem = require("../models/requestItemModel");
 const PhotoProof = require("../models/photoProofModel");
 const { Plant } = require("../models/plantModel");
 const { User, reserveTokens, releaseTokens } = require("../models/userModel");
+const { planVisits } = require("../services/visitPlan");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const dateInSingapore = (value) => new Date(`${value}T00:00:00+08:00`);
@@ -114,6 +115,16 @@ exports.create = async (req, res) => {
       throw fail(400, "Enter a valid end date");
     if (endDate < startDate)
       throw fail(400, "End date must be on or after start date");
+    
+    if ((endDate - startDate) / 86_400_000 > 90) // 90 day cap for the date picking
+      throw fail(400, "A request can cover at most 90 days");
+
+    const todaySgt = dateInSingapore(new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10));
+    if (startDate < todaySgt) throw fail(400, "Start date can't be in the past");
+
+    const plan = planVisits(plants, startDate, endDate);// only days where a plant is actually due get a visit
+    if (!plan.length)
+      throw fail(400, "None of the selected plants need watering in this period");
 
     const request = await CareRequest.create({
       ownerId: req.userId,
@@ -128,27 +139,22 @@ exports.create = async (req, res) => {
     const createdVisits = [];
     const createdItems = [];
     try {
-      // Include both dates: a three-day request needs three daily visit rewards.
-      const visitCount = Math.floor((endDate - startDate) / 86_400_000) + 1;
+      // One visit per day that has a plant due, so the reward is reserved per real visit.
       await reserveTokens(
         req.userId,
         request.requestId,
-        request.tokenReward * visitCount,
+        request.tokenReward * plan.length,
       );
-      // The date range represents one planned plant-care visit per calendar day.
-      for (
-        let dueAt = new Date(startDate);
-        dueAt <= endDate;
-        dueAt = new Date(dueAt.getTime() + 86_400_000)
-      ) {
-        const visitDate = new Date(dueAt.getTime() + 12 * 60 * 60 * 1000);
+      for (const day of plan) {
+        const visitDate = new Date(day.date.getTime() + 12 * 60 * 60 * 1000);
         const visit = await CareVisit.create({
           requestId: request.requestId,
           visitDate,
           status: "open",
         });
         createdVisits.push(visit);
-        for (const plantId of plantIds) {
+        // only the plants that are due that day
+        for (const plantId of day.plantIds) {
           const item = await RequestItem.create({
             visitId: visit.visitId,
             plantId,
@@ -162,6 +168,7 @@ exports.create = async (req, res) => {
           createdItems.push(item);
         }
       }
+      
       // Publish only after funds are reserved and all daily visits have been created.
       request.status = "open";
       await request.save();
