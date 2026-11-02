@@ -5,6 +5,8 @@ const careRequestSchema = new mongoose.Schema(
   {
     requestId: { type: Number, unique: true, sparse: true, immutable: true },
     ownerId: { type: Number, required: true, immutable: true },
+    // Links a manually created make-up request to its missed or expired visit.
+    makeupForVisitId: { type: Number, default: undefined, immutable: true },
     startDate: { type: Date, required: [true, "Start date is required"] },
     endDate: { type: Date, required: [true, "End date is required"] },
     note: {
@@ -33,6 +35,9 @@ const careRequestSchema = new mongoose.Schema(
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
+
+// A missed visit can have at most one make-up request.
+careRequestSchema.index({ makeupForVisitId: 1 }, { unique: true, sparse: true });
 
 careRequestSchema.pre("save", async function () {
   if (this.isNew && this.requestId == null)

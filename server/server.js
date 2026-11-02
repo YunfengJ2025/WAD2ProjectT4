@@ -15,6 +15,9 @@ const tokenRoutes = require("./routes/tokenRoute");
 const reviewRoutes = require("./routes/reviewRoute");
 const careRequestRoutes = require("./routes/careRequestRoute");
 const careVisitRoutes = require("./routes/careVisitRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+// Start visit deadlines only after the database connection is ready.
+const { startVisitSweeper } = require("./services/visitSweeper");
 const postRoutes = require("./routes/postRoute");
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
@@ -38,6 +41,8 @@ server.use("/api", boardRoutes);
 server.use("/post", postRoutes);
 server.use("/care-requests", careRequestRoutes);
 server.use("/care-visits", careVisitRoutes);
+// Expose the authenticated in-app notice endpoints.
+server.use("/notifications", notificationRoutes);
 
 async function connectDB() {
   try {
@@ -61,5 +66,9 @@ function startServer() {
 }
 
 // call connectDB first and when connection is ready we start the web server
-connectDB().then(startServer);
+connectDB().then(() => {
+  startServer();
+  // Check for missed and unclaimed visits at startup, then every 15 minutes.
+  startVisitSweeper();
+});
 // startServer()

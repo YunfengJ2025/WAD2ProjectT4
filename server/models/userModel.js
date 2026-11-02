@@ -171,6 +171,42 @@ async function releaseTokens(userId, requestId, amount) {
   );
 }
 
+// Deduct a penalty without consuming tokens frozen for the user's own requests.
+async function deductAvailableTokens(userId, requestedAmount) {
+  if (!Number.isSafeInteger(requestedAmount) || requestedAmount < 1) return 0;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const user = await User.findOne({ userId })
+      .select("tokenBalance tokenReservations")
+      .lean();
+    if (!user) return 0;
+    const reserved = (user.tokenReservations || []).reduce(
+      (sum, item) => sum + (item.amount || 0),
+      0,
+    );
+    const deduction = Math.min(requestedAmount, Math.max(0, user.tokenBalance - reserved));
+    if (!deduction) return 0;
+    const result = await User.updateOne(
+      {
+        userId,
+        $expr: {
+          $gte: [
+            {
+              $subtract: [
+                "$tokenBalance",
+                { $sum: { $ifNull: ["$tokenReservations.amount", []] } },
+              ],
+            },
+            deduction,
+          ],
+        },
+      },
+      { $inc: { tokenBalance: -deduction } },
+    );
+    if (result.modifiedCount) return deduction;
+  }
+  return 0;
+}
+
 // Creates a new user. Only whitelisted fields are accepted, so callers
 // can't set userRole, tokenBalance, etc.
 // Returns all users, oldest first. passwordHash is excluded by select:false
@@ -434,6 +470,7 @@ module.exports = {
   tokenSummary,
   reserveTokens,
   releaseTokens,
+  deductAvailableTokens,
   User,
   getAllUsers,
   registerUser,
