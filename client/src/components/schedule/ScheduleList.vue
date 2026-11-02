@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ScheduleDayCard from './ScheduleDayCard.vue'
 import ScheduleLegend from './ScheduleLegend.vue'
 import { useWeekRange } from '../../composables/schedule/useWeekRange'
+import WeekNav from './WeekNav.vue'
 
 const props = defineProps({ 
     items: { 
@@ -45,6 +46,25 @@ const grouped = computed(() => {
 
 })
 
+// which days the user has expanded, e.g. { '2026-11-02': true }
+const open = ref({})
+
+function toggle(date) {
+    open.value[date] = !open.value[date]
+}
+
+// forget what was expanded when paging to another week
+watch(startISO, () => {
+    open.value = {}
+})
+
+function isAllDone(dayItems) {
+    return dayItems.length > 0 && doneCount(dayItems) === dayItems.length
+}
+
+const pendingItems = (dayItems) => dayItems.filter((item) => item.status !== 'done')
+const doneItems = (dayItems) => dayItems.filter((item) => item.status === 'done')
+
 function formatDate(iso) {
     // standardising T00:00:00 keep it in local time so the day does not shift
     return new Date(iso + "T00:00:00").toLocaleDateString('en-SG', {
@@ -69,20 +89,13 @@ function hasChange(dayItems) {
   <div>
     <ScheduleLegend />
 
-    <div class="week-nav">
-      <button class="nav-btn" :disabled="isCurrentWeek" @click="shiftWeek(-1)" aria-label="Previous 7 days">
-        ‹ Previous
-      </button>
-
-      <div class="week-title">
-        <strong>{{ formatDate(startISO) }} – {{ formatDate(endISO) }}</strong>
-        <button v-if="!isCurrentWeek" class="today-chip" @click="goToToday">Back to today</button>
-      </div>
-
-      <button class="nav-btn" :disabled="!hasLater" @click="shiftWeek(1)" aria-label="Next 7 days">
-        Next ›
-      </button>
-    </div>
+    <WeekNav
+      :title="`${formatDate(startISO)} – ${formatDate(endISO)}`"
+      :is-current-week="isCurrentWeek"
+      :has-later="hasLater"
+      @shift="shiftWeek"
+      @today="goToToday"
+    />
 
     <!-- :key changes with the week, so Vue treats it as a new element and plays the slide -->
     <Transition :name="`week-${slide}`" mode="out-in">
@@ -93,19 +106,59 @@ function hasChange(dayItems) {
           class="mb-3"
           :style="{ '--i': Math.min(index, 6) }"
         >
-          <h6 class="date-heading text-muted d-flex align-items-center justify-content-between">
-            <span>{{ formatDate(date) }}</span>
+          <h6
+            class="date-heading text-muted d-flex align-items-center justify-content-between"
+            :class="{ clickable: isAllDone(dayItems) }"
+            :role="isAllDone(dayItems) ? 'button' : null"
+            :tabindex="isAllDone(dayItems) ? 0 : null"
+            :aria-expanded="isAllDone(dayItems) ? !!open[date] : null"
+            @click="isAllDone(dayItems) && toggle(date)"
+            @keydown.enter="isAllDone(dayItems) && toggle(date)"
+            @keydown.space.prevent="isAllDone(dayItems) && toggle(date)"
+          >
+            <span>
+              <span v-if="isAllDone(dayItems)" class="chevron" :class="{ open: open[date] }">▸</span>
+              {{ formatDate(date) }}
+            </span>
             <span
               class="count-badge"
-              :class="{ changed: hasChange(dayItems), finished: doneCount(dayItems) === dayItems.length }"
+              :class="{ changed: hasChange(dayItems), finished: isAllDone(dayItems) }"
             >
-              <template v-if="doneCount(dayItems) === dayItems.length">✅ All done</template>
+              <template v-if="isAllDone(dayItems)">✅ All done</template>
               <template v-else-if="doneCount(dayItems)">{{ doneCount(dayItems) }}/{{ dayItems.length }} done</template>
               <template v-else>{{ dayItems.length }} 💧</template>
             </span>
           </h6>
+
+          <!-- plants still to water: always visible -->
           <TransitionGroup name="card" tag="div" appear class="card-list d-flex flex-column gap-2">
-            <ScheduleDayCard v-for="item in dayItems" :key="item.requestItemId" :item="item" layout="row"/>
+            <ScheduleDayCard
+              v-for="item in pendingItems(dayItems)"
+              :key="item.requestItemId"
+              :item="item"
+              layout="row"
+            />
+          </TransitionGroup>
+
+          <!-- partly done day: one slim row that folds the finished plants -->
+          <button
+            v-if="doneCount(dayItems) && !isAllDone(dayItems)"
+            class="done-fold"
+            :aria-expanded="!!open[date]"
+            @click="toggle(date)"
+          >
+            <span class="chevron" :class="{ open: open[date] }">▸</span>
+            ✅ {{ doneCount(dayItems) }} done
+          </button>
+
+          <!-- finished plants: only shown when expanded -->
+          <TransitionGroup name="card" tag="div" class="card-list d-flex flex-column gap-2">
+            <ScheduleDayCard
+              v-for="item in (open[date] ? doneItems(dayItems) : [])"
+              :key="item.requestItemId"
+              :item="item"
+              layout="row"
+            />
           </TransitionGroup>
         </section>
 
@@ -118,43 +171,6 @@ function hasChange(dayItems) {
 </template>
 
 <style scoped>
-/* ---------- week navigation ---------- */
-.week-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.5rem 0 0.75rem;
-}
-.week-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  font-size: 0.9rem;
-}
-.nav-btn {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #14532d;
-  font-weight: 600;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-.nav-btn:disabled { opacity: 0.4; }
-.today-chip {
-  margin-top: 0.15rem;
-  padding: 0.05rem 0.55rem;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(34, 197, 94, 0.18);
-  color: #14532d;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 /* ---------- the week slides in and out ---------- */
 .week-next-enter-active, .week-next-leave-active,
 .week-prev-enter-active, .week-prev-leave-active {
@@ -174,6 +190,33 @@ function hasChange(dayItems) {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
 }
+
+/* ---------- collapsible days ---------- */
+.date-heading.clickable { cursor: pointer; user-select: none; }
+.date-heading.clickable:hover { background: rgba(255, 255, 255, 0.98); }
+.date-heading.clickable:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+.chevron {
+  display: inline-block;
+  margin-right: 0.35rem;
+  transition: transform 0.2s ease;
+}
+.chevron.open { transform: rotate(90deg); }
+
+.done-fold {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.35rem 0.75rem;
+  border: 1px dashed rgba(22, 163, 74, 0.5);
+  border-radius: var(--radius-md);
+  background: rgba(22, 163, 74, 0.1);
+  color: #14532d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.done-fold:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
 /* ---------- count badge (same look as the calendar) ---------- */
 .count-badge {
@@ -219,5 +262,6 @@ function hasChange(dayItems) {
   .card-enter-active, .card-leave-active,
   .week-next-enter-active, .week-next-leave-active,
   .week-prev-enter-active, .week-prev-leave-active { animation: none; transition: none; }
+  .chevron { transition: none; }
 }
 </style>

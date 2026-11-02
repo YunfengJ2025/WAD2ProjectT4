@@ -1,8 +1,10 @@
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
-import gsap from 'gsap'
+import { computed } from 'vue'
 import ScheduleDayCard from './ScheduleDayCard.vue'
 import ScheduleLegend from './ScheduleLegend.vue'
+import WeekNav from './WeekNav.vue'
+import { useWeekRange } from '../../composables/schedule/useWeekRange'
+import { toDateInputValue } from '../../utils/wateringStatus'
 
 const props = defineProps({ 
     items: { 
@@ -11,119 +13,28 @@ const props = defineProps({
     }
 })
 
-// Build YYYY-MM-DD from LOCAL date parts.
-// Don't use toISOString(): it converts to UTC, so in Singapore after midnight it gives yesterday.
-function toISO(d) {
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${d.getFullYear()}-${month}-${day}`
-}
+const { rangeStart, slide, isCurrentWeek, endISO, shiftWeek, goToToday } = useWeekRange()
 
-const today = new Date()
-const homeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()) // the week that starts today
-const rangeStart = ref(new Date(homeStart))
-const slide = ref('next') // which way the week slides: 'next' or 'prev'
-
-const isCurrentWeek = computed(() => rangeStart.value.getTime() === homeStart.getTime())
-function goToToday() {
-  // slide the way that matches where we're coming from
-  slide.value = rangeStart.value > homeStart ? 'prev' : 'next'
-  rangeStart.value = new Date(homeStart)
-}
+// is there anything after this week? if not, Next is disabled
+const hasLater = computed(() => props.items.some((item) => item.dueAt > endISO.value))
 
 // 7 days starting from rangeStart with its matching schedule items
 const days = computed(() => {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(rangeStart.value)
     d.setDate(d.getDate() + i)
-    const iso = toISO(d)
-    const dayItems = props.items.filter(item => item.dueAt === iso) // filter and reuse
+    const iso = toDateInputValue(d)
+    const dayItems = props.items.filter(item => item.dueAt === iso)
     const doneCount = dayItems.filter(item => item.status === 'done').length
     return {
       iso,
       label: d.toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' }),
-      isToday: iso === toISO(new Date()),
+      isToday: iso === toDateInputValue(new Date()),
       items: dayItems,
       doneCount,
-      changed: dayItems.some(item => item.adjustmentType), // returns true if rain or heat touched any card this day
-      // some() checks if at least one element in an array passes the condi implemented
+      changed: dayItems.some(item => item.adjustmentType),
     }
   })
-})
-
-function shiftWeek(direction) {
-  slide.value = direction > 0 ? 'next' : 'prev' // set before the week changes so the right animation plays
-  const d = new Date(rangeStart.value)
-  d.setDate(d.getDate() + direction * 7)
-  rangeStart.value = d
-}
-
-// leaf button animation when clicked
-// people who ask their device for less motion get no burst
-const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
-
-const activeLeaves = new Set() // every leaf currently flying, so we can clean up if the page closes mid-burst
-
-function removeLeaf(leaf) {
-  leaf.remove()
-  activeLeaves.delete(leaf)
-}
-
-function leafBurst(button, direction) {
-  if (reduceMotion || activeLeaves.size > 12) return // cap it so rapid clicking can't flood the page
-
-  const box = button.getBoundingClientRect()
-  const startX = box.left + box.width / 2
-  const startY = box.top + box.height / 2
-
-  for (let i = 0; i < 3; i++) {
-    const leaf = document.createElement('span')
-    leaf.textContent = '🍃'
-    leaf.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(leaf)
-    activeLeaves.add(leaf)
-
-    // inline styles, because this element is created outside Vue so scoped CSS can't reach it
-    gsap.set(leaf, {
-      position: 'fixed',
-      left: startX,
-      top: startY,
-      xPercent: -50,
-      yPercent: -50,
-      fontSize: gsap.utils.random(14, 24),
-      pointerEvents: 'none',
-      zIndex: 2000,
-      scale: 0.4,
-      rotation: gsap.utils.random(-40, 40),
-    })
-
-    const duration = gsap.utils.random(0.8, 1.2)
-    gsap.timeline({ onComplete: () => removeLeaf(leaf) })
-      .to(leaf, {
-        x: direction * gsap.utils.random(30, 100),  // Next flies right, Previous flies left
-        y: gsap.utils.random(-100, -50),            // always floats up
-        rotation: gsap.utils.random(-200, 200),
-        scale: gsap.utils.random(0.9, 1.3),
-        duration,
-        ease: 'power2.out',
-      }, 0)
-      .to(leaf, { opacity: 0, duration: 0.4, ease: 'none' }, duration - 0.4) // fade out at the end
-  }
-}
-
-// one handler for both buttons: change the week, then burst
-function onNav(direction, event) {
-  shiftWeek(direction)
-  leafBurst(event.currentTarget, direction)
-}
-
-onBeforeUnmount(() => {
-  // leaves live outside Vue, so remove any that are still flying
-  for (const leaf of activeLeaves) {
-    gsap.killTweensOf(leaf)
-    leaf.remove()
-  }
-  activeLeaves.clear()
 })
 
 </script>
@@ -132,20 +43,13 @@ onBeforeUnmount(() => {
   <div>
     <ScheduleLegend/>
 
-    <div class="week-nav">
-      <button class="leaf-btn leaf-prev" @click="onNav(-1, $event)" aria-label="Previous week">
-        <span class="leaf-arrow">‹</span> Previous
-      </button>
-
-      <div class="week-title">
-        <strong>{{ days[0].label }} – {{ days[6].label }}</strong>
-        <button v-if="!isCurrentWeek" class="today-chip" @click="goToToday">Back to today</button>
-      </div>
-
-      <button class="leaf-btn leaf-next" @click="onNav(1, $event)" aria-label="Next week">
-        Next <span class="leaf-arrow">›</span>
-      </button>
-    </div>
+    <WeekNav
+      :title="`${days[0].label} – ${days[6].label}`"
+      :is-current-week="isCurrentWeek"
+      :has-later="hasLater"
+      @shift="shiftWeek"
+      @today="goToToday"
+    />
 
     <!-- :key changes with the week, so Vue treats it as a new element and plays the slide -->
     <Transition :name="`week-${slide}`" mode="out-in">
@@ -276,81 +180,10 @@ onBeforeUnmount(() => {
   to { opacity: 0; transform: translateY(10px) scale(0.95); }
 }
 
-/* week navigation */
-.week-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.week-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.3rem 1.1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.today-chip {
-  border: 0;
-  padding: 0.05rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #166534;
-  background: rgba(34, 197, 94, 0.18);
-  cursor: pointer;
-}
-.today-chip:hover { background: rgba(34, 197, 94, 0.32); }
-
-/* leaf buttons */
-.leaf-btn {
-  position: relative;
-  border: 0;
-  padding: 0.55rem 1.4rem;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #4ade80, #16a34a);
-  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.35);
-  cursor: pointer;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-}
-/* two sharp opposite corners and two big round ones = a leaf. mirrored for the other direction */
-.leaf-next { border-radius: 2rem 0.3rem 2rem 0.3rem; }
-.leaf-prev { border-radius: 0.3rem 2rem 0.3rem 2rem; }
-
-/* a faint vein line across the leaf */
-.leaf-btn::after {
-  content: '';
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  top: 50%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.35);
-  pointer-events: none;
-}
-.leaf-next::after { transform: rotate(-18deg); }
-.leaf-prev::after { transform: rotate(18deg); }
-
-.leaf-arrow { font-size: 1.1rem; margin: 0 0.15rem; }
-
-.leaf-next:hover { transform: translateY(-2px) rotate(-4deg); box-shadow: 0 8px 16px rgba(22, 163, 74, 0.4); }
-.leaf-prev:hover { transform: translateY(-2px) rotate(4deg);  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.4); }
-.leaf-btn:active { transform: scale(0.94); }
-.leaf-btn:focus-visible { outline: 3px solid #0d6efd; outline-offset: 3px; }
-
 @media (prefers-reduced-motion: reduce) {
   .week-next-enter-active, .week-next-leave-active,
   .week-prev-enter-active, .week-prev-leave-active { transition: none; }
   .card-enter-active, .card-leave-active { animation: none; }
-  .leaf-btn { transition: none; }
-  .leaf-btn:hover, .leaf-btn:active { transform: none; }
 }
 
 </style>
