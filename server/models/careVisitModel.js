@@ -7,7 +7,8 @@ const careVisitSchema = new mongoose.Schema(
     sitterId: { type: Number, default: null },
     requestId: { type: Number, required: true, immutable: true },
     visitDate: { type: Date, required: true, default: Date.now },
-    status: { type: String, enum: ["open", "accepted", "completed", "cancelled"], default: "open" },
+    // Missed and expired visits are final states set by the visit sweep.
+    status: { type: String, enum: ["open", "accepted", "completed", "cancelled", "missed", "expired"], default: "open" },
     doneAt: { type: Date, default: null },
     weatherAlert: { type: String, default: null },
     corridorCared: { type: Boolean, default: false },

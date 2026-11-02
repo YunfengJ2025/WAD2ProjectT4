@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 const Counter = require("./counterModel");
 
 // Gifts create a credit; care rewards transfer tokens already reserved by the owner.
-const TRANSACTION_TYPES = ["SYSTEM_GIFT", "CARE"];
+// Penalties are burned tokens recorded without a receiving user.
+const TRANSACTION_TYPES = ["SYSTEM_GIFT", "CARE", "PENALTY"];
 
 const tokenTransactionSchema = new mongoose.Schema({
   transactionId: { type: Number, unique: true, sparse: true }, // PK, auto-incremented
@@ -55,6 +56,8 @@ async function createTransaction({
   senderId,
   receiverId,
   amount,
+  // Allows policy penalties to be stored after their debit has already happened.
+  balanceApplied = false,
 }) {
   if (senderId && senderId === receiverId) {
     throw badRequest("Sender and receiver cannot be the same user");
@@ -71,6 +74,9 @@ async function createTransaction({
       "Care transactions need a sender, a receiver, a visitId and a requestId",
     );
   }
+  if (type === "PENALTY" && (!senderId || receiverId || !visitId || !requestId)) {
+    throw badRequest("Penalty transactions need a sitter, a visitId and a requestId");
+  }
 
   const token = await TokenTransaction.create({
     visitId,
@@ -80,6 +86,7 @@ async function createTransaction({
     senderId,
     receiverId,
     amount,
+    balanceApplied,
   });
 
   // Only after a successful insert, take the next ID from the counter

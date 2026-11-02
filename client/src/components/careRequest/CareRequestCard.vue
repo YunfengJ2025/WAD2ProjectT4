@@ -5,8 +5,10 @@ import plantPlaceholder from '@/assets/plant.png'
 const props = defineProps({
   request: { type: Object, required: true },
   busy: { type: Boolean, default: false },
+  makeupBusyVisitId: { type: Number, default: 0 },
 })
-const emit = defineEmits(['cancel-request'])
+// Emit make-up actions to the view so request creation stays in the parent.
+const emit = defineEmits(['cancel-request', 'makeup-request'])
 const waterSourceLabels = {
   left_out: 'Water left outside',
   tap_available: 'Tap available',
@@ -59,9 +61,20 @@ function date(value) {
     >
       {{ busy ? 'Cancelling…' : 'Cancel request' }}
     </button>
+    <!-- Offer an owner a manual replacement after a visit expires or is missed. -->
     <ul v-if="request.visits?.length" class="proof-list">
       <li v-for="visit in request.visits" :key="visit.visitId">
         {{ date(visit.visitDate) }} · {{ visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Plant' }} · {{ visit.status }}
+        <button
+          v-if="['missed', 'expired'].includes(visit.status) && !visit.makeupRequestId"
+          type="button"
+          class="btn btn-outline-primary btn-sm makeup-button"
+          :disabled="makeupBusyVisitId === visit.visitId"
+          @click="emit('makeup-request', { request, visit })"
+        >
+          {{ makeupBusyVisitId === visit.visitId ? 'Creating…' : 'Request a make-up visit' }}
+        </button>
+        <span v-else-if="visit.makeupRequestId" class="makeup-created">Make-up requested</span>
         <span v-for="item in visit.items || []" :key="item.requestItemId">
           <a v-if="item.proofUrl" :href="item.proofUrl" target="_blank" rel="noopener noreferrer">{{ item.plant?.plantName || 'Plant' }} proof</a>
         </span>
@@ -85,6 +98,9 @@ p { margin: 0.35rem 0; color: #59665c; }
 }
 .proof-list { margin: 0.5rem 0; padding-left: 1rem; color: #59665c; font-size: 0.9rem; }
 .proof-list li + li { margin-top: 0.25rem; }
+/* Keep the make-up action distinct from the visit status and proof links. */
+.makeup-button { margin: 0.2rem 0.35rem; }
+.makeup-created { margin-left: 0.35rem; color: #2d6740; font-size: 0.85rem; }
 .plant-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.65rem 0; }
 .plant-chip { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; column-gap: 0.4rem; max-width: 220px; padding: 0.35rem 0.55rem 0.35rem 0.25rem; border-radius: 12px; background: #f1f6f1; color: #34463a; font-size: 0.85rem; }
 .plant-chip img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }

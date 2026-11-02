@@ -2,16 +2,18 @@ const { runHealthChecks } = require("../services/plantHealth"); // added import
 const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
-const PhotoProof = require("../models/photoProofModel");
 const { Plant } = require("../models/plantModel");
-const { User, reserveTokens, releaseTokens } = require("../models/userModel");
-const { planVisits } = require("../services/visitPlan");
+const { reserveTokens, releaseTokens } = require("../models/userModel");
+const { enrichVisits } = require("./careVisitController");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const dateInSingapore = (value) => new Date(`${value}T00:00:00+08:00`);
 
 function handleError(err, res) {
   if (err.status) return res.status(err.status).json({ message: err.message });
+  // A sparse unique link prevents owners from duplicating make-up requests.
+  if (err.code === 11000)
+    return res.status(409).json({ message: "This record conflicts with an existing record" });
   if (err.name === "ValidationError" || err.name === "CastError") {
     const errors = {};
     for (const [key, detail] of Object.entries(err.errors || {}))
@@ -24,44 +26,29 @@ function handleError(err, res) {
   return res.status(500).json({ message: "Server error" });
 }
 
-async function enrichVisits(visits) {
-  if (!visits.length) return [];
-  const requestIds = [...new Set(visits.map((v) => v.requestId))];
-  const visitIds = visits.map((v) => v.visitId);
-  const [requests, items, proofs] = await Promise.all([
-    CareRequest.find({ requestId: { $in: requestIds } }).lean(),
-    RequestItem.find({ visitId: { $in: visitIds } }).lean(),
-    PhotoProof.find({ visitId: { $in: visitIds } }).lean(),
-  ]);
-  const plantIds = [...new Set(items.map((item) => item.plantId))];
-  const ownerIds = [...new Set(requests.map((request) => request.ownerId))];
-  const [plants, owners] = await Promise.all([
-    Plant.find({ plantId: { $in: plantIds } })
-      .select("plantId plantName photoUrl plantLocation")
-      .lean(),
-    User.find({ userId: { $in: ownerIds } })
-      .select("userId userName block postalCode")
-      .lean(),
-  ]);
-  const requestById = new Map(requests.map((r) => [r.requestId, r]));
-  const itemsByVisit = new Map();
-  for (const item of items) {
-    itemsByVisit.set(item.visitId, [...(itemsByVisit.get(item.visitId) || []), item]);
-  }
-  const proofsByItem = new Map(proofs.map((proof) => [proof.requestItemId, proof]));
-  const plantById = new Map(plants.map((p) => [p.plantId, p]));
-  const ownerById = new Map(owners.map((u) => [u.userId, u]));
-  return visits.map((visit) => {
-    const request = requestById.get(visit.requestId) || null;
-    const visitItems = itemsByVisit.get(visit.visitId) || [];
-    const detailedItems = visitItems.map((item) => {
-      const proof = proofsByItem.get(item.requestItemId) || null;
-      return {
-        ...item,
-        plant: plantById.get(item.plantId) || null,
-        proofUrl: proof?.photoUrl || "",
-        photoProofId: proof?.photoProofId || null,
-      };
+// Create a request and its daily visits; shared with the make-up visit endpoint.
+async function createCareRequest(ownerId, body, makeupForVisitId) {
+  const selectedPlantIds = Array.isArray(body.plantIds)
+    ? body.plantIds.map(Number)
+    : [Number(body.plantId)];
+  const plantIds = [...new Set(selectedPlantIds)];
+  if (!plantIds.length || plantIds.some((id) => !Number.isSafeInteger(id) || id < 1))
+    throw fail(400, "Choose at least one of your plants");
+  const plants = await Plant.find({ ownerId, plantId: { $in: plantIds } });
+  if (plants.length !== plantIds.length)
+    throw fail(404, "One or more selected plants were not found in your collection");
+  const plantDetails = new Map();
+  for (const detail of Array.isArray(body.plantDetails) ? body.plantDetails : []) {
+    const plantId = Number(detail.plantId);
+    if (detail.amountToWater === "" || detail.amountToWater == null)
+      throw fail(400, "Enter a watering amount for each selected plant");
+    const amountToWater = Number(detail.amountToWater);
+    if (!plantIds.includes(plantId)) throw fail(400, "Care details must match selected plants");
+    if (!Number.isFinite(amountToWater) || amountToWater < 0 || amountToWater > 10000)
+      throw fail(400, "Water amount must be between 0 and 10000 ml per visit");
+    plantDetails.set(plantId, {
+      amountToWater,
+      careInstructions: String(detail.careInstructions || "").trim(),
     });
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
@@ -74,7 +61,65 @@ async function enrichVisits(visits) {
       action: detailedItems[0]?.action || "",
       proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
     };
+  }
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const startDate = datePattern.test(body.startDate || "")
+    ? dateInSingapore(body.startDate)
+    : new Date(NaN);
+  const endDate = datePattern.test(body.endDate || "")
+    ? dateInSingapore(body.endDate)
+    : new Date(NaN);
+  if (Number.isNaN(startDate.getTime())) throw fail(400, "Enter a valid start date");
+  if (Number.isNaN(endDate.getTime())) throw fail(400, "Enter a valid end date");
+  if (endDate < startDate) throw fail(400, "End date must be on or after start date");
+
+  const request = await CareRequest.create({
+    ownerId,
+    ...(makeupForVisitId ? { makeupForVisitId } : {}),
+    startDate,
+    endDate,
+    note: body.note || "",
+    waterSource: body.waterSource || "tap_available",
+    tokenReward: Number(body.tokenReward),
+    status: "funding",
   });
+  const createdVisits = [];
+  const createdItems = [];
+  try {
+    const visitCount = Math.floor((endDate - startDate) / 86_400_000) + 1;
+    await reserveTokens(ownerId, request.requestId, request.tokenReward * visitCount);
+    for (
+      let dueAt = new Date(startDate);
+      dueAt <= endDate;
+      dueAt = new Date(dueAt.getTime() + 86_400_000)
+    ) {
+      const visitDate = new Date(dueAt.getTime() + 12 * 60 * 60 * 1000);
+      const visit = await CareVisit.create({ requestId: request.requestId, visitDate, status: "open" });
+      createdVisits.push(visit);
+      for (const plantId of plantIds) {
+        const item = await RequestItem.create({
+          visitId: visit.visitId,
+          plantId,
+          action: "Plant care",
+          amountToWater: plantDetails.get(plantId)?.amountToWater ?? 0,
+          careInstructions: plantDetails.get(plantId)?.careInstructions || "",
+          status: "pending",
+          originalDueAt: visitDate,
+          dueAt: visitDate,
+        });
+        createdItems.push(item);
+      }
+    }
+    request.status = "open";
+    await request.save();
+  } catch (err) {
+    await Promise.all(createdItems.map((item) => item.deleteOne()));
+    await Promise.all(createdVisits.map((visit) => visit.deleteOne()));
+    await request.deleteOne();
+    await releaseTokens(ownerId, request.requestId);
+    throw err;
+  }
+  return { request: { ...request.toObject(), plants } };
 }
 
 exports.create = async (req, res) => {
@@ -181,10 +226,12 @@ exports.create = async (req, res) => {
       throw err;
     }
     res.status(201).json({ request: { ...request.toObject(), plants } });
+    res.status(201).json(await createCareRequest(req.userId, req.body));
   } catch (err) {
     handleError(err, res);
   }
 };
+exports.createCareRequest = createCareRequest;
 
 exports.mine = async (req, res) => {
   try {
