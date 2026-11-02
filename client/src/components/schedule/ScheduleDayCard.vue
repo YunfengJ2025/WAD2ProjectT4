@@ -27,15 +27,6 @@ const STATUS_CLASS = {
 
 const statusClass = computed(() => STATUS_CLASS[props.item.status] ?? 'text-bg-light')
 
-function formatDate(iso) {
-    // standardising T00:00:00 keep it in local time so the day does not shift
-    return new Date(iso + "T00:00:00").toLocaleDateString('en-SG', {
-        weekday: 'short', 
-        day: 'numeric',
-        month: 'short',
-    })
-}
-
 const iconEl = ref(null)
 let tip
 onMounted(() => { if (iconEl.value) tip = new Tooltip(iconEl.value, {container: 'body'}) })
@@ -44,7 +35,7 @@ onBeforeUnmount(() => tip?.dispose())
 
 <template>
   <RouterLink
-    :to="{ name: 'plant-detail', params: { plantId: item.plantId } }"
+    :to="item.link ?? { name: 'plant-detail', params: { plantId: item.plantId } }"
     class="plant-card h-100"
     :class="[`is-${item.status}`, `layout-${layout}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
   >
