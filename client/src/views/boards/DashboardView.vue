@@ -14,10 +14,13 @@
 
         <div class="header-ctas">
           <!-- token-pill & anim-bounce-in = custom CSS classes from main.css [NOT IN WAD2 CONTENT] -->
-          <div class="token-pill anim-bounce-in">
+          <div class="token-pill anim-bounce-in" :title="`Total: ${userData.tokenBalance || userData.availableTokens || 0} tokens · Available: ${userData.availableTokenBalance ?? (userData.availableTokens || 0)} · Frozen: ${userData.frozenTokenBalance || 0}`">
             <span class="coin">🪙</span>
-            <span class="amount">{{ userData.availableTokens || 0 }}</span>
+            <span class="amount">{{ userData.tokenBalance || userData.availableTokens || 0 }}</span>
             <span class="token-tag">Tokens</span>
+            <span v-if="userData.frozenTokenBalance > 0" class="token-breakdown">
+              ({{ userData.availableTokenBalance ?? 0 }} Avail · {{ userData.frozenTokenBalance }} Frozen)
+            </span>
           </div>
           <!-- <router-link> — covered in WAD2 wk6 (Vue Router) -->
           <router-link to="/leaderboard" class="btn btn-primary btn-sm">🏆 View Leaderboard</router-link>
@@ -256,10 +259,13 @@ onMounted(() => {
   padding: 6px 14px;
   font-size: 0.9rem;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .token-pill:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
 .token-tag {
@@ -267,6 +273,16 @@ onMounted(() => {
   text-transform: uppercase;
   color: #78350f;
   margin-left: 2px;
+}
+
+.token-breakdown {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.18);
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-left: 4px;
 }
 
 /* CSS Grid — [NOT IN WAD2 CONTENT] WAD2 wk3 teaches Bootstrap grid, not CSS Grid */
@@ -388,6 +404,26 @@ onMounted(() => {
 }
 
 /* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */
+@media (max-width: 1400px) {
+  .stats-row {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+  }
+  .stat-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+
+@media (max-width: 1200px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+}
+
 @media (max-width: 1024px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
@@ -395,18 +431,103 @@ onMounted(() => {
   .charts-row {
     grid-template-columns: 1fr;
   }
+  .badges-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .content {
     padding: 0 var(--space-md);
   }
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  .header-ctas {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  .token-pill {
+    max-width: 100%;
+    flex-wrap: wrap;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+  }
+  .token-breakdown {
+    display: inline-block;
+    margin-top: 2px;
+  }
+  .chart-card {
+    padding: var(--space-md);
+  }
+  .section.glass-card {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 0 var(--space-sm);
+  }
+  .page-header h1 {
+    font-size: 1.65rem;
+  }
+  .subtitle {
+    font-size: 0.8rem;
+  }
+  .header-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+  .header-ctas .btn {
+    text-align: center;
+    width: 100%;
   }
   .stats-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+  .stat-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .stat-val {
+    font-size: 1.35rem;
+  }
+  .badges-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+  .section.glass-card {
+    padding: var(--space-md) var(--space-sm);
+  }
+  .section-header h2 {
+    font-size: 1.05rem;
+  }
+  .section-sub {
+    font-size: 0.78rem;
+    margin-bottom: var(--space-sm);
+  }
+}
+
+@media (max-width: 380px) {
+  .stat-card {
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .stat-icon {
+    font-size: 1.4rem;
+  }
+  .token-pill {
+    font-size: 0.78rem;
   }
 }
 </style>

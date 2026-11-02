@@ -123,4 +123,16 @@ const chartOptions = computed(() => ({
   color: var(--color-neutral-500);
   font-size: 0.9rem;
 }
+
+@media (max-width: 640px) {
+  .chart-container {
+    height: 220px;
+  }
+}
+
+@media (max-width: 380px) {
+  .chart-container {
+    height: 190px;
+  }
+}
 </style>
