@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import RequestMap from '../map/RequestMap.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
+
 
 const auth = useAuthStore()
 const { show: toast } = useToast()
@@ -52,10 +53,19 @@ const filteredRequests = computed(() =>
 )
 
 // 0.45 km shows as "450 m", 1.2 km as "1.2 km"
+// rounding to whole metres first avoids float noise like 0.30000000000000004 or 0.9999 showing as "1000 m"
 function formatDistance(km) {
-  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+  const m = Math.round(km * 1000)
+  return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`
 }
 
+// ---- distance slider: the bubble shows while the thumb is being dragged (or focused with the keyboard) ----
+const sliding = ref(false)
+const sliderMin = 0.1
+const sliderMax = 1
+// 0 to 100, used to size the green fill and place the bubble over the thumb
+const sliderPercent = computed(() => ((radiusKm.value - sliderMin) / (sliderMax - sliderMin)) * 100)
+const stopSliding = () => (sliding.value = false)
 function formatDate(value) {
   return new Date(value).toLocaleDateString('en-GB', {
     weekday: 'short',
@@ -119,13 +129,34 @@ async function acceptVisit(visit) {
   <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
 
   <div class="filterBar">
-    <label>
-      Distance: {{ radiusKm }} km
-      <input type="range" min="0.1" max="1" step="0.1" v-model.number="radiusKm" />
+    <label class="distanceLabel">
+      <span class="distanceText">Distance: {{ formatDistance(radiusKm) }}</span>
+      <span
+        class="sliderWrap"
+        :class="{ isSliding: sliding }"
+        :style="{ '--pct': sliderPercent }"
+      >
+        <output class="bubble" aria-hidden="true">{{ formatDistance(radiusKm) }}</output>
+        <input
+          type="range"
+          class="plantSlider"
+          :min="sliderMin"
+          :max="sliderMax"
+          step="0.1"
+          v-model.number="radiusKm"
+          @pointerdown="sliding = true"
+          @pointercancel="stopSliding"
+        />
+      </span>
     </label>
-    <label>
-      Date:
-      <input type="date" v-model="selectedDate" />
+    <label class="dateField">
+      <span class="distanceText dateText">Date:</span>
+      <input
+        type="date"
+        class="styledDate"
+        v-model="selectedDate"
+        aria-label="Filter requests by date"
+      />
     </label>
   </div>
 
@@ -281,10 +312,197 @@ async function acceptVisit(visit) {
 </template>
 
 <style scoped>
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 700;
+  color: var(--color-heading);
+  line-height: 1.2;
+}
+
+
 .filterBar {
   display: flex;
   gap: 1.5rem;
   margin: 1rem 0;
+}
+
+/* ---------- distance slider (green fill, plant thumb, bubble) ---------- */
+.distanceLabel {
+  display: flex;
+  align-items: flex-end; /* the slider has bubble space above it, so line the text up with the track instead of the top */
+  gap: 0.75rem;
+}
+
+.distanceText {
+  min-width: 9.5rem; /* fixed width so the slider doesn't shift when "500 m" becomes "1.0 km" */
+  line-height: 34px; /* same as the thumb height, so the text sits level with the track */
+  font-variant-numeric: tabular-nums;
+}
+
+.sliderWrap {
+  --thumb: 34px;
+  --track-h: 10px;
+  --green: var(--accent, #2f7d4f);
+  position: relative;
+  display: block;
+  width: 240px;
+  padding-top: 34px; /* room for the bubble */
+}
+
+.plantSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: var(--thumb);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.plantSlider:focus {
+  outline: none;
+}
+
+/* track: green up to the thumb, grey after it (the fill is driven by --pct) */
+.plantSlider::-webkit-slider-runnable-track {
+  height: var(--track-h);
+  border-radius: 999px;
+  border: 1px solid #cfc9bf;
+  background: linear-gradient(to right, #a8d65a, var(--green)) 0 / calc(var(--pct) * 1%) 100% no-repeat,
+    #e4e0d8;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.plantSlider::-moz-range-track {
+  height: var(--track-h);
+  border-radius: 999px;
+  border: 1px solid #cfc9bf;
+  background: #e4e0d8;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.plantSlider::-moz-range-progress {
+  height: var(--track-h);
+  border-radius: 999px;
+  background: linear-gradient(to right, #a8d65a, var(--green));
+}
+
+/* thumb: a little sprout in a green ring */
+.plantSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((var(--track-h) - var(--thumb)) / 2 - 1px);
+  border-radius: 50%;
+  border: 3px solid var(--green);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21v-8' stroke='%23558b2f' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Cpath d='M12 13C12 8 8.5 5.5 4 6c0 4.5 3 7.5 8 7z' fill='%2389c34a'/%3E%3Cpath d='M12 12c0-4 3-7 8-7 0 4.5-3 7.500-8 7z' fill='%23558b2f'/%3E%3C/svg%3E") center / 70% no-repeat;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s var(--transition-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+.plantSlider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 50%;
+  border: 3px solid var(--green);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21v-8' stroke='%23558b2f' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Cpath d='M12 13C12 8 8.5 5.5 4 6c0 4.5 3 7.5 8 7z' fill='%2389c34a'/%3E%3Cpath d='M12 12c0-4 3-7 8-7 0 4.5-3 7.500-8 7z' fill='%23558b2f'/%3E%3C/svg%3E") center / 70% no-repeat;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.plantSlider:active::-webkit-slider-thumb,
+.plantSlider:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* bubble above the thumb; the maths keeps it centred on the thumb across the whole track */
+.bubble {
+  position: absolute;
+  top: 0;
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--pct) / 100);
+  transform: translate(-50%, 6px) scale(0.8);
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.2s var(--transition-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+/* little arrow pointing down at the thumb */
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: var(--green);
+}
+
+.sliderWrap.isSliding .bubble,
+.sliderWrap:focus-within .bubble {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble,
+  .plantSlider::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+/* ---------- date picker: Option 1 native input styling ---------- */
+.dateField {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.dateText {
+  min-width: 0;
+  margin-right: 0.25rem;
+}
+
+.styledDate {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #d5ded8;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #46584c;
+  font: inherit;
+  font-weight: 600;
+  accent-color: var(--accent, #2f7d4f);
+  color-scheme: light;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.25s ease;
+}
+
+.styledDate:hover,
+.styledDate:focus-visible {
+  border-color: var(--accent, #2f7d4f);
+  box-shadow: 0 0 0 3px rgba(47, 125, 79, 0.18);
+  outline: none;
+}
+
+.styledDate::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 2px;
+  opacity: 0.7;
+  filter: invert(35%) sepia(40%) saturate(600%) hue-rotate(95deg);
+}
+
+.styledDate::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(47, 125, 79, 0.12);
 }
 
 .pageContent {
