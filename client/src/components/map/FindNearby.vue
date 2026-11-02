@@ -188,7 +188,7 @@ async function acceptVisit(visit) {
         </p>
 
         <p v-if="filteredRequests.length === 0">
-          No requests within {{ radiusKm }} km. Try widening the distance or changing the date.
+          No requests within {{formatDistance(radiusKm)}}. Try widening the distance or changing the date.
         </p>
 
         <ul v-else class="requestList">
