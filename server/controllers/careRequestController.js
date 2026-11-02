@@ -65,7 +65,7 @@ async function enrichVisits(visits) {
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
-      request,
+      request: request ? { ...request, healthCheck: undefined } : null,   // sitters do not see this
       items: detailedItems,
       plants: visitPlants,
       plant: visitPlants[0] || null,
@@ -121,6 +121,7 @@ exports.create = async (req, res) => {
       endDate,
       note: req.body.note || "",
       waterSource: req.body.waterSource || "tap_available",
+      healthCheck: req.body.healthCheck === true, // added for health check
       tokenReward: Number(req.body.tokenReward),
       status: "funding", // Keep the request unavailable until funding and setup succeed.
     });
@@ -441,7 +442,7 @@ exports.addVisitProof = async (req, res) => {
     });
 
     // added for checking plant health
-    if (req.body.healthCheck === "true") {
+    if (request.healthCheck) {      // was req.body.healthCheck === "true"
       runHealthChecks({
         items: itemDocs,
         filesByPlant,

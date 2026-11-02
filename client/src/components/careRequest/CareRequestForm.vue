@@ -17,6 +17,7 @@ const form = ref({
   note: '',
   waterSource: 'tap_available',
   tokenReward: 1,
+  healthCheck: false, // added for health check
 })
 const animatedCalendar = ref('')
 const selectionError = ref('')
@@ -161,6 +162,11 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
           placeholder="Care instructions for the sitter"
         ></textarea>
       </label>
+      <label class="wide health-option">
+        <input v-model="form.healthCheck" type="checkbox" />
+        Run a plant health check on the sitter's photos
+        <small>(results are for you only)</small>
+      </label>
       <button class="btn btn-primary" :disabled="saving || totalReward <= 0 || totalReward > availableBalance">
         {{ saving ? 'Posting…' : 'Post request' }}
       </button>
@@ -179,6 +185,8 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
 h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .request-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .request-form label { display: grid; gap: 0.35rem; font-weight: 600; }
+.request-form .health-option { display: flex; align-items: center; gap: 0.5rem; }
+.request-form .health-option input { width: auto; }
 .request-form input,
 .request-form textarea {
   width: 100%;

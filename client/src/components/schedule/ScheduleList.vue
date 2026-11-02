@@ -58,7 +58,7 @@ function hasChange(dayItems) {
   <div>
     <ScheduleLegend />
     <section 
-      v-for="[date, dayItems] in grouped" 
+      v-for="([date, dayItems], index) in grouped"
       :key="date" 
       class="mb-3" 
       :style="{ '--i': Math.min(index, 6) }"

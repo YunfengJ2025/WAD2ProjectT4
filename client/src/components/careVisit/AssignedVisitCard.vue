@@ -20,8 +20,6 @@ const error = ref('')
 const items = props.visit.items?.length ? props.visit.items : (props.visit.plants || [props.visit.plant]).filter(Boolean).map((plant) => ({ plant }))
 const plants = items.map((item) => item.plant).filter(Boolean)
 
-const healthCheck = ref(true) // sitter can untick to skip the Plant.id check
-
 function choosePhoto(event, plantId) {
   photos[plantId] = event.target.files.length ? event.target.files[0] : null
 }
@@ -40,7 +38,6 @@ function submit() {
     visit: props.visit,
     actions: Object.fromEntries(items.map((item) => [item.plantId, actions[item.plantId].trim()])),
     photos: Object.fromEntries(items.map((item) => [item.plantId, photos[item.plantId]])),
-    healthCheck: healthCheck.value // added
   })
 }
 
@@ -79,10 +76,6 @@ function date(value) {
       </div>
     </div>
     <p class="upload-hint">Upload one JPG, PNG or WebP photo per plant (up to 2 MB each).</p>
-    <label class="health-toggle">
-      <input v-model="healthCheck" type="checkbox" />
-      Run plant health check <small>(spots pests and diseases from your photos)</small>
-    </label>
     <p v-if="visit.request?.note">{{ visit.request.note }}</p>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <button class="btn btn-primary" :disabled="busy">
@@ -109,7 +102,6 @@ p { margin: 0.3rem 0; color: #59665c; }
 .upload-hint { font-size: 0.85rem; }
 .visit-form { display: grid; gap: 0.8rem; margin: 1rem 0; }
 .visit-form label { display: grid; gap: 0.35rem; font-weight: 600; }
-.visit-form .health-toggle { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
 .visit-form input:not([type='file']) { padding: 0.55rem; border: 1px solid #b9c7bb; border-radius: 7px; font: inherit; }
 .visit-form small { color: #68766b; font-weight: 400; }
 .visit-form button { justify-self: start; }
