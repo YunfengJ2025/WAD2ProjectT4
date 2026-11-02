@@ -1,4 +1,4 @@
-const { User } = require("../models/userModel");
+const { User, tokenSummary } = require("../models/userModel");
 const mongoose = require("mongoose");
 
 // Helper to query MongoDB collections directly, accounting for collection name casing
@@ -213,23 +213,56 @@ exports.getUserStats = async (req, res) => {
     let visitIds = [];
 
     try {
-      const reqCol = getCollection("carerequests");
-      careRequestsPosted = await reqCol.countDocuments({
-        $or: [
-          { requesterId: numUserId },
-          { ownerId: numUserId },
-          { userId: numUserId },
-        ],
-      });
+      const seenReqIds = new Set();
+      let uniqueReqs = [];
+      for (const reqColName of ["carerequests", "CareRequest"]) {
+        try {
+          const reqCol = getCollection(reqColName);
+          const reqDocs = await reqCol
+            .find({
+              $or: [
+                { requesterId: numUserId },
+                { ownerId: numUserId },
+                { userId: numUserId },
+              ],
+            })
+            .toArray();
+          for (const r of reqDocs) {
+            const key = String(r.requestId || r._id);
+            if (!seenReqIds.has(key)) {
+              seenReqIds.add(key);
+              uniqueReqs.push(r);
+            }
+          }
+        } catch (colErr) {}
+      }
+      careRequestsPosted = uniqueReqs.length;
     } catch (e) {}
 
     try {
-      const visitCol = getCollection("carevisits");
-      userVisits = await visitCol
-        .find({
-          $or: [{ sitterId: numUserId }, { helperId: numUserId }],
-        })
-        .toArray();
+      // Query both 'carevisits' and 'CareVisit' to account for seed data and live app records
+      const visitCollections = ["carevisits", "CareVisit"];
+      const seenVisitIds = new Set();
+      userVisits = [];
+
+      for (const colName of visitCollections) {
+        try {
+          const col = getCollection(colName);
+          const docs = await col
+            .find({
+              $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+            })
+            .toArray();
+          for (const d of docs) {
+            const key = String(d.visitId || d._id);
+            if (!seenVisitIds.has(key)) {
+              seenVisitIds.add(key);
+              userVisits.push(d);
+            }
+          }
+        } catch (colErr) {}
+      }
+
       visitsCompleted = userVisits.length;
       plantsCaredFor = visitsCompleted * 3;
 
@@ -239,6 +272,14 @@ exports.getUserStats = async (req, res) => {
         photoProofCount = await photoCol.countDocuments({
           visitId: { $in: visitIds },
         });
+        // Also check lowercase 'photoproofs' collection
+        try {
+          const photoColLower = getCollection("photoproofs");
+          const lowerCount = await photoColLower.countDocuments({
+            visitId: { $in: visitIds },
+          });
+          photoProofCount += lowerCount;
+        } catch (e) {}
       }
       if (photoProofCount === 0 && visitsCompleted > 0) {
         photoProofCount = Math.min(visitsCompleted, 3);
@@ -299,12 +340,16 @@ exports.getUserStats = async (req, res) => {
     // 5. Rainy Day Hero check (strictly during active rain alert from weather API)
     let rainyVisitsCount = 0;
     try {
-      const visitCol = getCollection("carevisits");
-      const rainyDocs = await visitCol.countDocuments({
-        $or: [{ sitterId: numUserId }, { helperId: numUserId }],
-        weatherAlert: { $in: ["rain", "thunder", "shower"] },
-      });
-      rainyVisitsCount = rainyDocs;
+      for (const colName of ["carevisits", "CareVisit"]) {
+        try {
+          const col = getCollection(colName);
+          const rainyDocs = await col.countDocuments({
+            $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+            weatherAlert: { $in: ["rain", "thunder", "shower"] },
+          });
+          rainyVisitsCount += rainyDocs;
+        } catch (colErr) {}
+      }
 
       if (rainyVisitsCount === 0 && visitIds.length > 0) {
         const reqItemCol = getCollection("RequestItem");
@@ -320,12 +365,16 @@ exports.getUserStats = async (req, res) => {
     } catch (e) {}
 
     const userName = user.userName || "Green Friend";
+    const userTokens = tokenSummary(user);
     const userPayload = {
       name: userName,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userName)}`,
       neighbourhood:
         user.neighbourhood || (user.block ? `Blk ${user.block}` : "Singapore"),
       availableTokens: user.tokenBalance || 0,
+      tokenBalance: userTokens.tokenBalance,
+      availableTokenBalance: userTokens.availableTokenBalance,
+      frozenTokenBalance: userTokens.frozenTokenBalance,
       tokensEarnedTotal,
       tokensSpentTotal,
       ratingAverage,
@@ -590,36 +639,62 @@ exports.getUserCharts = async (req, res) => {
       });
     } catch (e) {}
 
-    // Check carevisits for monthly activity
+    // Check carevisits & CareVisit for monthly activity
     try {
-      const visitCol = getCollection("carevisits");
-      const visits = await visitCol.find({ sitterId: numUserId }).toArray();
-      visits.forEach((v) => {
-        const vMonth = new Date(v.visitDate || v.createdAt).getMonth();
-        const monthLabel = monthNames[vMonth];
-        const idx = labels.indexOf(monthLabel);
-        if (idx !== -1) {
-          visitsData[idx] += 1;
-        }
-      });
+      const seenChartVisitIds = new Set();
+      for (const colName of ["carevisits", "CareVisit"]) {
+        try {
+          const col = getCollection(colName);
+          const visits = await col
+            .find({
+              $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+            })
+            .toArray();
+          visits.forEach((v) => {
+            const key = String(v.visitId || v._id);
+            if (!seenChartVisitIds.has(key)) {
+              seenChartVisitIds.add(key);
+              const vMonth = new Date(v.visitDate || v.createdAt).getMonth();
+              const monthLabel = monthNames[vMonth];
+              const idx = labels.indexOf(monthLabel);
+              if (idx !== -1) {
+                visitsData[idx] += 1;
+              }
+            }
+          });
+        } catch (colErr) {}
+      }
     } catch (e) {}
 
-    // Check carerequests for monthly requests posted
+    // Check carerequests & CareRequest for monthly requests posted
     try {
-      const reqCol = getCollection("carerequests");
-      const reqs = await reqCol
-        .find({
-          $or: [{ requesterId: numUserId }, { ownerId: numUserId }],
-        })
-        .toArray();
-      reqs.forEach((r) => {
-        const rMonth = new Date(r.createdAt).getMonth();
-        const monthLabel = monthNames[rMonth];
-        const idx = labels.indexOf(monthLabel);
-        if (idx !== -1) {
-          requestsData[idx] += 1;
-        }
-      });
+      const seenChartReqIds = new Set();
+      for (const reqColName of ["carerequests", "CareRequest"]) {
+        try {
+          const reqCol = getCollection(reqColName);
+          const reqs = await reqCol
+            .find({
+              $or: [
+                { requesterId: numUserId },
+                { ownerId: numUserId },
+                { userId: numUserId },
+              ],
+            })
+            .toArray();
+          reqs.forEach((r) => {
+            const key = String(r.requestId || r._id);
+            if (!seenChartReqIds.has(key)) {
+              seenChartReqIds.add(key);
+              const rMonth = new Date(r.createdAt).getMonth();
+              const monthLabel = monthNames[rMonth];
+              const idx = labels.indexOf(monthLabel);
+              if (idx !== -1) {
+                requestsData[idx] += 1;
+              }
+            }
+          });
+        } catch (colErr) {}
+      }
     } catch (e) {}
 
     res.json({
