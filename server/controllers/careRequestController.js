@@ -1,3 +1,4 @@
+const { runHealthChecks } = require("../services/plantHealth"); // added import
 const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
@@ -64,7 +65,7 @@ async function enrichVisits(visits) {
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
-      request,
+      request: request ? { ...request, healthCheck: undefined } : null,   // sitters do not see this
       items: detailedItems,
       plants: visitPlants,
       plant: visitPlants[0] || null,
@@ -120,6 +121,7 @@ exports.create = async (req, res) => {
       endDate,
       note: req.body.note || "",
       waterSource: req.body.waterSource || "tap_available",
+      healthCheck: req.body.healthCheck === true, // added for health check
       tokenReward: Number(req.body.tokenReward),
       status: "funding", // Keep the request unavailable until funding and setup succeed.
     });
@@ -438,6 +440,17 @@ exports.addVisitProof = async (req, res) => {
         proofUrl: proofDocs[0]?.photoUrl || "",
       },
     });
+
+    // added for checking plant health
+    if (request.healthCheck) {      // was req.body.healthCheck === "true"
+      runHealthChecks({
+        items: itemDocs,
+        filesByPlant,
+        ownerId: request.ownerId,
+        visitId: visitDoc.visitId,
+      }).catch((e) => console.warn("Health checks skipped:", e.message));
+    }
+
   } catch (err) {
     await Promise.allSettled(itemDocs.map(async (item, index) => {
       const original = originalItemStates[index];
