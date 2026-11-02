@@ -198,21 +198,17 @@ function onPointerLeave() {
 
 // shrink to bar when scrolling page
 const compact = ref(false)
-const COMPACT_HEIGHT = 56   // must match .weather-header.compact min-height in the CSS
+const slotHeight = ref(null)   // holds the header's space while it floats as a small bar
 
 // prevent glitching
 function onScroll() {
   const y = window.scrollY
-  if (!compact.value) {
-    // how far the page could still scroll after the header shrinks
-    const shrinkBy = headerEl.value.offsetHeight - COMPACT_HEIGHT
-    const roomAfter = document.documentElement.scrollHeight - window.innerHeight - shrinkBy
-
-    // shrink only if we're well down the page and there is still room to scroll once smaller
-    if (y > 80 && roomAfter > 40) compact.value = true
-  } else if (y < 20) {
-    // grow back only near the very top (a lower number than 80 on purpose)
+  if (!compact.value && y > 80) {
+    slotHeight.value = headerEl.value.offsetHeight   // measure before it shrinks
+    compact.value = true
+  } else if (compact.value && y < 20) {
     compact.value = false
+    slotHeight.value = null
   }
 }
 
@@ -242,109 +238,112 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div 
-    ref="headerEl" 
-    class="weather-header rounded mb-3 overflow-hidden" 
-    :class="[skyClass, { compact }]"
-    @pointermove="onPointerMove"
-    @pointerleave="onPointerLeave">
+  <div class="header-slot mb-3" :style="slotHeight ? { minHeight: slotHeight + 'px' } : null">
+    <div 
+      ref="headerEl" 
+      class="weather-header rounded mb-3 overflow-hidden" 
+      :class="[skyClass, { compact }]"
+      @pointermove="onPointerMove"
+      @pointerleave="onPointerLeave">
 
-    <div v-if="showStars" class="stars" aria-hidden="true">
-      <span
-        v-for="(s, i) in stars"
-        :key="i"
-        class="star"
-        :style="{
-          left: s.left + '%',
-          top: s.top + '%',
-          width: s.size + 'px',
-          height: s.size + 'px',
-          animationDuration: s.duration + 's',
-          animationDelay: s.delay + 's',
-        }"
-      ></span>
-    </div>
-
-    <!-- layer: GSAP moves it with the mouse. inner clouds: CSS drifts them -->
-    <div ref="farLayer" class="layer" aria-hidden="true">
-      <span
-        v-for="(c, i) in clouds"
-        :key="i"
-        class="cloud"
-        :style="{
-          top: c.top + '%',
-          fontSize: c.size + 'rem',
-          animationDuration: c.duration + 's',
-          animationDelay: c.delay + 's',
-        }"
-      >☁️</span>
-    </div>
-
-    <div ref="hillLayer" class="layer" aria-hidden="true">
-      <svg class="hills" viewBox="0 0 400 84" preserveAspectRatio="none">
-        <path class="hill-back" d="M0 84 L0 40 Q50 18 110 36 T230 32 T340 38 T400 26 L400 84 Z" />
-        <path class="hill-front" d="M0 84 L0 54 Q70 36 140 52 T280 50 T400 46 L400 84 Z" />
-      </svg>
-    </div>
-
-    <div ref="plantLayer" class="layer" aria-hidden="true">
-      <div class="plants-row" :class="{ perk: theme === 'rain', droop: isHot }">
+      <div v-if="showStars" class="stars" aria-hidden="true">
         <span
-          v-for="(p, i) in plants"
+          v-for="(s, i) in stars"
           :key="i"
-          class="plant"
-          :style="{ animationDelay: (i * -0.7) + 's' }"
-        >{{ p }}</span>
-      </div>
-    </div>
-
-    <div v-if="theme === 'rain'" class="rain" aria-hidden="true">
-      <span
-        v-for="(d, i) in visibleDrops"
-        :key="i"
-        class="drop"
-        :style="{
-          left: d.left + '%',
-          height: d.height + 'px',
-          animationDuration: d.duration + 's',
-          animationDelay: d.delay + 's',
-        }"
-      ></span>
-    </div>
-
-    <div ref="flashEl" class="flash" aria-hidden="true"></div>
-
-    <div class="hero-content d-flex justify-content-between align-items-center">
-      <div class="readout">
-        <span v-if="loading">Checking weather…</span>
-        <span v-else-if="error">Weather unavailable right now ({{ error }})</span>
-        <template v-else>
-          <div v-if="displayTemp !== null" class="temp">
-            {{ displayTemp }}°<span class="temp-label">high today</span>
-          </div>
-          <strong class="forecast">{{ forecastText }}</strong>
-          <span class="chip">near {{ stationName }}</span>
-        </template>
+          class="star"
+          :style="{
+            left: s.left + '%',
+            top: s.top + '%',
+            width: s.size + 'px',
+            height: s.size + 'px',
+            animationDuration: s.duration + 's',
+            animationDelay: s.delay + 's',
+          }"
+        ></span>
       </div>
 
-      <!-- outer span: GSAP drags this. inner button: CSS idle/click animations -->
-      <span
-        v-if="!loading && !error && theme !== 'unknown'"
-        ref="toyWrap"
-        class="toy-wrap"
-        :class="{ sun: isSun }"
-        title="Drag me!"
-      >
-        <button
-          type="button"
-          class="toy"
-          :class="playing ? toy.play : showStars ? 'idle-night' : `idle-${theme}`"
-          :aria-label="toy.label"
-          :aria-pressed="theme === 'rain' ? heavyRain : undefined"
-          @click="play"
-          @animationend="playing = false"
-        >{{ toy.icon }}</button>
-      </span>
+      <!-- layer: GSAP moves it with the mouse. inner clouds: CSS drifts them -->
+      <div ref="farLayer" class="layer" aria-hidden="true">
+        <span
+          v-for="(c, i) in clouds"
+          :key="i"
+          class="cloud"
+          :style="{
+            top: c.top + '%',
+            fontSize: c.size + 'rem',
+            animationDuration: c.duration + 's',
+            animationDelay: c.delay + 's',
+          }"
+        >☁️</span>
+      </div>
+
+      <div ref="hillLayer" class="layer" aria-hidden="true">
+        <svg class="hills" viewBox="0 0 400 84" preserveAspectRatio="none">
+          <path class="hill-back" d="M0 84 L0 40 Q50 18 110 36 T230 32 T340 38 T400 26 L400 84 Z" />
+          <path class="hill-front" d="M0 84 L0 54 Q70 36 140 52 T280 50 T400 46 L400 84 Z" />
+        </svg>
+      </div>
+
+      <div ref="plantLayer" class="layer" aria-hidden="true">
+        <div class="plants-row" :class="{ perk: theme === 'rain', droop: isHot }">
+          <span
+            v-for="(p, i) in plants"
+            :key="i"
+            class="plant"
+            :style="{ animationDelay: (i * -0.7) + 's' }"
+          >{{ p }}</span>
+        </div>
+      </div>
+
+      <div v-if="theme === 'rain'" class="rain" aria-hidden="true">
+        <span
+          v-for="(d, i) in visibleDrops"
+          :key="i"
+          class="drop"
+          :style="{
+            left: d.left + '%',
+            height: d.height + 'px',
+            animationDuration: d.duration + 's',
+            animationDelay: d.delay + 's',
+          }"
+        ></span>
+      </div>
+
+      <div ref="flashEl" class="flash" aria-hidden="true"></div>
+
+      <div class="hero-content d-flex justify-content-between align-items-center">
+        <div class="readout">
+          <span v-if="loading">Checking weather…</span>
+          <span v-else-if="error">Weather unavailable right now ({{ error }})</span>
+          <template v-else>
+            <div v-if="displayTemp !== null" class="temp">
+              {{ displayTemp }}°<span class="temp-label">high today</span>
+            </div>
+            <strong class="forecast">{{ forecastText }}</strong>
+            <span class="chip">near {{ stationName }}</span>
+          </template>
+        </div>
+
+        <!-- outer span: GSAP drags this. inner button: CSS idle/click animations -->
+        <span
+          v-if="!loading && !error && theme !== 'unknown'"
+          ref="toyWrap"
+          class="toy-wrap"
+          :class="{ sun: isSun }"
+          title="Drag me!"
+        >
+          <button
+            type="button"
+            class="toy"
+            :class="playing ? toy.play : showStars ? 'idle-night' : `idle-${theme}`"
+            :aria-label="toy.label"
+            :aria-pressed="theme === 'rain' ? heavyRain : undefined"
+            @click="play"
+            @animationend="playing = false"
+          >{{ toy.icon }}</button>
+        </span>
+      </div>
+
     </div>
   </div>
 </template>
@@ -352,18 +351,26 @@ onBeforeUnmount(() => {
 <style scoped>
 /*hero box sticky, shrinks when compact */
 .weather-header {
-  position: sticky;            /* stays at the top while the schedule scrolls under it */
-  top: 0;
+  position: relative;            /* stays at the top while the schedule scrolls under it */
   z-index: 10;                 /* above the cards, below Bootstrap tooltips (1080) */
   min-height: 190px;
   padding: 1rem 1.25rem 2.6rem;
   color: #12324a;
   text-shadow: 0 1px 8px rgba(255, 255, 255, 0.55);
-  transition: min-height 0.3s ease, padding 0.3s ease;
 }
 .weather-header.compact {
+  position: fixed;             /* floats over the reserved space */
+  top: 0;
+  left: 0;
+  right: 0;
   min-height: 56px;
   padding: 0.5rem 1.25rem;
+  animation: barDrop 0.25s ease-out;
+}
+
+@keyframes barDrop {
+  from { transform: translateY(-100%); }
+  to   { transform: none; }
 }
 
 /* sky */
@@ -559,5 +566,6 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .drop, .toy, .star, .cloud, .plant, .toy-wrap::before { animation: none !important; }
   .weather-header, .plants-row, .toy, .temp { transition: none; }
+  .weather-header.compact { animation: none; }
 }
 </style>

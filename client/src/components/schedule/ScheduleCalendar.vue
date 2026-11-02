@@ -185,10 +185,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .week {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.5rem;
 }
 .day-col {
+  min-width: 0; /* lets a column shrink below its content */
   min-height: 140px;
   padding: 0.5rem;
   border: 1px solid rgba(0, 0, 0, 0.1);
