@@ -11,8 +11,10 @@ const waterSourceLabels = {
 const props = defineProps({
   visit: { type: Object, required: true },
   busy: { type: Boolean, default: false },
+  optingOut: { type: Boolean, default: false },
 })
-const emit = defineEmits(['submit-proof'])
+// Keep visit release as a separate action from submitting proof.
+const emit = defineEmits(['submit-proof', 'opt-out'])
 
 const actions = reactive({})
 const photos = reactive({})
@@ -82,6 +84,15 @@ function date(value) {
         {{ busy ? 'Saving…' : 'Submit visit proof' }}
       </button>
     </form>
+    <!-- Let sitters release an accepted visit before its deadline. -->
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-sm"
+      :disabled="optingOut || busy"
+      @click="emit('opt-out', visit)"
+    >
+      {{ optingOut ? 'Opting out…' : 'Opt out of this visit' }}
+    </button>
   </article>
 </template>
 

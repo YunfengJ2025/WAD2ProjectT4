@@ -15,6 +15,7 @@ const error = ref('')
 const message = ref('')
 const submittingVisitId = ref(0)
 const acceptingVisitId = ref(0)
+const optingOutVisitId = ref(0)
 
 async function load() {
   loading.value = true
@@ -54,6 +55,30 @@ async function acceptVisit(visit) {
     error.value = err.message
   } finally {
     acceptingVisitId.value = 0
+  }
+}
+
+// Confirm and release a visit, then report any late-cancellation penalty.
+async function optOutVisit(visit) {
+  const confirmed = window.confirm(
+    'Opt out of this visit? After the 24-hour cutoff, a penalty up to the visit reward will be deducted from your available tokens.',
+  )
+  if (!confirmed) return
+  optingOutVisitId.value = visit.visitId
+  error.value = ''
+  message.value = ''
+  try {
+    const result = await auth.authorizedRequest(`/care-visits/${visit.visitId}/opt-out`, { method: 'POST' })
+    message.value = result.penaltyApplies
+      ? result.penalty
+        ? `You opted out. ${result.penalty} token${result.penalty === 1 ? '' : 's'} deducted.`
+        : 'You opted out after the cutoff, but had no available tokens to deduct.'
+      : 'You opted out before the penalty cutoff.'
+    await load()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    optingOutVisitId.value = 0
   }
 }
 
@@ -153,7 +178,9 @@ async function submitVisitProof(details) {
         :key="visit.visitId"
         :visit="visit"
         :busy="submittingVisitId === visit.visitId"
+        :opting-out="optingOutVisitId === visit.visitId"
         @submit-proof="submitVisitProof"
+        @opt-out="optOutVisit"
       />
     </section>
 
