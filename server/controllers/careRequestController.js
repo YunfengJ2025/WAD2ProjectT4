@@ -50,7 +50,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
       amountToWater,
       careInstructions: String(detail.careInstructions || "").trim(),
     });
-<<<<<<<<< Temporary merge branch 1
+// <<<<<<<<< Temporary merge branch 1
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
@@ -62,7 +62,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
       action: detailedItems[0]?.action || "",
       proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
     };
-=========
+// =========
   }
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const startDate = datePattern.test(body.startDate || "")
@@ -139,7 +139,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
 
 exports.create = async (req, res) => {
   try {
-<<<<<<<<< Temporary merge branch 1
+// <<<<<<<<< Temporary merge branch 1
     const selectedPlantIds = Array.isArray(req.body.plantIds)
       ? req.body.plantIds.map(Number)
       : [Number(req.body.plantId)];
@@ -242,7 +242,7 @@ exports.create = async (req, res) => {
       throw err;
     }
     res.status(201).json({ request: { ...request.toObject(), plants } });
-=========
+// =========
     res.status(201).json(await createCareRequest(req.userId, req.body));
   } catch (err) {
     handleError(err, res);
@@ -344,7 +344,7 @@ exports.cancel = async (req, res) => {
     handleError(err, res);
   }
 };
-<<<<<<<<< Temporary merge branch 1
+// <<<<<<<<< Temporary merge branch 1
 
 exports.availableVisits = async (req, res) => {
   try {
@@ -570,5 +570,5 @@ exports.myAssignments = async (req, res) => {
     handleError(err, res);
   }
 };
-=========
->>>>>>>>> Temporary merge branch 2
+// =========
+// >>>>>>>>> Temporary merge branch 2
