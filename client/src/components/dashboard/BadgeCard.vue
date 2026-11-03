@@ -1,13 +1,27 @@
 <template>
   <!--
-    :class binding with array + object syntax — covered in WAD2 wk4 (Vue Basics I, v-bind)
-    badge.unlocked conditionally applies the 'unlocked' CSS class
+    :class with array + object syntax — covered in WAD2 wk4 (Vue Basics I, v-bind)
+
+    Array form: ['badge-card glass-card', { unlocked: badge.unlocked }]
+      - The strings in the array are ALWAYS applied as static classes.
+      - The object { unlocked: badge.unlocked } conditionally adds 'unlocked'
+        only when badge.unlocked === true.
+    This is more powerful than a plain string because you can mix static + conditional
+    classes without writing a long ternary. Covered in Week 4, page 58-59.
+
+    The 'unlocked' class triggers a full visual transformation in CSS (lines 53-60):
+    filter: none (removes grayscale), opacity: 1, glowing green border + background.
   -->
   <div :class="['badge-card glass-card', { unlocked: badge.unlocked }]">
     <div class="badge-icon-wrap">
       <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
       <span class="badge-icon">{{ badge.icon }}</span>
-      <!-- v-if — covered in WAD2 wk4 -->
+      <!--
+        v-if — covered in WAD2 wk4
+        Shows a small green checkmark badge overlay only on unlocked badges.
+        position: absolute is used (lines 91-106) to float it over the icon circle corner.
+        [NOT IN WAD2 CONTENT] — position: absolute overlay technique.
+      -->
       <span v-if="badge.unlocked" class="check-mark">✓</span>
     </div>
     <div class="badge-info">
@@ -15,12 +29,22 @@
       <p>{{ badge.description }}</p>
       <!--
         :style binding — covered in WAD2 wk4 (v-bind:style)
-        Dynamically sets the progress bar width from the badge.progress prop
+        Dynamically sets the progress bar fill width as an inline style.
+        badge.progress is a number 0-100 computed on the server (e.g. 60 means 60%).
+        We cannot use a CSS class here because the exact width is a runtime number.
+        The CSS transition: width 0.6s ease on .progress-fill (line 141)
+        makes the bar animate smoothly when the value updates. [NOT IN WAD2 CONTENT]
       -->
       <div class="progress-bar-container">
         <div class="progress-fill" :style="{ width: badge.progress + '%' }"></div>
       </div>
-      <!-- Ternary expression in template — covered in WAD2 wk4 -->
+      <!--
+        Ternary expression in template — covered in WAD2 wk4
+        badge.unlocked ? 'Unlocked 🎉' : `${badge.progress}% completed`
+        Template literals (backtick strings) are standard modern JS — not WAD2-specific.
+        If the badge is unlocked (progress === 100), show celebration text.
+        Otherwise show the numeric progress percentage.
+      -->
       <span class="status-text">
         {{ badge.unlocked ? 'Unlocked 🎉' : `${badge.progress}% completed` }}
       </span>
@@ -30,6 +54,10 @@
 
 <script setup>
 // defineProps — covered in WAD2 wk6 (Vue Components, <script setup>)
+// The parent (DashboardView.vue) passes badge objects via :badge="badge".
+// type: Object validates at runtime in dev mode. required: true warns if omitted.
+// We do NOT need to assign this to a variable since the template accesses 'badge' directly
+// via the defineProps declaration (a <script setup> shorthand).
 defineProps({ badge: { type: Object, required: true } })
 </script>
 
@@ -145,5 +173,25 @@ defineProps({ badge: { type: Object, required: true } })
   font-size: 0.75rem;
   color: var(--color-primary-600);
   font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .badge-card {
+    padding: var(--space-sm);
+    gap: var(--space-xs);
+  }
+  .badge-icon-wrap {
+    width: 38px;
+    height: 38px;
+  }
+  .badge-icon {
+    font-size: 1.25rem;
+  }
+  .badge-info h4 {
+    font-size: 0.88rem;
+  }
+  .badge-info p {
+    font-size: 0.75rem;
+  }
 }
 </style>

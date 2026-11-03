@@ -85,6 +85,18 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    badges: {
+      type: [
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          description: { type: String, default: "" },
+          icon: { type: String, default: "🌱" },
+          unlockedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
@@ -399,7 +411,7 @@ async function applyTransactionToBalances(transactionId) {
 
 async function getPublicProfile(userId) {
   const user = await User.findOne({ userId })
-    .select("userId userName photoUrl bio createdAt -_id")
+    .select("userId userName photoUrl bio createdAt badges -_id")
     .lean();
   if (!user) return null;
   // Public feedback contains only completed, received care-visit reviews.
@@ -427,6 +439,7 @@ async function getPublicProfile(userId) {
       photoUrl: user.photoUrl || "",
       bio: user.bio || "",
       createdAt: user.createdAt,
+      badges: user.badges || [],
     },
     reviewCount: reviews.length,
     averageRating: ratings.length
@@ -461,6 +474,7 @@ function toAuthJSON(user) {
     unitNumber: user.unitNumber,
     photoUrl: user.photoUrl || "",
     bio: user.bio || "",
+    badges: user.badges || [],
     createdAt: user.createdAt,
     hideFromLeaderboard: Boolean(user.hideFromLeaderboard),
   };

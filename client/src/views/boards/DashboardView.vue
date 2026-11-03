@@ -14,10 +14,13 @@
 
         <div class="header-ctas">
           <!-- token-pill & anim-bounce-in = custom CSS classes from main.css [NOT IN WAD2 CONTENT] -->
-          <div class="token-pill anim-bounce-in">
+          <div class="token-pill anim-bounce-in" :title="`Total: ${userData.tokenBalance || userData.availableTokens || 0} tokens · Available: ${userData.availableTokenBalance ?? (userData.availableTokens || 0)} · Frozen: ${userData.frozenTokenBalance || 0}`">
             <span class="coin">🪙</span>
-            <span class="amount">{{ userData.availableTokens || 0 }}</span>
+            <span class="amount">{{ userData.tokenBalance || userData.availableTokens || 0 }}</span>
             <span class="token-tag">Tokens</span>
+            <span v-if="userData.frozenTokenBalance > 0" class="token-breakdown">
+              ({{ userData.availableTokenBalance ?? 0 }} Avail · {{ userData.frozenTokenBalance }} Frozen)
+            </span>
           </div>
           <!-- <router-link> — covered in WAD2 wk6 (Vue Router) -->
           <router-link to="/leaderboard" class="btn btn-primary btn-sm">🏆 View Leaderboard</router-link>
@@ -33,7 +36,7 @@
           <div>
             <!-- || 0 fallback — basic JS short-circuit, WAD2 wk4+ -->
             <div class="stat-val">{{ stats.totalPlantsOwned || 0 }}</div>
-            <div class="stat-label">Plants Owned</div>
+            <div class="stat-label">Total Plants Owned</div>
           </div>
         </div>
 
@@ -41,7 +44,7 @@
           <span class="stat-icon">📋</span>
           <div>
             <div class="stat-val">{{ stats.careRequestsPosted || 0 }}</div>
-            <div class="stat-label">Requests Posted</div>
+            <div class="stat-label">Total Requests Posted</div>
           </div>
         </div>
 
@@ -49,7 +52,7 @@
           <span class="stat-icon">🤝</span>
           <div>
             <div class="stat-val">{{ stats.visitsCompleted || 0 }}</div>
-            <div class="stat-label">Visits as Helper</div>
+            <div class="stat-label">Total Visits as Helper</div>
           </div>
         </div>
 
@@ -93,7 +96,7 @@
           <h2>🏅 Milestone Badges</h2>
           <span class="badge badge-progress">Community Achievements</span>
         </div>
-        <p class="section-sub">Unlock milestone badges by completing plant care visits for corridor &amp; balcony plants</p>
+        <p class="section-sub">Unlock milestone badges by completing plant care visits</p>
         <div class="badges-grid">
           <!--
             v-for with :key — covered in WAD2 wk4 (Vue Basics I)
@@ -114,16 +117,21 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+// useAuthStore() is a Pinia store — a global reactive state manager [NOT IN WAD2 CONTENT]
+// It holds the currently logged-in user's data (userId, name, tokens, etc.)
+// across all components without prop-drilling. WAD2 wk6 introduces Vuex/Pinia conceptually.
 const auth = useAuthStore()
 
 // Component imports — covered in WAD2 wk6 (<script setup> imports)
+// These are locally registered child components — they do NOT need app.component() registration
+// because <script setup> automatically makes imported components available in the template.
 import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
 import BadgeCard from '../../components/dashboard/BadgeCard.vue'
 
 // ref() reactive state — covered in WAD2 wk4/wk5
-// Initial empty state before fetching live data from MongoDB via backend API.
-// Setting default object properties prevents Vue runtime errors (e.g. Cannot read property of null)
-// while waiting for axios.get() to respond.
+// We initialise userData and stats with empty/zero defaults so Vue never tries to
+// render {{ undefined }} while waiting for the API. Without defaults, accessing
+// userData.name before the API responds would throw "Cannot read property of null".
 const userData = ref({
   name: "",
   avatarUrl: "",
@@ -142,15 +150,19 @@ const stats = ref({
   plantsCaredFor: 0,
 })
 
-// Empty badges list populated dynamically from GET /api/dashboard/stats/:userId
+// badges starts as [] so v-for renders nothing (empty grid) until data arrives.
 const badges = ref([])
 
-// Chart data starts as null so <InteractiveBarChart> displays its clean loading spinner
-// until live data arrives from GET /api/dashboard/charts/:userId
+// activityChartData and tokenChartData start as null — NOT empty {}.
+// <InteractiveBarChart> uses v-if="chartData && chartData.labels" to guard rendering.
+// null = spinner shows; {} = Chart.js tries to render with missing data and crashes.
 const activityChartData = ref(null)
 const tokenChartData = ref(null)
 
 // computed() — covered in WAD2 wk4/wk5
+// Reads the current hour once at mount time and returns a greeting string.
+// Using computed() instead of a plain variable means Vue memoises the result —
+// it won't recompute every render if the hour hasn't changed.
 const timeOfDay = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return 'morning'
@@ -159,19 +171,23 @@ const timeOfDay = computed(() => {
 })
 
 // async/await + axios.get() — covered in WAD2 wk5 (Express + Axios)
-// Fetches live user statistics, badges, and chart metrics from the backend API
+// We chain three sequential API calls:
+// 1. GET /api/leaderboard   — to resolve the logged-in user's userId
+// 2. GET /api/dashboard/stats/:id — returns stats, user object, and badge array
+// 3. GET /api/dashboard/charts/:id — returns 6-month activity & token datasets
+// All three are awaited so data flows in order: no chart rendering before userId is known.
 async function fetchDashboard() {
   try {
     const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
+    // Optional chaining (?.) — modern JS, not WAD2-specific.
+    // Safely reads nested properties without throwing if auth.user is null.
     const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
     if (activeUserId) {
-      // Fetch user profile metrics and milestone badges
       const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${activeUserId}`)
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
-      // Fetch monthly visualisations data for Chart.js
       const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${activeUserId}`)
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
@@ -182,6 +198,9 @@ async function fetchDashboard() {
 }
 
 // onMounted() lifecycle hook — covered in WAD2 wk5 (Vue lifecycle)
+// Fires once after the component's DOM is inserted into the page.
+// We call fetchDashboard() here rather than at the top level so that
+// the API call only runs when this component is actually rendered, not on import.
 onMounted(() => {
   fetchDashboard()
 })
@@ -240,10 +259,13 @@ onMounted(() => {
   padding: 6px 14px;
   font-size: 0.9rem;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .token-pill:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
 .token-tag {
@@ -251,6 +273,16 @@ onMounted(() => {
   text-transform: uppercase;
   color: #78350f;
   margin-left: 2px;
+}
+
+.token-breakdown {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.18);
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-left: 4px;
 }
 
 /* CSS Grid — [NOT IN WAD2 CONTENT] WAD2 wk3 teaches Bootstrap grid, not CSS Grid */
@@ -372,6 +404,26 @@ onMounted(() => {
 }
 
 /* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */
+@media (max-width: 1400px) {
+  .stats-row {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+  }
+  .stat-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+
+@media (max-width: 1200px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+}
+
 @media (max-width: 1024px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
@@ -379,18 +431,103 @@ onMounted(() => {
   .charts-row {
     grid-template-columns: 1fr;
   }
+  .badges-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .content {
     padding: 0 var(--space-md);
   }
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  .header-ctas {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  .token-pill {
+    max-width: 100%;
+    flex-wrap: wrap;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+  }
+  .token-breakdown {
+    display: inline-block;
+    margin-top: 2px;
+  }
+  .chart-card {
+    padding: var(--space-md);
+  }
+  .section.glass-card {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 0 var(--space-sm);
+  }
+  .page-header h1 {
+    font-size: 1.65rem;
+  }
+  .subtitle {
+    font-size: 0.8rem;
+  }
+  .header-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+  .header-ctas .btn {
+    text-align: center;
+    width: 100%;
   }
   .stats-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+  .stat-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .stat-val {
+    font-size: 1.35rem;
+  }
+  .badges-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+  .section.glass-card {
+    padding: var(--space-md) var(--space-sm);
+  }
+  .section-header h2 {
+    font-size: 1.05rem;
+  }
+  .section-sub {
+    font-size: 0.78rem;
+    margin-bottom: var(--space-sm);
+  }
+}
+
+@media (max-width: 380px) {
+  .stat-card {
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .stat-icon {
+    font-size: 1.4rem;
+  }
+  .token-pill {
+    font-size: 0.78rem;
   }
 }
 </style>

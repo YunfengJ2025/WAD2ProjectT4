@@ -20,6 +20,10 @@ const careRequestSchema = new mongoose.Schema(
       enum: ["left_out", "tap_available", "sitter_brings"],
       default: "tap_available",
     },
+    healthCheck: { // owner chooses at posting time
+      type: Boolean, 
+      default: false 
+    },   
     tokenReward: {
       type: Number,
       required: [true, "Reward is required"],

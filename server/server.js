@@ -19,6 +19,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 // Start visit deadlines only after the database connection is ready.
 const { startVisitSweeper } = require("./services/visitSweeper");
 const postRoutes = require("./routes/postRoute");
+const nearbyRoutes = require("./routes/nearbyRequests");
 const { validateJwtConfig } = require("./config/jwt");
 validateJwtConfig();
 // Specify the path to the environment variable file '.env'
@@ -41,6 +42,7 @@ server.use("/api", boardRoutes);
 server.use("/post", postRoutes);
 server.use("/care-requests", careRequestRoutes);
 server.use("/care-visits", careVisitRoutes);
+server.use("/find-nearby", nearbyRoutes);
 // Expose the authenticated in-app notice endpoints.
 server.use("/notifications", notificationRoutes);
 

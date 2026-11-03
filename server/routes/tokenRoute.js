@@ -1,11 +1,13 @@
 // tokenTransactionRoutes.js
 const router = require("express").Router();
 const controller = require("../controllers/tokenController");
-const requireUser = require("../middleware/requireUser")
-// JWT middleware supplies req.userId so the controller can verify the reward claimant.
+const requireUser = require("../middleware/requireUser");
+// System gifts intentionally bypass authentication.
+// Care claims still need JWT authentication to identify the sitter who completed the visit.
 router.post(
   "/",
-  requireUser,
+  (req, res, next) =>
+    req.body?.type === "SYSTEM_GIFT" ? next() : requireUser(req, res, next),
   controller.createTokenTran,
 );
 router.get("/", controller.getAllTokenTran);

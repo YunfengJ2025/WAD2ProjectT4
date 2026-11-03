@@ -62,6 +62,18 @@ it('includes reviews navigation and highlights only the section reached by scrol
   })
   expect(wrapper.findAll('.profile-sidebar .selected')).toHaveLength(1)
   expect(wrapper.get('.profile-sidebar [aria-current="location"]').text()).toContain('My reviews')
+  expect(wrapper.find('.profile-sidebar a[href="#profile-badges"]').exists()).toBe(false)
+  auth.user.badges = [{ id: 'first-care', name: 'First care', icon: '✦' }]
+  await flushPromises()
+  expect(wrapper.get('.profile-sidebar a[href="#profile-badges"]').text()).toContain('My badges')
+  wrapper.get('#profile-badges').element.getBoundingClientRect = () => ({ top: 20 })
+  positions['profile-reviews'] = -400
+  positions['profile-posts'] = -100
+  window.dispatchEvent(new Event('scroll'))
+  await vi.waitFor(() => {
+    expect(wrapper.get('.profile-sidebar [aria-current="location"]').attributes('href')).toBe('#profile-badges')
+  })
+  expect(wrapper.findAll('.profile-sidebar .selected')).toHaveLength(1)
 })
 async function pick(file) {
   Object.defineProperty(wrapper.get('#profile-photo').element, 'files', { configurable: true, value: [file] })

@@ -6,7 +6,7 @@
       <header class="page-header anim-slide-up">
         <div>
           <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
-          <p class="greeting">Singapore HDB Community Rankings</p>
+          <p class="greeting">Singapore Rankings</p>
           <h1>🏆 Community Leaderboard</h1>
           <p class="subtitle">Top plant caregivers and helpful neighbours ranked by community tokens</p>
         </div>
@@ -15,12 +15,16 @@
           glass-card = glassmorphism CSS class [NOT IN WAD2 CONTENT]
           @change event binding — covered in WAD2 wk5 (Vue Events)
           :checked prop binding — covered in WAD2 wk4 (v-bind)
+          <router-link> — covered in WAD2 wk6 (Vue Router)
         -->
-        <div class="opt-out-box glass-card">
-          <label class="switch-label">
-            <input type="checkbox" :checked="isOptedOut" @change="toggleOptOut" class="styled-checkbox" />
-            <span class="switch-text">Hide my profile from Leaderboard</span>
-          </label>
+        <div class="header-actions">
+          <router-link to="/dashboard" class="btn btn-primary btn-sm">🌱 View Dashboard</router-link>
+          <div class="opt-out-box glass-card">
+            <label class="switch-label">
+              <input type="checkbox" :checked="isOptedOut" @change="toggleOptOut" class="styled-checkbox" />
+              <span class="switch-text">Hide my profile from Leaderboard</span>
+            </label>
+          </div>
         </div>
       </header>
 
@@ -76,15 +80,31 @@
             :class="{ 'lb-me': isCurrentUser(u) }"
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
-            <div
-              class="lb-avatar"
-              :style="{
-                background: isCurrentUser(u)
-                  ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
-                  : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
-              }"
-            >
-              {{ u.name ? u.name[0] : '🌱' }}
+            <!--
+              User Avatar with Profile Photo or Fallback Initial:
+              v-if checks if u.photoUrl exists (uploaded image from Cloudinary).
+              If true, renders <img> with .lb-avatar-img.
+              Otherwise, renders fallback colored circle with the first initial u.name[0].
+              v-if / v-else — covered in WAD2 wk4 (Vue Basics I)
+            -->
+            <div class="lb-avatar-wrap">
+              <img
+                v-if="u.photoUrl"
+                :src="u.photoUrl"
+                :alt="`${u.name}'s profile photo`"
+                class="lb-avatar-img"
+              />
+              <div
+                v-else
+                class="lb-avatar"
+                :style="{
+                  background: isCurrentUser(u)
+                    ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
+                    : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
+                }"
+              >
+                {{ u.name ? u.name[0] : '🌱' }}
+              </div>
             </div>
             <div class="lb-name">
               {{ u.name }}
@@ -113,11 +133,24 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+// useAuthStore() is a Pinia store — global reactive state for auth [NOT IN WAD2 CONTENT]
+// Holds the logged-in user's data so all components share the same auth state.
 const auth = useAuthStore()
+
+// isOptedOut tracks whether the current user has chosen to hide their profile.
+// Starts as false; updated by fetchOptOutStatus() on mount.
 const isOptedOut = ref(false)
 
+// computed() — covered in WAD2 wk4/wk5
+// Optional chaining (?.) safely reads nested properties without crashing if auth.user is null.
+// This is modern JS — not WAD2-specific. It's equivalent to:
+//   auth.user !== null && auth.user !== undefined ? auth.user.userId : null
 const CURRENT_USER_ID = computed(() => auth.user?.userId || auth.user?.id || null)
 
+// isCurrentUser() — defensive dual-match logic:
+// First tries to match by numeric userId (from DB), then falls back to matching by
+// userName string (case-insensitive). This guards against the auth store returning
+// slightly different user object shapes depending on how/when the user logged in.
 function isCurrentUser(u) {
   if (!auth.user) return false
   if (CURRENT_USER_ID.value && String(u.id) === String(CURRENT_USER_ID.value)) return true
@@ -125,21 +158,31 @@ function isCurrentUser(u) {
   return false
 }
 
-// Initial empty leaderboard array.
-// Will be dynamically populated via fetchLeaderboard() from GET /api/leaderboard
+// Initial empty leaderboard array — starts as [] so v-for renders nothing.
+// Populated reactively once fetchLeaderboard() resolves.
 const leaderboard = ref([])
 
 // computed() with .filter() and .map() — covered in WAD2 wk4/wk5 (Vue + JS arrays)
+// filteredLeaderboard is derived state — it recalculates automatically whenever
+// leaderboard or isOptedOut changes (Vue tracks these dependencies).
+// Steps:
+//   1. .filter() removes the current user from the list if they've opted out.
+//   2. .map() with spread (...u) creates a new object for each user with rank attached.
+//      Spread operator — modern JS, not explicitly in WAD2.
+//      rank is recalculated from the current array index so if #1 opts out,
+//      everyone below automatically moves up without any server call.
 const filteredLeaderboard = computed(() => {
   let list = leaderboard.value
   if (isOptedOut.value) {
     list = list.filter((u) => !isCurrentUser(u))
   }
-  // spread operator (...) with map — modern JS, not explicitly in WAD2
   return list.map((u, i) => ({ ...u, rank: i + 1 }))
 })
 
 // async/await + axios.get() — covered in WAD2 wk5
+// Calls GET /api/leaderboard which returns users sorted by availableTokens descending.
+// The backend already excludes opted-out users at the DB level (hideFromLeaderboard: {$ne: true})
+// so we never even receive their data — a second line of privacy protection.
 async function fetchLeaderboard() {
   try {
     const res = await axios.get('http://localhost:8000/api/leaderboard')
@@ -151,7 +194,10 @@ async function fetchLeaderboard() {
   }
 }
 
-// Fetch user's saved opt-out status from backend
+// Calls GET /api/leaderboard/status/:userId to retrieve the user's saved opt-out preference.
+// This is needed because if the user opted out in a previous session, the checkbox
+// must already appear ticked when they open the page — we cannot rely on in-memory state.
+// Falls back to auth.user.hideFromLeaderboard if the API call fails (e.g. no connection).
 async function fetchOptOutStatus() {
   const targetId = CURRENT_USER_ID.value
   if (!targetId) {
@@ -176,31 +222,40 @@ async function fetchOptOutStatus() {
 }
 
 // axios.patch() — covered in WAD2 wk5 (HTTP methods)
+// PATCH = partial update. We're only changing one field (hideFromLeaderboard) on the user,
+// not replacing the entire user document. Using the correct HTTP verb is REST best practice.
+// Pattern: Optimistic UI — we flip isOptedOut.value immediately (instant feedback),
+// then confirm with the server. If the server fails, we flip it back (the catch block).
 async function toggleOptOut() {
   const targetId = CURRENT_USER_ID.value
-  isOptedOut.value = !isOptedOut.value
+  isOptedOut.value = !isOptedOut.value // immediate UI update (optimistic)
 
   if (targetId) {
     try {
       const res = await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
       if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
-        isOptedOut.value = res.data.hideFromLeaderboard
+        isOptedOut.value = res.data.hideFromLeaderboard // confirm with server's actual value
         if (auth.user) {
           auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
         }
       }
-      await fetchLeaderboard()
+      await fetchLeaderboard() // re-fetch so the list reflects the change immediately
     } catch (err) {
       console.error('Error toggling opt-out:', err)
-      isOptedOut.value = !isOptedOut.value
+      isOptedOut.value = !isOptedOut.value // revert on failure
     }
   }
 }
 
-// Arrow function returning object lookup — basic JS
+// Object lookup with fallback — concise alternative to a switch/if-else chain.
+// { 1: '🥇', 2: '🥈', 3: '🥉' }[rank] looks up the rank as a key.
+// If rank > 3, the lookup returns undefined, so || `#${rank}` gives '#4', '#5', etc.
 const rankMedal = (rank) => ({ 1: '🥇', 2: '🥈', 3: '🥉' }[rank] || `#${rank}`)
 
 // onMounted() lifecycle hook — covered in WAD2 wk5
+// We await fetchOptOutStatus() FIRST so the checkbox is in the correct state
+// before the leaderboard list renders — otherwise the user might see a flicker
+// where they briefly appear on the list even though they've opted out.
 onMounted(async () => {
   await fetchOptOutStatus()
   await fetchLeaderboard()
@@ -248,6 +303,13 @@ onMounted(async () => {
   margin: 4px 0 0;
   color: var(--color-neutral-500);
   font-size: 0.88rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .opt-out-box {
@@ -481,6 +543,24 @@ onMounted(async () => {
   font-weight: 800;
 }
 
+.lb-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lb-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+}
+
 .lb-avatar {
   width: 36px;
   height: 36px;
@@ -579,19 +659,191 @@ onMounted(async () => {
 }
 
 /* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */
-@media (max-width: 640px) {
+@media (max-width: 1200px) {
+  .podium-section {
+    gap: var(--space-md);
+  }
+  .podium-card {
+    width: 175px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .podium-section {
+    gap: var(--space-md);
+  }
+  .podium-card {
+    width: 155px;
+    padding: var(--space-md) var(--space-sm);
+  }
+  .podium-avatar.top {
+    width: 68px;
+    height: 68px;
+  }
+  .lb-name {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 768px) {
   .content {
     padding: 0 var(--space-md);
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  .header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  .opt-out-box {
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .podium-section {
+    gap: var(--space-sm);
+    margin: var(--space-md) 0 var(--space-lg);
+  }
+  .podium-card {
+    width: 130px;
+    padding: var(--space-md) var(--space-xs);
+  }
+  .podium-card h4 {
+    font-size: 0.85rem;
+  }
+  .podium-avatar {
+    width: 50px;
+    height: 50px;
+  }
+  .podium-avatar.top {
+    width: 60px;
+    height: 60px;
+  }
+  .lb-bar-wrap {
+    display: none;
+  }
+  .leaderboard-card {
+    padding: var(--space-md);
+  }
+  .lb-row {
+    padding: var(--space-xs) var(--space-sm);
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 0 var(--space-sm);
+  }
+  .page-header h1 {
+    font-size: 1.7rem;
+  }
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+  .header-actions .btn {
+    text-align: center;
+    width: 100%;
+  }
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    white-space: nowrap;
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.8rem;
+  }
+  .podium-section {
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .podium-card {
+    width: 105px;
+    padding: var(--space-sm) 4px;
+  }
+  .podium-card h4 {
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .token-pill {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+  .lb-row {
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .lb-rank {
+    font-size: 0.95rem;
+    min-width: 24px;
+  }
+  .lb-avatar-wrap, .lb-avatar, .lb-avatar-img {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+  .lb-name {
+    min-width: 90px;
+    font-size: 0.82rem;
   }
   .lb-area {
     display: none;
   }
+  .lb-rating {
+    min-width: 44px;
+    font-size: 0.75rem;
+  }
+  .lb-tokens {
+    font-size: 0.82rem;
+    min-width: 55px;
+  }
+}
+
+@media (max-width: 380px) {
   .podium-section {
-    gap: var(--space-sm);
+    gap: 4px;
   }
   .podium-card {
-    width: 105px;
-    padding: var(--space-md) var(--space-xs);
+    width: 96px;
+    padding: var(--space-xs) 2px;
+  }
+  .podium-avatar {
+    width: 42px;
+    height: 42px;
+  }
+  .podium-avatar.top {
+    width: 50px;
+    height: 50px;
+  }
+  .medal {
+    font-size: 1.1rem;
+  }
+  .crown {
+    font-size: 1.3rem;
+    top: -14px;
+  }
+  .lb-row {
+    gap: 4px;
+  }
+  .lb-name {
+    min-width: 80px;
+    font-size: 0.78rem;
+  }
+  .lb-tokens {
+    font-size: 0.78rem;
   }
 }
 </style>
