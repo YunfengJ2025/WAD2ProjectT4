@@ -4,6 +4,7 @@ const RequestItem = require("../models/requestItemModel");
 const PhotoProof = require("../models/photoProofModel");
 const { Plant } = require("../models/plantModel");
 const { User, releaseTokens } = require("../models/userModel");
+const { runHealthChecks } = require("../services/plantHealth");
 const {
   notifyUser,
   burnSitterPenalty,
@@ -76,7 +77,7 @@ async function enrichVisits(visits) {
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
-      request,
+      request: request ? { ...request, healthCheck: undefined } : null, // sitters must not see this
       items: detailedItems,
       plants: visitPlants,
       plant: visitPlants[0] || null,
@@ -134,6 +135,7 @@ exports.makeUpRequest = async (req, res) => {
         endDate: date,
         note: sourceRequest.note,
         waterSource: sourceRequest.waterSource,
+        healthCheck: sourceRequest.healthCheck === true,
         tokenReward: sourceRequest.tokenReward,
       },
       visitId,
@@ -348,6 +350,16 @@ exports.addVisitProof = async (req, res) => {
         proofUrl: proofDocs[0]?.photoUrl || "",
       },
     });
+    
+    if (request.healthCheck) { // plant health check, only when the owner turned it on for this request
+      runHealthChecks({
+        items: itemDocs,
+        filesByPlant,
+        ownerId: request.ownerId,
+        visitId: visitDoc.visitId,
+      }).catch((e) => console.warn("Health checks skipped:", e.message));
+    }
+
   } catch (err) {
     await Promise.allSettled(itemDocs.map(async (item, index) => {
       const original = originalItemStates[index];

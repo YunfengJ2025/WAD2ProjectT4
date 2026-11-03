@@ -1,6 +1,9 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
+// Care checklist (Carolyn): same helper as the owner's plant page, so both split
+// the care notes the same way (one step per line)
+import { getCareSteps } from '@/utils/careSteps'
 
 const waterSourceLabels = {
   left_out: 'Water left outside',
@@ -22,6 +25,15 @@ const error = ref('')
 const items = props.visit.items?.length ? props.visit.items : (props.visit.plants || [props.visit.plant]).filter(Boolean).map((plant) => ({ plant }))
 const plants = items.map((item) => item.plant).filter(Boolean)
 
+// Care checklist (Carolyn): for each plant, its care steps and the steps the sitter ticks.
+// careSteps[plantId] = ["Water the soil", ...]   ticked[plantId] = steps ticked (v-model)
+const careSteps = {}
+const ticked = reactive({})
+for (const item of items) {
+  careSteps[item.plantId] = getCareSteps(item.plant?.wateringInfo?.notes)
+  ticked[item.plantId] = []
+}
+
 function choosePhoto(event, plantId) {
   photos[plantId] = event.target.files.length ? event.target.files[0] : null
 }
@@ -40,6 +52,7 @@ function submit() {
     visit: props.visit,
     actions: Object.fromEntries(items.map((item) => [item.plantId, actions[item.plantId].trim()])),
     photos: Object.fromEntries(items.map((item) => [item.plantId, photos[item.plantId]])),
+    completedSteps: ticked, // Care checklist (Carolyn): e.g. { 5: ["Water the soil"] }
   })
 }
 
@@ -67,6 +80,17 @@ function date(value) {
         </div>
         <p>Water {{ item.amountToWater ?? 0 }} ml each visit</p>
         <p v-if="item.careInstructions">{{ item.careInstructions }}</p>
+        <!-- Care checklist (Carolyn): the owner's care notes as tick boxes (optional) -->
+        <fieldset v-if="careSteps[item.plantId].length" class="care-checklist">
+          <legend>
+            Care checklist
+            <small>{{ ticked[item.plantId].length }} of {{ careSteps[item.plantId].length }} done</small>
+          </legend>
+          <label v-for="step in careSteps[item.plantId]" :key="step" class="step">
+            <input v-model="ticked[item.plantId]" type="checkbox" :value="step" />
+            <span>{{ step }}</span>
+          </label>
+        </fieldset>
         <label>
           Action completed for this plant
           <input v-model="actions[item.plantId]" maxlength="100" required placeholder="e.g. Watered and checked the soil" />
@@ -117,4 +141,10 @@ p { margin: 0.3rem 0; color: #59665c; }
 .visit-form small { color: #68766b; font-weight: 400; }
 .visit-form button { justify-self: start; }
 .error { color: #b42318; }
+/* Care checklist (Carolyn) */
+.care-checklist { margin: 0; padding: 0.5rem 0.65rem; border: 1px solid #e2e8e2; border-radius: 8px; background: #fff; }
+.care-checklist legend { float: left; width: 100%; margin-bottom: 0.25rem; font-size: 0.9rem; font-weight: 700; color: #34463a; }
+.care-checklist legend small { margin-left: 0.35rem; font-weight: 400; color: #68766b; }
+.plant-care-card .care-checklist .step { display: flex; align-items: flex-start; gap: 0.5rem; font-weight: 400; cursor: pointer; }
+.care-checklist .step input { width: 16px; height: 16px; margin-top: 0.2rem; accent-color: #2d6740; }
 </style>

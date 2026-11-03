@@ -1,6 +1,7 @@
 <script setup>
 import plantPlaceholder from '@/assets/plant.png'
 import { computed } from 'vue'
+import { getCareSteps } from '@/utils/careSteps'
 const props = defineProps({
   visit: { type: Object, required: true },
   paid: { type: Boolean, default: false },
@@ -12,6 +13,13 @@ const emit = defineEmits(['claim-reward'])
 function date(value) {
   return new Date(value).toLocaleString('en-GB')
 }
+
+// Care checklist (Carolyn): "3 of 5 care steps", or '' if the plant has no care steps
+function stepsSummary(item) {
+  const total = getCareSteps(item.plant?.wateringInfo?.notes).length
+  if (total === 0) return ''
+  return `${(item.completedSteps || []).length} of ${total} care steps`
+}
 </script>
 
 <template>
@@ -22,6 +30,8 @@ function date(value) {
       <ul class="item-actions">
         <li v-for="item in visit.items || []" :key="item.requestItemId">
           {{ item.plant?.plantName || 'Plant' }}: {{ item.action }}
+          <!-- Care checklist (Carolyn) -->
+          <span v-if="stepsSummary(item)"> · {{ stepsSummary(item) }}</span>
         </li>
       </ul>
       <div class="plant-strip">

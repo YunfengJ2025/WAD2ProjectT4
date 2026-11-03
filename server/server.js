@@ -42,6 +42,7 @@ server.use("/api", boardRoutes);
 server.use("/post", postRoutes);
 server.use("/care-requests", careRequestRoutes);
 server.use("/care-visits", careVisitRoutes);
+server.use("/find-nearby", nearbyRoutes);
 // Expose the authenticated in-app notice endpoints.
 server.use("/notifications", notificationRoutes);
 

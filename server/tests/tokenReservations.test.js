@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const users = require('../models/userModel');
 const tokens = require('../models/tokenModel');
+const day = (n) => new Date(Date.now() + (8 + 24 * n) * 3600e3).toISOString().slice(0, 10);
 
 // Exercise reservation rules with database operations stubbed out. These tests
 // check query guards and rollback behavior; they do not require a live MongoDB.
@@ -64,13 +65,13 @@ test('posting reserves every daily visit and removes an unfunded request', async
   const CareVisit = require('../models/careVisitModel');
   const RequestItem = require('../models/requestItemModel');
   const { Plant } = require('../models/plantModel');
-  const originals = [CareRequest.create, CareVisit.create, RequestItem.create, Plant.findOne, users.User.updateOne];
+  const originals = [CareRequest.create, CareVisit.create, RequestItem.create, Plant.find, users.User.updateOne];
   let amount;
   let removed = false;
   let insufficient = false;
   let visits = 0;
   try {
-    Plant.findOne = async () => ({});
+    Plant.find = async () => [{ plantId: 1, lastWateredAt: null, wateringInfo: { frequencyDays: 1 } }];
     CareRequest.create = async (data) => ({ ...data, requestId: 7,
       save: async () => {}, deleteOne: async () => { removed = true; }, toObject() { return { ...this }; } });
     CareVisit.create = async () => ({ visitId: ++visits, deleteOne: async () => {} });
@@ -80,7 +81,7 @@ test('posting reserves every daily visit and removes an unfunded request', async
       return { modifiedCount: 1 };
     };
     const controller = require('../controllers/careRequestController');
-    const req = { userId: 1, body: { plantId: 1, startDate: '2026-11-01', endDate: '2026-11-03', tokenReward: 10 } };
+    const req = { userId: 1, body: { plantId: 1, startDate: day(1), endDate: day(3), tokenReward: 10 } };
     const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
     await controller.create(req, res);
     assert.equal(res.code, 201);
@@ -93,7 +94,7 @@ test('posting reserves every daily visit and removes an unfunded request', async
     assert.equal(removed, true);
     assert.equal(visits, 3);
   } finally {
-    [CareRequest.create, CareVisit.create, RequestItem.create, Plant.findOne, users.User.updateOne] = originals;
+    [CareRequest.create, CareVisit.create, RequestItem.create, Plant.find, users.User.updateOne] = originals;
   }
 });
 

@@ -1,9 +1,9 @@
-const { runHealthChecks } = require("../services/plantHealth"); // added import
 const CareRequest = require("../models/careRequestModel");
 const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
 const { Plant } = require("../models/plantModel");
 const { reserveTokens, releaseTokens } = require("../models/userModel");
+const { planVisits } = require("../services/visitPlan");
 const { enrichVisits } = require("./careVisitController");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -26,7 +26,7 @@ function handleError(err, res) {
   return res.status(500).json({ message: "Server error" });
 }
 
-// Create a request and its daily visits; shared with the make-up visit endpoint.
+// Create a request and its visits; shared with the make-up visit endpoint.
 async function createCareRequest(ownerId, body, makeupForVisitId) {
   const selectedPlantIds = Array.isArray(body.plantIds)
     ? body.plantIds.map(Number)
@@ -50,6 +50,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
       amountToWater,
       careInstructions: String(detail.careInstructions || "").trim(),
     });
+<<<<<<<<< Temporary merge branch 1
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
     return {
       ...visit,
@@ -61,6 +62,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
       action: detailedItems[0]?.action || "",
       proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
     };
+=========
   }
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const startDate = datePattern.test(body.startDate || "")
@@ -73,6 +75,21 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
   if (Number.isNaN(endDate.getTime())) throw fail(400, "Enter a valid end date");
   if (endDate < startDate) throw fail(400, "End date must be on or after start date");
 
+  // which days need a visit
+  let plan;
+  if (makeupForVisitId) {
+    // a make-up request is always exactly one visit, for the plants of the visit that was missed
+    plan = [{ date: startDate, plantIds }];
+  } else {
+    if ((endDate - startDate) / 86_400_000 > 90)
+      throw fail(400, "A request can cover at most 90 days");
+    const todaySgt = dateInSingapore(new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10));
+    if (startDate < todaySgt) throw fail(400, "Start date can't be in the past");
+    plan = planVisits(plants, startDate, endDate);
+    if (!plan.length)
+      throw fail(400, "None of the selected plants need watering in this period");
+  }
+
   const request = await CareRequest.create({
     ownerId,
     ...(makeupForVisitId ? { makeupForVisitId } : {}),
@@ -80,23 +97,21 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
     endDate,
     note: body.note || "",
     waterSource: body.waterSource || "tap_available",
+    healthCheck: body.healthCheck === true, // owner chooses at posting time
     tokenReward: Number(body.tokenReward),
     status: "funding",
   });
   const createdVisits = [];
   const createdItems = [];
   try {
-    const visitCount = Math.floor((endDate - startDate) / 86_400_000) + 1;
-    await reserveTokens(ownerId, request.requestId, request.tokenReward * visitCount);
-    for (
-      let dueAt = new Date(startDate);
-      dueAt <= endDate;
-      dueAt = new Date(dueAt.getTime() + 86_400_000)
-    ) {
-      const visitDate = new Date(dueAt.getTime() + 12 * 60 * 60 * 1000);
+    // One visit per day that has a plant due, so the reward is reserved per real visit.
+    await reserveTokens(ownerId, request.requestId, request.tokenReward * plan.length);
+    for (const day of plan) {
+      const visitDate = new Date(day.date.getTime() + 12 * 60 * 60 * 1000);
       const visit = await CareVisit.create({ requestId: request.requestId, visitDate, status: "open" });
       createdVisits.push(visit);
-      for (const plantId of plantIds) {
+      // only the plants that are due that day
+      for (const plantId of day.plantIds) {
         const item = await RequestItem.create({
           visitId: visit.visitId,
           plantId,
@@ -124,6 +139,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
 
 exports.create = async (req, res) => {
   try {
+<<<<<<<<< Temporary merge branch 1
     const selectedPlantIds = Array.isArray(req.body.plantIds)
       ? req.body.plantIds.map(Number)
       : [Number(req.body.plantId)];
@@ -226,6 +242,7 @@ exports.create = async (req, res) => {
       throw err;
     }
     res.status(201).json({ request: { ...request.toObject(), plants } });
+=========
     res.status(201).json(await createCareRequest(req.userId, req.body));
   } catch (err) {
     handleError(err, res);
@@ -327,6 +344,7 @@ exports.cancel = async (req, res) => {
     handleError(err, res);
   }
 };
+<<<<<<<<< Temporary merge branch 1
 
 exports.availableVisits = async (req, res) => {
   try {
@@ -552,3 +570,5 @@ exports.myAssignments = async (req, res) => {
     handleError(err, res);
   }
 };
+=========
+>>>>>>>>> Temporary merge branch 2

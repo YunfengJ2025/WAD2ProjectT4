@@ -2,25 +2,34 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PlantCard from '@/components/plant/PlantCard.vue'
+import TodayPanel from '@/components/plant/TodayPanel.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { storeToRefs } from 'pinia'
 import { usePlantsStore } from '@/stores/plants'
 import { getWateringStatus, compareByWateringStatus } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
+// MyPlantsView: the "My Plants" page (/plants).
+// Loads the user's plants from the store, then shows the Today panel,
+// a search box + status tabs, and one PlantCard per plant.
+
+// show(message) pops up a small message at the bottom (see composables/useToast.js)
 const { show: toast } = useToast()
 
+// Pinia store that holds the plants (shared with the detail and edit pages).
+// storeToRefs keeps `plants` reactive after taking it out of the store.
 const plantsStore = usePlantsStore()
 const { plants } = storeToRefs(plantsStore)
-const loading = ref(true)
-const loadError = ref('')
+const loading = ref(true) // true while waiting for the server
+const loadError = ref('') // error message if loading failed
 
-const search = ref('')
-const statusFilter = ref('all')
+const search = ref('') // text typed in the search box (v-model)
+const statusFilter = ref('all') // which tab is selected
 
-const pendingDelete = ref(null)
-const deleting = ref(false)
+const pendingDelete = ref(null) // the plant waiting for "Delete?" confirmation
+const deleting = ref(false) // true while the delete request is running
 
+// The filter tabs above the grid. v-for in the template makes one button per tab.
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
   { value: 'overdue', label: 'Overdue' },
@@ -28,6 +37,8 @@ const STATUS_TABS = [
   { value: 'upcoming', label: 'Upcoming' },
 ]
 
+// Fetch the plants from the server (async/await + try/catch/finally).
+// Also used by the "Try again" button if loading failed.
 async function load() {
   loading.value = true
   loadError.value = ''
@@ -36,22 +47,28 @@ async function load() {
   } catch (err) {
     loadError.value = err.message
   } finally {
-    loading.value = false
+    loading.value = false // runs whether it worked or not
   }
 }
 onMounted(load)
 
-// Status is recomputed whenever a plant's lastWateredAt changes.
+// Each plant paired with its watering status, e.g. { plant, status: { key: 'due', ... } }.
+// computed: re-runs automatically whenever a plant changes (e.g. after Mark watered).
 const withStatus = computed(() =>
   plants.value.map((plant) => ({ plant, status: getWateringStatus(plant) })),
 )
 
+// How many plants are in each tab, e.g. { all: 6, overdue: 1, due: 2, upcoming: 3 }
 const counts = computed(() => {
   const c = { all: withStatus.value.length, overdue: 0, due: 0, upcoming: 0 }
   for (const { status } of withStatus.value) c[status.key]++
   return c
 })
 
+// The plants actually shown in the grid:
+// 1. keep only names containing the search text (not case-sensitive)
+// 2. keep only the selected tab (unless "All")
+// 3. sort: overdue first, then due, then upcoming (see compareByWateringStatus)
 const visible = computed(() => {
   const term = search.value.trim().toLowerCase()
   return withStatus.value
@@ -69,6 +86,8 @@ function clearFilters() {
   statusFilter.value = 'all'
 }
 
+// Runs when "Delete" is clicked in the confirm dialog.
+// PlantCard only emits 'delete'; this page owns the dialog and does the deleting.
 async function confirmDelete() {
   const plant = pendingDelete.value
   deleting.value = true
@@ -101,7 +120,10 @@ async function confirmDelete() {
       <RouterLink to="/plants/new" class="btn btn-primary">+ Add plant</RouterLink>
     </header>
 
-    <!-- Loading -->
+    <!-- v-if / v-else-if / v-else: only ONE of these 4 states shows:
+         loading -> error -> no plants -> the real list -->
+
+    <!-- Loading: 4 grey "skeleton" boxes shaped like cards -->
     <ul v-if="loading" class="grid" aria-busy="true" aria-label="Loading plants">
       <li v-for="n in 4" :key="n" class="skeleton"></li>
     </ul>
@@ -131,6 +153,9 @@ async function confirmDelete() {
     </section>
 
     <template v-else>
+      <!-- Needs water today (water several at once) + watered today -->
+      <TodayPanel :plants="plants" />
+
       <section class="toolbar" aria-label="Search and filter plants">
         <div class="search">
           <label for="plant-search" class="visually-hidden">Search plants by name</label>
@@ -142,6 +167,7 @@ async function confirmDelete() {
             autocomplete="off"
           />
         </div>
+        <!-- One button per tab; clicking sets statusFilter, which re-runs `visible` -->
         <div class="status-tabs" role="group" aria-label="Filter by watering status">
           <button
             v-for="tab in STATUS_TABS"
@@ -167,8 +193,12 @@ async function confirmDelete() {
         <button type="button" class="btn" @click="clearFilters">Show all plants</button>
       </section>
 
+      <!-- TransitionGroup: Vue's built-in animation wrapper, so cards fade/slide
+           when they are added, removed or re-ordered (styles: .card-enter-active etc.) -->
       <TransitionGroup v-else tag="ul" name="card" class="grid">
         <li v-for="item in visible" :key="item.plant.plantId">
+          <!-- props down (:plant), event up (@delete): the card asks, this page deletes.
+               $event is the plant the card sent with emit('delete', plant) -->
           <PlantCard
             :plant="item.plant"
             @delete="pendingDelete = $event"
@@ -177,6 +207,8 @@ async function confirmDelete() {
       </TransitionGroup>
     </template>
 
+    <!-- "Delete plant?" pop-up. It's open while pendingDelete holds a plant
+         (!! turns the plant/null into true/false). -->
     <ConfirmDialog
       :open="!!pendingDelete"
       :title="`Delete ${pendingDelete?.plantName ?? 'plant'}?`"

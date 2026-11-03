@@ -7,10 +7,10 @@ export function buildSitterSchedule(visits, now = new Date()) {
     const items = []
 
     for (const visit of visits ?? []) {
-        if (visit.status === 'cancelled') continue
+        if (['cancelled', 'missed', 'expired', 'weather_skipped'].includes(visit.status)) continue
 
         for (const item of visit.items ?? []) {
-            if (item.status === 'cancelled' || !item.plant) continue
+            if (['cancelled', 'missed'].includes(item.status) || !item.plant) continue
 
             const plannedISO = toDateInputValue(item.originalDueAt) // the day the owner asked for
             let status, dueAt, originalDueAt
@@ -22,10 +22,7 @@ export function buildSitterSchedule(visits, now = new Date()) {
                 status = 'done'
                 originalDueAt = dueAt
             } else if (plannedISO < todayISO) {
-                // missed: show it today as overdue, like the owner schedule does
-                status = 'overdue'
-                dueAt = todayISO
-                originalDueAt = plannedISO
+                continue // that day has passed: proof can no longer be submitted and the server marks it missed
             } else if (plannedISO === todayISO) {
                 status = 'due'
                 dueAt = originalDueAt = plannedISO
@@ -36,7 +33,8 @@ export function buildSitterSchedule(visits, now = new Date()) {
 
             // the server stores the string "none" when there is no adjustment
             const adjusted = item.adjustmentType && item.adjustmentType !== 'none'
-
+            // rain forecast: the sitter may skip this visit, so it is not "due" (unless already done)
+            if (item.adjustmentType === 'skipped-rain' && status !== 'done') status = 'skipped'
             items.push({
                 requestItemId: item.requestItemId,
                 plantId: item.plantId,

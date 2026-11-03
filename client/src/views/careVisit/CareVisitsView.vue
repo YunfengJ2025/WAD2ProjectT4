@@ -109,9 +109,11 @@ async function claimReward(visit) {
 
 async function submitVisitProof(details) {
   if (submittingVisitId.value) return
-  const { visit, actions, photos } = details
+  const { visit, actions, photos, completedSteps } = details
   const body = new FormData()
   body.append('actions', JSON.stringify(actions))
+  // Care checklist (Carolyn): the ticked care steps per plant (FormData only takes text)
+  body.append('completedSteps', JSON.stringify(completedSteps || {}))
   for (const [plantId, photo] of Object.entries(photos)) body.append(`photo_${plantId}`, photo)
   submittingVisitId.value = visit.visitId
   error.value = ''

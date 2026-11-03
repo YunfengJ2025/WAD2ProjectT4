@@ -1,9 +1,15 @@
 <script setup>
 // PlantCard: shows one plant in the My Plants grid.
+// Gets the plant as a prop from MyPlantsView. Mark watered is done here (store action);
+// Delete is only *asked* here: the card emits 'delete' and the page shows the confirm pop-up.
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getWateringStatus } from '@/utils/wateringStatus'
+import { getWateringStatus, isWateredToday, formatShortDate } from '@/utils/wateringStatus'
+import { usePlantsStore } from '@/stores/plants'
+import { useToast } from '@/composables/useToast'
+import { getCareSteps, getDoneSteps } from '@/utils/careSteps'
 import StatusPill from './StatusPill.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 // plant: the plant to show
 const props = defineProps({
@@ -12,6 +18,7 @@ const props = defineProps({
 const emit = defineEmits(['delete'])
 
 // true if the photo link is broken, so we show the leaf placeholder instead
+// (the <img @error> event sets it). If the plant gets a new photo, try again.
 const photoFailed = ref(false)
 watch(
   () => props.plant.photoUrl,
@@ -28,6 +35,65 @@ const frequency = computed(() => {
   const often = days === 1 ? 'Daily' : `Every ${days} days`
   return amountMl ? `${amountMl} ml · ${often}` : often
 })
+
+// Care checklist tag: only shown when the plant is due or overdue,
+// so plants that aren't due don't keep reminding the owner.
+const careSteps = computed(() => getCareSteps(props.plant.wateringInfo.notes))
+const stepsLeft = computed(() => {
+  const done = getDoneSteps(props.plant) // ticks since the last watering
+  return careSteps.value.filter((step) => !done.includes(step)).length
+})
+const showChecklistTag = computed(() => {
+  if (careSteps.value.length === 0) return false
+  return status.value.key === 'due' || status.value.key === 'overdue'
+})
+// "7 care steps" (or "1 care step") under the plant details
+const careCountLabel = computed(() => {
+  if (careSteps.value.length === 1) return '1 care step'
+  return `${careSteps.value.length} care steps`
+})
+const checklistLabel = computed(() => {
+  if (stepsLeft.value === 0) return 'Care steps done ✓'
+  if (stepsLeft.value === 1) return '1 care step left'
+  return `${stepsLeft.value} care steps left`
+})
+
+// "Mark watered" button: same as on the plant's detail page.
+// The store updates the plant, so the status pill changes straight away.
+const plantsStore = usePlantsStore()
+const { show: toast } = useToast()
+const watering = ref(false) // true while saving (disables the button)
+// Already watered today: the button is disabled so it can't be pressed twice
+const wateredToday = computed(() => isWateredToday(props.plant))
+const waterLabel = computed(() => {
+  if (watering.value) return 'Saving…'
+  if (wateredToday.value) return 'Watered today ✓'
+  return 'Mark watered'
+})
+
+async function markWatered() {
+  if (watering.value) return
+  watering.value = true
+  try {
+    await plantsStore.markWatered(props.plant.plantId)
+    toast(`${props.plant.plantName} watered`)
+  } catch (err) {
+    toast(err.message, 'error')
+  } finally {
+    watering.value = false
+    confirmingEarly.value = false
+  }
+}
+
+// Not due yet: ask first, in case the button was pressed by mistake
+const confirmingEarly = ref(false)
+function onWaterClick() {
+  if (status.value.key === 'upcoming') {
+    confirmingEarly.value = true
+  } else {
+    markWatered()
+  }
+}
 </script>
 
 <template>
@@ -79,13 +145,36 @@ const frequency = computed(() => {
           </svg>
           {{ frequency }}
         </li>
+        <!-- Indoor plants can't be added to a care request, so show which kind it is -->
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 11 12 4l8 7M6 10v10h12V10" />
+          </svg>
+          {{ plant.isOutdoor === false ? 'Indoor' : 'Outdoor' }}
+        </li>
+        <!-- Care checklist progress, only when the plant is due/overdue -->
+        <li v-if="showChecklistTag" class="checklist-tag" :class="{ done: stepsLeft === 0 }">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h16v16H4zM8 12l3 3 5-6" />
+          </svg>
+          {{ checklistLabel }}
+        </li>
       </ul>
 
-      <!-- Care notes, only if there are any -->
-      <p v-if="plant.wateringInfo.notes" class="notes">{{ plant.wateringInfo.notes }}</p>
+      <!-- Short summary of the care checklist (the full list is on the plant page).
+           Hidden when the plant is due, because the "steps left" tag shows instead. -->
+      <p v-if="careSteps.length && !showChecklistTag" class="care-count">{{ careCountLabel }}</p>
 
-      <!-- Edit / Delete -->
+      <!-- Mark watered / Edit / Delete -->
       <div class="actions">
+        <button
+          type="button"
+          class="btn btn-primary water-btn"
+          :disabled="watering || wateredToday"
+          @click="onWaterClick"
+        >
+          {{ waterLabel }}
+        </button>
         <RouterLink
           :to="`/plants/${plant.plantId}/edit`"
           class="icon-btn"
@@ -109,6 +198,18 @@ const frequency = computed(() => {
         </button>
       </div>
     </div>
+    <!-- Asks before watering a plant that isn't due yet -->
+    <ConfirmDialog
+      :open="confirmingEarly"
+      :title="`Water ${plant.plantName} early?`"
+      :message="status.nextDate ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?` : ''"
+      confirm-label="Water anyway"
+      confirm-class="btn-primary"
+      busy-label="Saving…"
+      :busy="watering"
+      @confirm="markWatered"
+      @cancel="confirmingEarly = false"
+    />
   </article>
 </template>
 
@@ -252,6 +353,20 @@ h3 {
   white-space: nowrap;
 }
 
+/* Checklist tag: amber while steps are left, green when all done */
+.meta li.checklist-tag {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #7a5200;
+  font-weight: 600;
+}
+
+.meta li.checklist-tag.done {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .meta svg {
   width: 14px;
   height: 14px;
@@ -263,14 +378,10 @@ h3 {
   stroke-linejoin: round;
 }
 
-.notes {
+.care-count {
+  margin: 0;
   font-size: 0.85rem;
-  line-height: 1.45;
   color: var(--muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .actions {
@@ -282,6 +393,13 @@ h3 {
   gap: 0.25rem;
   margin-top: auto;
   padding-top: 0.6rem;
+}
+
+/* margin-right: auto pushes Edit and Delete to the right-hand side */
+.water-btn {
+  margin-right: auto;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
 }
 
 .icon-btn {

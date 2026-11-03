@@ -43,7 +43,14 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user
       return data.user
     } catch (err) {
-      error.value = err.message
+      // 500+ means the server had a problem (e.g. 502 when it is down),
+      // so show a friendly message instead of "Request failed (502)"
+      if (err.status >= 500) {
+        if (endpoint === 'login') error.value = 'Login failed. Try again.'
+        else error.value = 'Sign up failed. Try again.'
+      } else {
+        error.value = err.message
+      }
       throw err
     } finally {
       submitting.value = false
