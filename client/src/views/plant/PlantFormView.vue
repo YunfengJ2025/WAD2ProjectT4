@@ -22,7 +22,7 @@ const backTo = computed(() => (isEdit.value ? `/plants/${plantId.value}` : '/pla
 
 const plantsStore = usePlantsStore()
 // The plant being edited, taken from the store (null when adding a new one)
-const plant = computed(() => isEdit.value ? plantsStore.findPlant(plantId.value) ?? null : null)
+const plant = computed(() => (isEdit.value ? (plantsStore.findPlant(plantId.value) ?? null) : null))
 // Start in "loading" when editing so the empty form never flashes up first
 const loading = ref(isEdit.value)
 const loadError = ref('')
@@ -52,16 +52,17 @@ function onSaved(saved) {
 <template>
   <main class="form-page">
     <RouterLink :to="backTo" class="back">
-      {{ isEdit ? '← Back to plant' : '← My Plants' }}
+      <span class="arrow">←</span> {{ isEdit ? 'Back to plant' : 'My Plants' }}
     </RouterLink>
-    <h1>{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
+    <!-- The form shows its own title (with Save beside it); this one is for loading/errors -->
+    <h1 v-if="loading || loadError">{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
 
     <p v-if="loading" class="muted">Loading plant…</p>
     <div v-else-if="loadError" class="load-error" role="alert">
       <p>{{ loadError }}</p>
       <RouterLink to="/plants" class="btn">Back to My Plants</RouterLink>
     </div>
-    <div v-else class="panel">
+    <div v-else>
       <!-- key remounts the form when switching between add and edit -->
       <PlantForm
         :key="plantId || 'new'"
@@ -74,31 +75,38 @@ function onSaved(saved) {
 </template>
 
 <style scoped>
-.form-page {
-  max-width: 640px;
-  margin: 0 auto;
+
+/* Same back link as the plant page: no underline, arrow nudges on hover */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #4d5b52;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.back {
+.back:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+.back .arrow {
   display: inline-block;
-  margin-bottom: 0.5rem;
-  color: var(--muted);
-  font-weight: 500;
+  transition: transform 0.15s ease;
+}
+
+.back:hover .arrow {
+  transform: translateX(-3px);
 }
 
 h1 {
-  font-size: clamp(1.5rem, 4vw, 1.9rem);
+  margin-bottom: 24px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--color-heading);
-  margin-bottom: 1rem;
-}
-
-.panel {
-  padding: clamp(1rem, 4vw, 1.75rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
 .muted {

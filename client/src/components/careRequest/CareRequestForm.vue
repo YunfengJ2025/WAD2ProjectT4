@@ -86,9 +86,23 @@ function togglePlant(plantId) {
     form.value.plantIds = form.value.plantIds.filter((id) => id !== plantId)
   } else {
     form.value.plantIds.push(plantId)
-    form.value.plantDetails[plantId] = { amountToWater: 0, careInstructions: '' }
+    // Care checklist (Carolyn): start with the plant's own amount and care notes
+    // (from its plant profile); the owner can still change them for this request
+    const plant = plantById.value[plantId]
+    form.value.plantDetails[plantId] = {
+      amountToWater: plant?.wateringInfo?.amountMl || 0,
+      careInstructions: plant?.wateringInfo?.notes || '',
+    }
   }
   selectionError.value = ''
+}
+
+// Care checklist (Carolyn): instructions box shows every line (one row per line,
+// 3 to 8 rows) so the steps aren't cut off
+function instructionRows(plantId) {
+  const text = form.value.plantDetails[plantId]?.careInstructions || ''
+  const lines = text.split('\n').filter((line) => line.trim() !== '').length
+  return Math.min(8, Math.max(3, lines + 1))
 }
 
 onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
@@ -129,14 +143,23 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
         <p v-if="selectionError" class="selection-error" role="alert">{{ selectionError }}</p>
       </fieldset>
       <fieldset v-for="plant in selectedPlants" :key="`care-${plant.plantId}`" class="wide plant-care">
-        <legend>Care for {{ plant.plantName }}</legend>
+        <!-- Care checklist (Carolyn): small photo + name as the card title -->
+        <legend>
+          <img :src="plant.photoUrl || plantPlaceholder" alt="" @error="$event.target.src = plantPlaceholder" />
+          Care for {{ plant.plantName }}
+        </legend>
         <label>
-          Water amount per visit (ml)
-          <input v-model.number="form.plantDetails[plant.plantId].amountToWater" type="number" min="0" max="10000" step="10" required />
+          Water per visit
+          <!-- number box with "ml" joined on the right -->
+          <span class="amount-input">
+            <input v-model.number="form.plantDetails[plant.plantId].amountToWater" type="number" min="0" max="10000" step="10" required />
+            <span class="unit">ml</span>
+          </span>
         </label>
         <label>
           Plant-specific instructions
-          <textarea v-model="form.plantDetails[plant.plantId].careInstructions" maxlength="500" rows="2" placeholder="e.g. Keep away from direct sun after watering"></textarea>
+          <textarea v-model="form.plantDetails[plant.plantId].careInstructions" maxlength="500" :rows="instructionRows(plant.plantId)" placeholder="e.g. Keep away from direct sun after watering"></textarea>
+          <small class="care-hint">Filled in from the plant's profile. Each line becomes a checklist step for the sitter.</small>
         </label>
       </fieldset>
       <label>
@@ -262,6 +285,16 @@ h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .plant-selection { min-width: 0; margin: 0; padding: 0; border: 0; }
 .plant-care { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 0; padding: 0.9rem; border: 1px solid #d7e1d8; border-radius: 10px; }
 .plant-care legend { float: none; width: 100%; font-weight: 700; }
+/* Care checklist (Carolyn): tidier "Care for ..." cards */
+.plant-care { grid-template-columns: 180px minmax(0, 1fr); align-items: start; gap: 1rem; padding: 1rem; background: #fafcfb; }
+.plant-care legend { display: flex; align-items: center; gap: 0.6rem; margin: 0; padding: 0 0.25rem; font-size: 1rem; color: #245b34; }
+.plant-care legend img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.plant-care label { font-size: 0.9rem; }
+.plant-care textarea { line-height: 1.5; resize: vertical; }
+.amount-input { display: flex; }
+.amount-input input { flex: 1; min-width: 0; border-radius: 7px 0 0 7px; }
+.amount-input .unit { display: grid; place-items: center; padding: 0 0.75rem; border: 1px solid #b9c7bb; border-left: 0; border-radius: 0 7px 7px 0; background: #edf3ed; color: #637466; font-weight: 500; }
+.care-hint { color: #637466; font-size: 0.8rem; font-weight: 400; }
 .water-source { min-width: 0; margin: 0; padding: 0; border: 0; }
 .water-source legend { float: none; width: 100%; margin-bottom: 0.5rem; font-weight: 700; }
 .water-source-options { display: flex; flex-wrap: wrap; gap: 0.55rem; }

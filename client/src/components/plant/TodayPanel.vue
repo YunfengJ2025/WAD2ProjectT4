@@ -79,15 +79,43 @@ async function waterSelected() {
   // Copy the ticked ids first: the list changes as each plant is watered
   const ids = selected.value.slice()
   let done = 0
+  // Remember each plant's old "last watered" date, so Undo can put it back
+  const watered = []
   try {
     // One at a time, using the same store action as the card button
     for (const id of ids) {
+      const oldDate = plantsStore.findPlant(id)?.lastWateredAt || null
       await plantsStore.markWatered(id)
+      watered.push({ id: id, oldDate: oldDate })
       done++
     }
-    toast(`${done} plant${done === 1 ? '' : 's'} watered`)
+    // Toast with an Undo button, shown for 6 seconds
+    toast(`${done} plant${done === 1 ? '' : 's'} watered`, 'success', 6000, {
+      label: 'Undo',
+      onClick: () => undoWatering(watered),
+    })
   } catch (err) {
     toast(`${done} of ${ids.length} watered. ${err.message}`, 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+// Undo: save each plant's old "last watered" date again (same save as the edit form).
+// An empty date means "never watered".
+async function undoWatering(watered) {
+  saving.value = true
+  let undone = 0
+  try {
+    for (const item of watered) {
+      const data = new FormData()
+      data.append('lastWateredAt', item.oldDate || '')
+      await plantsStore.savePlant(data, item.id)
+      undone++
+    }
+    toast(`Undone: ${undone} plant${undone === 1 ? '' : 's'} back to needing water`, 'info')
+  } catch (err) {
+    toast(`Could not undo all of them (${undone} undone). ${err.message}`, 'error')
   } finally {
     saving.value = false
   }
@@ -121,7 +149,8 @@ async function waterSelected() {
             <span>Select all</span>
           </label>
 
-          <ul class="check-list">
+          <!-- TransitionGroup: a watered row fades and slides out, the rest glide up -->
+          <TransitionGroup tag="ul" name="row" class="check-list">
             <li v-for="plant in needsWater" :key="plant.plantId" class="plant-row">
               <label class="row-check">
                 <input
@@ -137,7 +166,7 @@ async function waterSelected() {
               <!-- Care steps left; opens the plant page where the checklist is.
                Kept outside the <label> so clicking it doesn't tick the box. -->
               <RouterLink
-                v-if="careInfo[plant.plantId].total"
+                v-if="careInfo[plant.plantId]?.total"
                 :to="`/plants/${plant.plantId}`"
                 class="care-link"
                 :class="{ done: careInfo[plant.plantId].left === 0 }"
@@ -145,7 +174,7 @@ async function waterSelected() {
                 {{ careLabel(plant.plantId) }}
               </RouterLink>
             </li>
-          </ul>
+          </TransitionGroup>
         </template>
         <p v-else class="muted">All caught up 🌱</p>
       </div>
@@ -153,12 +182,13 @@ async function waterSelected() {
       <!-- Watered today: sidebar on big screens, underneath on small ones -->
       <div class="watered">
         <h3>Watered today ({{ wateredToday.length }})</h3>
-        <ul v-if="wateredToday.length" class="chips">
+        <!-- New chips pop in (always rendered so even the first chip animates) -->
+        <TransitionGroup tag="ul" name="chip" class="chips">
           <li v-for="plant in wateredToday" :key="plant.plantId" class="chip">
             ✓ {{ plant.plantName }}
           </li>
-        </ul>
-        <p v-else class="muted">Nothing watered yet today.</p>
+        </TransitionGroup>
+        <p v-if="!wateredToday.length" class="muted">Nothing watered yet today.</p>
       </div>
     </div>
   </section>
@@ -350,6 +380,61 @@ ul {
     grid-column: 1 / -1;
     justify-self: start;
     margin-left: 1.75rem; /* line up with the plant name, past the tick box */
+  }
+}
+
+/* ---------- List animations (TransitionGroup adds these classes) ---------- */
+
+/* Needed so a leaving row can be taken out of the layout (position: absolute) */
+.check-list {
+  position: relative;
+}
+
+/* Rows: fade + slide right when leaving (and when coming back) */
+.row-enter-active,
+.row-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+/* The leaving row stops taking up space, so the rows below can glide up */
+.row-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.row-enter-from,
+.row-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+/* The rows that shift up to close the gap */
+.row-move {
+  transition: transform 0.3s ease;
+}
+
+/* Chips: pop in from small */
+.chip-enter-active {
+  transition:
+    opacity 0.3s ease 0.15s,
+    transform 0.3s ease 0.15s;
+}
+
+.chip-enter-from {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+/* No sliding or popping if the user turned on "reduce motion" */
+@media (prefers-reduced-motion: reduce) {
+  .row-enter-active,
+  .row-leave-active,
+  .row-move,
+  .chip-enter-active {
+    transition: none;
   }
 }
 </style>

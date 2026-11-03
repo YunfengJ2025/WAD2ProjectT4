@@ -1,5 +1,7 @@
 <script setup>
 import plantPlaceholder from '@/assets/plant.png'
+// Care checklist (Carolyn): this request's instructions (or the plant's notes) as steps
+import { getRequestSteps } from '@/utils/careSteps'
 
 const waterSourceLabels = {
   left_out: 'Water left outside',
@@ -42,8 +44,14 @@ function date(value) {
           <strong>{{ item.plant?.plantName }}</strong>
           <span>{{ item.plant?.plantLocation }}</span>
           <span>Water {{ item.amountToWater ?? 0 }} ml</span>
-          <span v-if="item.careInstructions">{{ item.careInstructions }}</span>
         </div>
+        <!-- Care checklist (Carolyn): <details> = click the summary to open/close the list -->
+        <details v-if="getRequestSteps(item).length" class="care-steps">
+          <summary>📋 {{ getRequestSteps(item).length }} care steps</summary>
+          <ul>
+            <li v-for="step in getRequestSteps(item)" :key="step">{{ step }}</li>
+          </ul>
+        </details>
       </div>
     </div>
     <button
@@ -74,5 +82,10 @@ function date(value) {
 .plant-tile strong { color: #334638; font-size: 0.85rem; }
 .plant-tile span { color: #718074; font-size: 0.75rem; }
 .available-card button { margin-top: 0.35rem; }
+/* Care checklist (Carolyn): steps list under the photo + name, full tile width */
+.plant-tile { flex-wrap: wrap; }
+.care-steps { flex-basis: 100%; font-size: 0.75rem; color: #34463a; }
+.care-steps summary { color: #28623a; font-weight: 700; cursor: pointer; }
+.care-steps ul { margin: 0.3rem 0 0; padding-left: 1rem; display: grid; gap: 0.15rem; }
 @media (prefers-reduced-motion: reduce) { .available-card { transition: none; } .available-card:hover { transform: none; } }
 </style>

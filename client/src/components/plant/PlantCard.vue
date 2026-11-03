@@ -10,6 +10,7 @@ import { useToast } from '@/composables/useToast'
 import { getCareSteps, getDoneSteps } from '@/utils/careSteps'
 import StatusPill from './StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PlantIcon from './PlantIcon.vue'
 
 // plant: the plant to show
 const props = defineProps({
@@ -17,9 +18,23 @@ const props = defineProps({
 })
 const emit = defineEmits(['delete'])
 
-// true if the photo link is broken, so we show the leaf placeholder instead
+// true if the photo link is broken, so we show the "No photo yet" icon instead
 // (the <img @error> event sets it). If the plant gets a new photo, try again.
 const photoFailed = ref(false)
+
+// No photo: show a random plant icon (each card picks its own when it loads)
+const ICON_TYPES = [
+  'leafy',
+  'cactus',
+  'flower',
+  'herb',
+  'tree',
+  'snake',
+  'monstera',
+  'vine',
+  'succulent',
+]
+const randomIcon = ICON_TYPES[Math.floor(Math.random() * ICON_TYPES.length)]
 watch(
   () => props.plant.photoUrl,
   () => {
@@ -108,16 +123,12 @@ function onWaterClick() {
         loading="lazy"
         @error="photoFailed = true"
       />
-      <svg v-else class="placeholder" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M12 21v-8m0 0c0-4 3-7 8-7 0 4-3 7-8 7Zm0 0C12 9 9 6 4 6c0 4 3 7 8 7Z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      <!-- No photo: picture icon + text. Not called "placeholder" because
+           Bootstrap's .placeholder class turns it into a solid block. -->
+      <div v-else class="no-photo">
+        <PlantIcon :type="randomIcon" :size="96" />
+        <span>No photo yet</span>
+      </div>
       <StatusPill :status="status" class="pill" />
     </div>
 
@@ -202,7 +213,11 @@ function onWaterClick() {
     <ConfirmDialog
       :open="confirmingEarly"
       :title="`Water ${plant.plantName} early?`"
-      :message="status.nextDate ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?` : ''"
+      :message="
+        status.nextDate
+          ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?`
+          : ''
+      "
       confirm-label="Water anyway"
       confirm-class="btn-primary"
       busy-label="Saving…"
@@ -261,14 +276,19 @@ function onWaterClick() {
   transform: scale(1.03);
 }
 
-.placeholder {
+/* Picture icon + "No photo yet" in the middle of the photo area */
+.no-photo {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 48px;
-  height: 48px;
-  transform: translate(-50%, -50%);
-  opacity: 0.6;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #f3f7f4;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .pill {
@@ -295,10 +315,12 @@ h3 {
 
 /* The name link stretches over the whole card so any click opens the plant.
    The buttons sit above it (z-index) so they still work on their own. */
+/* No underline, even on hover (Bootstrap underlines all links) */
 .name-link {
   padding: 0;
   color: inherit;
   font-weight: inherit;
+  text-decoration: none;
   transition: none;
 }
 
@@ -311,6 +333,7 @@ h3 {
 
 .name-link:hover {
   background: none;
+  text-decoration: none;
 }
 
 .name-link:focus-visible {
@@ -396,6 +419,12 @@ h3 {
 }
 
 /* margin-right: auto pushes Edit and Delete to the right-hand side */
+/* Small press effect: shrink a little while held down */
+.water-btn:active:not(:disabled),
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
 .water-btn {
   margin-right: auto;
   padding: 0.35rem 0.8rem;
@@ -415,7 +444,8 @@ h3 {
   cursor: pointer;
   transition:
     background-color 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.1s ease;
 }
 
 .icon-btn svg {

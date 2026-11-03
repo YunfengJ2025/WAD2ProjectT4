@@ -5,6 +5,12 @@
 import { useToast } from '@/composables/useToast'
 
 const { toasts, dismiss } = useToast()
+
+// Toast button (e.g. Undo): close the toast, then run its action
+function runAction(t) {
+  dismiss(t.id)
+  t.action.onClick()
+}
 </script>
 
 <template>
@@ -12,8 +18,12 @@ const { toasts, dismiss } = useToast()
   <div class="toasts" role="status" aria-live="polite">
     <!-- TransitionGroup animates each toast sliding in and out -->
     <TransitionGroup name="toast">
-      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">
+      <!-- Called "app-toast", not "toast": Bootstrap's .toast class hides itself (display: none) -->
+      <div v-for="t in toasts" :key="t.id" class="app-toast" :class="t.type">
         <span>{{ t.message }}</span>
+        <button v-if="t.action" type="button" class="toast-action" @click="runAction(t)">
+          {{ t.action.label }}
+        </button>
         <button type="button" aria-label="Dismiss" @click="dismiss(t.id)">×</button>
       </div>
     </TransitionGroup>
@@ -33,7 +43,7 @@ const { toasts, dismiss } = useToast()
   pointer-events: none;
 }
 
-.toast {
+.app-toast {
   pointer-events: auto;
   display: flex;
   align-items: center;
@@ -47,12 +57,26 @@ const { toasts, dismiss } = useToast()
   font-weight: 500;
 }
 
-.toast.error {
+/* Undo-style button: outlined so it looks different from the × */
+.app-toast .toast-action {
+  margin-left: auto;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.app-toast .toast-action:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app-toast.error {
   background: var(--danger);
   color: var(--on-danger);
 }
 
-.toast button {
+.app-toast button {
   background: none;
   border: 0;
   color: inherit;

@@ -2,8 +2,8 @@
 import { reactive, ref } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): same helper as the owner's plant page, so both split
-// the care notes the same way (one step per line)
-import { getCareSteps } from '@/utils/careSteps'
+// the steps the same way (one per line). Uses this request's instructions, else the plant's notes
+import { getRequestSteps } from '@/utils/careSteps'
 
 const waterSourceLabels = {
   left_out: 'Water left outside',
@@ -32,7 +32,7 @@ const plants = items.map((item) => item.plant).filter(Boolean)
 const careSteps = {}
 const ticked = reactive({})
 for (const item of items) {
-  careSteps[item.plantId] = getCareSteps(item.plant?.wateringInfo?.notes)
+  careSteps[item.plantId] = getRequestSteps(item)
   ticked[item.plantId] = []
 }
 
@@ -42,17 +42,18 @@ function choosePhoto(event, plantId) {
 
 function submit() {
   error.value = ''
-  if (items.some((item) => !actions[item.plantId]?.trim())) {
-    error.value = 'Describe the care you completed for each plant.'
-    return
-  }
   if (items.some((item) => !photos[item.plantId])) {
     error.value = 'Choose a proof photo for each plant.'
     return
   }
   emit('submit-proof', {
     visit: props.visit,
-    actions: Object.fromEntries(items.map((item) => [item.plantId, actions[item.plantId].trim()])),
+    // Care checklist (Carolyn): the note is optional now (the checklist shows what was done).
+    // It is saved in the existing "action" field, which the server requires, so a blank
+    // note is sent as "Care done".
+    actions: Object.fromEntries(
+      items.map((item) => [item.plantId, actions[item.plantId]?.trim() || 'Care done']),
+    ),
     photos: Object.fromEntries(items.map((item) => [item.plantId, photos[item.plantId]])),
     completedSteps: ticked, // Care checklist (Carolyn): e.g. { 5: ["Water the soil"] }
   })

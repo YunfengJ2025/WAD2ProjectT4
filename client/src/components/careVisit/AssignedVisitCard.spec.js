@@ -46,6 +46,32 @@ describe('AssignedVisitCard care checklist', () => {
     expect(wrapper.text()).toContain('1 of 2 done')
   })
 
+  // Verify that the owner's instructions for this request are used instead of the plant's notes.
+  it('uses the request instructions for the checklist when given', () => {
+    const visit = makeVisit('Water the soil\nWipe the leaves')
+    visit.items[0].careInstructions = 'Mist the leaves'
+    const wrapper = mount(AssignedVisitCard, { props: { visit } })
+
+    expect(wrapper.findAll('.care-checklist input')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Mist the leaves')
+    expect(wrapper.text()).not.toContain('Wipe the leaves')
+  })
+
+  // Verify that a blank note is sent as "Care done" (the server needs some text).
+  it('sends "Care done" when the note is left blank', async () => {
+    const wrapper = mount(AssignedVisitCard, {
+      props: { visit: makeVisit('Water the soil') },
+    })
+    const photo = new File(['x'], 'proof.jpg', { type: 'image/jpeg' })
+    const fileInput = wrapper.find('input[type="file"]')
+    Object.defineProperty(fileInput.element, 'files', { value: [photo] })
+    await fileInput.trigger('change')
+
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit-proof')[0][0].actions).toEqual({ 5: 'Care done' })
+  })
+
   // Verify that no checklist shows when the plant has no care notes.
   it('hides the checklist when there are no care notes', () => {
     const wrapper = mount(AssignedVisitCard, { props: { visit: makeVisit('') } })
