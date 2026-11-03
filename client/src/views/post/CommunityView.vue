@@ -103,13 +103,6 @@ onMounted(() => {
         <h1>Community<span>.</span></h1>
         <p class="community-muted">Little wins, leafy updates, and advice from your neighbours.</p>
       </div>
-      <RouterLink
-        to="/community/new"
-        class="community-plus"
-        aria-label="Create a post"
-        title="Create a post"
-        >+</RouterLink
-      >
     </header>
 
     <!-- Top 3 Caregivers Podium in Community -->
@@ -118,7 +111,13 @@ onMounted(() => {
     <section class="community-feed" aria-labelledby="feed-title" :aria-busy="loading">
       <div class="community-feed-heading">
         <h2 id="feed-title">From the community</h2>
-        <span class="community-muted">Newest first</span>
+        <!-- Keep post creation below the podium, beside the feed and search controls. -->
+        <div class="community-feed-actions">
+          <RouterLink to="/community/new" class="btn btn-primary community-create-button" aria-label="Create a post">
+            <span class="community-create-icon" aria-hidden="true">＋</span>
+            <span class="community-create-label">Create post</span>
+          </RouterLink>
+        </div>
       </div>
       <div class="community-tools">
         <div class="community-search">
@@ -148,6 +147,8 @@ onMounted(() => {
           </button>
         </div>
       </div>
+      <!-- Sorting information belongs below the search and filter toolbar. -->
+      <div class="community-feed-sort"><span class="community-muted">Newest first</span></div>
       <p v-if="!auth.isAuthenticated" class="community-muted">
         Sign in to filter your own or liked posts.
       </p>

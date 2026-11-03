@@ -1038,3 +1038,78 @@
     transform: none; /* Move or scale the rendered element without reflowing nearby content. */
   } /* End this style rule or conditional block. */
 } /* End this style rule or conditional block. */
+
+/* Keep the create action beside the feed heading above search, wrapping on small screens. */
+.community-feed-heading { /* Override only the feed heading arrangement. */
+  align-items: center; /* Align the heading vertically with the create button. */
+  flex-wrap: wrap; /* Let controls move to another row when horizontal space is limited. */
+} /* End the heading adjustment. */
+.community-feed-actions { /* Group the post creation action beside the feed heading. */
+  display: flex; /* Place the controls in a horizontal row. */
+  align-items: center; /* Vertically center the label beside the button. */
+  flex-wrap: wrap; /* Avoid horizontal overflow on narrow screens. */
+  gap: .75rem; /* Separate actions if more controls are added later. */
+} /* End the action group. */
+.community-feed-sort { /* Position the sorting hint below the search toolbar. */
+  display: flex; /* Use a row to align the sorting hint. */
+  justify-content: flex-end; /* Align sorting information with the right edge of the feed. */
+  margin-bottom: .75rem; /* Separate sorting information from the results and cards. */
+  font-size: .8rem; /* Match the existing small feed-label text. */
+} /* End the sorting-label rule. */
+
+
+/* Equal icon-side columns keep the label centered in the entire button. */
+.community-feed-actions .community-create-button { /* Scope feedback to the community create action. */
+  display: grid; /* Place the icon, label and balancing spacer in separate columns. */
+  grid-template-columns: 1.25rem 1fr 1.25rem; /* Reserve equal space on both sides of the centered label. */
+  align-items: center; /* Vertically center the icon and label. */
+  gap: .5rem; /* Keep the label clear of the icon. */
+  min-width: 170px; /* Give the label enough room on all supported screens. */
+  min-height: 46px; /* Provide a comfortable mouse and touch target. */
+  text-align: center; /* Center text inside its grid column. */
+  border-radius: 12px; /* Match the rounded search and filter controls. */
+  color: var(--on-accent); /* Preserve readable label contrast on the green surface. */
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease; /* Smooth the button's interaction feedback. */
+} /* End the create-button layout. */
+.community-create-button::after { /* Balance the plus icon without adding visible content. */
+  content: ''; /* Generate the empty final grid item that centers the label. */
+} /* End the balancing spacer. */
+.community-create-icon { /* Animate the decorative plus independently of the text. */
+  display: inline-block; /* Allow the icon to rotate around its own box. */
+  font-size: 1.3rem; /* Keep the plus prominent beside the label. */
+  line-height: 1; /* Prevent extra vertical space around the plus. */
+  transition: transform 220ms ease; /* Rotate smoothly when interaction begins or ends. */
+} /* End the icon styling. */
+.community-create-label { /* Keep the label legible and stable while the icon moves. */
+  white-space: nowrap; /* Prevent the two-word action from breaking onto multiple lines. */
+  font-weight: 600; /* Emphasize the primary feed action. */
+} /* End the label styling. */
+@media (hover: hover) and (pointer: fine) { /* Limit lift feedback to devices with a precise hover pointer. */
+  .community-feed-actions .community-create-button:hover { /* Highlight the create action under the cursor. */
+    transform: translateY(-2px); /* Lift slightly without changing the surrounding layout. */
+    box-shadow: 0 5px 14px #163f2b33; /* Reinforce the raised appearance. */
+  } /* End the hover feedback. */
+  .community-create-button:hover .community-create-icon { /* Add feedback without shifting the centered label. */
+    transform: rotate(90deg); /* Rotate the plus a quarter turn. */
+  } /* End the hover icon animation. */
+} /* End the fine-pointer overrides. */
+.community-feed-actions .community-create-button:focus-visible { /* Give keyboard users an equally clear focus indication. */
+  outline: 3px solid var(--accent); /* Draw an accessible focus ring. */
+  outline-offset: 4px; /* Separate the ring from the button edge. */
+} /* End the focus styling. */
+.community-create-button:focus-visible .community-create-icon { /* Mirror icon feedback for keyboard navigation. */
+  transform: rotate(90deg); /* Rotate the icon while the button has keyboard focus. */
+} /* End the focused icon styling. */
+.community-feed-actions .community-create-button:active { /* Indicate the moment a click or tap is pressed. */
+  transform: scale(.97); /* Compress the button slightly to acknowledge activation. */
+  box-shadow: none; /* Remove the raised shadow during the press. */
+} /* End the press feedback. */
+@media (prefers-reduced-motion: reduce) { /* Honor the user's preference for less animation. */
+  .community-feed-actions .community-create-button, /* Include all button interaction states below. */
+  .community-feed-actions .community-create-button:hover, /* Remove the hover movement. */
+  .community-feed-actions .community-create-button:active, /* Remove the pressed movement. */
+  .community-feed-actions .community-create-button .community-create-icon { /* Override icon rotation even when hovered or focused. */
+    transition: none; /* Apply visual state changes immediately. */
+    transform: none; /* Disable button movement and icon rotation. */
+  } /* End the reduced-motion rules. */
+} /* End the motion-preference condition. */
