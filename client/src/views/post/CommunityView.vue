@@ -1,4 +1,5 @@
 <script setup>
+import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import axios from 'axios'
@@ -186,12 +187,22 @@ onMounted(() => {
           </button>
         </div>
         <!-- Stable post IDs let TransitionGroup animate cards when their grid positions change. -->
-        <TransitionGroup name="community-filter" tag="div" class="community-posts">
+        <!-- appear runs the initial entrance; filter changes keep their existing short transition. -->
+        <TransitionGroup
+          name="community-filter"
+          tag="div"
+          class="community-posts"
+          appear
+          appear-active-class="community-card-arrive"
+          appear-from-class="community-card-arrive-from"
+          appear-to-class="community-card-arrive-to"
+        >
           <PostCard
-            v-for="post in visiblePosts"
+            v-for="(post, index) in visiblePosts"
             :key="post.postId"
             :post="post"
             :author="author(post)"
+            :style="{ '--card-entrance-delay': `${Math.min(index, 5) * 55}ms` }"
           />
         </TransitionGroup>
         <div v-if="!visiblePosts.length" class="community-panel community-state">
@@ -201,5 +212,6 @@ onMounted(() => {
         </div>
       </template>
     </section>
+    <ScrollToTop />
   </main>
 </template>
