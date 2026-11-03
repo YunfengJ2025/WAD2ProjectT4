@@ -174,4 +174,24 @@ defineProps({ badge: { type: Object, required: true } })
   color: var(--color-primary-600);
   font-weight: 700;
 }
+
+@media (max-width: 480px) {
+  .badge-card {
+    padding: var(--space-sm);
+    gap: var(--space-xs);
+  }
+  .badge-icon-wrap {
+    width: 38px;
+    height: 38px;
+  }
+  .badge-icon {
+    font-size: 1.25rem;
+  }
+  .badge-info h4 {
+    font-size: 0.88rem;
+  }
+  .badge-info p {
+    font-size: 0.75rem;
+  }
+}
 </style>

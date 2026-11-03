@@ -221,7 +221,7 @@ async function save() {
 
       <!--
         Badges Showcase in Sidebar:
-        Positioned below the profile navigation links.
+        Positioned below the profile navigation links and right above the leafy note.
         v-if="user.badges && user.badges.length" ensures the box only renders if user has earned badges (WAD2 wk4).
         v-for with :key loops over user.badges (WAD2 wk4).
         Hovering shows title tooltip with name and description.
@@ -238,6 +238,23 @@ async function save() {
             <span class="sidebar-badge-icon">{{ b.icon }}</span>
           </div>
         </div>
+      </div>
+
+      <div class="sidebar-note">
+        <svg
+          class="leaf"
+          width="30"
+          height="30"
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="M7 25C5 13 13 6 26 5c1 13-7 20-19 20Zm0 0L22 10" />
+        </svg>
+        <p>A little care goes a long way.</p>
+        <span>Make yourself at home in your plant-loving community.</span>
       </div>
 
     </aside>
@@ -635,6 +652,28 @@ h1 {
   font-size: 0.78rem;
   color: var(--muted);
   line-height: 1.35;
+}
+
+.sidebar-note {
+  border-top: 1px solid var(--color-border);
+  padding: 1.5rem 0.75rem 0;
+  margin-top: 3.5rem;
+}
+.sidebar-note .leaf {
+  font-size: 2rem;
+  color: var(--accent);
+}
+.sidebar-note p {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.5rem;
+  color: var(--color-heading);
+}
+.sidebar-note > span:last-child {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.7;
+  display: block;
 }
 
 .profile-content {
