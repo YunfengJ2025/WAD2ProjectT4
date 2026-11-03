@@ -9,6 +9,7 @@ const {
   singaporeDayBounds,
   singaporeDateLabel,
 } = require("./visitPolicyService");
+const { runWeatherChecks, settleWeatherSkip } = require("./weatherSkip");
 
 async function finishRequestIfNoVisitsRemain(requestId) {
   const hasVisits = await CareVisit.exists({
@@ -24,6 +25,8 @@ async function finishRequestIfNoVisitsRemain(requestId) {
 }
 
 async function sweepVisits(now = new Date()) {
+  await runWeatherChecks(now); // morning rain check, see weatherSkip.js
+
   const candidates = await CareVisit.find({
     status: { $in: ["open", "accepted"] },
     visitDate: { $lte: now },
@@ -36,7 +39,10 @@ async function sweepVisits(now = new Date()) {
     const request = await CareRequest.findOne({ requestId: candidate.requestId });
     if (!request || !["open", "in_progress"].includes(request.status)) continue;
 
-    if (candidate.status === "accepted" && candidate.sitterId != null) {
+    // Rain-flagged and nobody submitted proof: skip it with no penalty and return the reward.
+    if (candidate.weatherSkip && !(await PhotoProof.exists({ visitId: candidate.visitId }))) {
+      await settleWeatherSkip(candidate, request, now);
+    } else if (candidate.status === "accepted" && candidate.sitterId != null) {
       if (await PhotoProof.exists({ visitId: candidate.visitId })) continue;
       // The conditional state change makes repeated sweeps charge only once.
       const missed = await CareVisit.findOneAndUpdate(
@@ -78,6 +84,7 @@ async function sweepVisits(now = new Date()) {
           candidate.visitId,
         ),
       ]);
+
     } else if (candidate.status === "open") {
       // Expire unclaimed slots and return their reserved reward to the owner.
       const expired = await CareVisit.findOneAndUpdate(
