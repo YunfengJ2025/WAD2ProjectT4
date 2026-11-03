@@ -6,7 +6,7 @@
       <header class="page-header anim-slide-up">
         <div>
           <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
-          <p class="greeting">Singapore HDB Community Rankings</p>
+          <p class="greeting">Singapore Rankings</p>
           <h1>🏆 Community Leaderboard</h1>
           <p class="subtitle">Top plant caregivers and helpful neighbours ranked by community tokens</p>
         </div>
