@@ -34,4 +34,9 @@ describe('buildSitterSchedule', () => {
     expect(buildSitterSchedule([visit([item(1, 'cancelled', at(3))], 'cancelled')], now)).toEqual([])
     expect(buildSitterSchedule([visit([item(1, 'accepted', at(3))])], now)[0].adjustmentType).toBeNull()
   })
+  it('shows rain-flagged items as skipped, unless already done', () => {
+    const rain = (id, status) => ({ ...item(id, status, at(2)), adjustmentType: 'skipped-rain', adjustmentReason: 'Rain' })
+    const out = buildSitterSchedule([visit([rain(1, 'accepted'), rain(2, 'completed')])], now)
+    expect(out.map((i) => i.status)).toEqual(['skipped', 'done'])
+  })
 })

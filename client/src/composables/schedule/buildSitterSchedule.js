@@ -7,7 +7,7 @@ export function buildSitterSchedule(visits, now = new Date()) {
     const items = []
 
     for (const visit of visits ?? []) {
-        if (['cancelled', 'missed', 'expired'].includes(visit.status)) continue
+        if (['cancelled', 'missed', 'expired', 'weather_skipped'].includes(visit.status)) continue
 
         for (const item of visit.items ?? []) {
             if (['cancelled', 'missed'].includes(item.status) || !item.plant) continue
@@ -33,7 +33,8 @@ export function buildSitterSchedule(visits, now = new Date()) {
 
             // the server stores the string "none" when there is no adjustment
             const adjusted = item.adjustmentType && item.adjustmentType !== 'none'
-
+            // rain forecast: the sitter may skip this visit, so it is not "due" (unless already done)
+            if (item.adjustmentType === 'skipped-rain' && status !== 'done') status = 'skipped'
             items.push({
                 requestItemId: item.requestItemId,
                 plantId: item.plantId,
