@@ -23,9 +23,11 @@ const STATUS_CLASS = {
     due: 'text-bg-warning',
     overdue: 'text-bg-danger',
     done: 'text-bg-success',
+    skipped: 'text-bg-info',
 }
 
 const statusClass = computed(() => STATUS_CLASS[props.item.status] ?? 'text-bg-light')
+const statusLabel = computed(() => (props.item.status === 'skipped' ? 'rain: may skip' : props.item.status))
 
 const iconEl = ref(null)
 let tip
@@ -37,7 +39,7 @@ onBeforeUnmount(() => tip?.dispose())
   <RouterLink
     :to="item.link ?? { name: 'plant-detail', params: { plantId: item.plantId } }"
     class="plant-card h-100"
-    :class="[`is-${item.status}`, `layout-${layout}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
+    :class="[`is-${statusLabel}`, `layout-${layout}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
   >
     <div class="photo-wrap">
       <img
@@ -64,7 +66,7 @@ onBeforeUnmount(() => tip?.dispose())
 
     <div class="plant-info">
         <strong class="plant-name">{{ item.plantName }}</strong>       
-        <span class="badge text-capitalize" :class="statusClass">{{ item.status }}</span>
+        <span class="badge text-capitalize" :class="statusClass">{{ statusLabel }}</span>
     </div>
   </RouterLink>
 </template>
@@ -106,6 +108,7 @@ onBeforeUnmount(() => tip?.dispose())
 .is-upcoming { border-left-color: #6c757d; }
 .is-done { border-left-color: #198754; opacity: 0.8; }
 .is-done .plant-photo { filter: grayscale(0.4); }
+.is-skipped  { border-left-color: #0dcaf0; }
 
 /* weather-adjusted cards get a soft amber outline */
 .adjusted {

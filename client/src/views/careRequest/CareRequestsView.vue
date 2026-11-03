@@ -13,6 +13,7 @@ const owned = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const cancellingRequestId = ref(0)
+const makeupBusyVisitId = ref(0)
 const formVersion = ref(0)
 const error = ref('')
 const notice = ref('')
@@ -67,6 +68,45 @@ async function cancelRequest(request) {
     cancellingRequestId.value = 0
   }
 }
+
+// Format replacement request dates in Singapore time, matching server policy dates.
+function singaporeDateString(value) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(value))
+  const date = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${date.year}-${date.month}-${date.day}`
+}
+
+function addCalendarDays(value, days) {
+  const [year, month, day] = value.split('-').map(Number)
+  const result = new Date(Date.UTC(year, month - 1, day + days))
+  return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}-${String(result.getUTCDate()).padStart(2, '0')}`
+}
+
+// Post a one-day make-up request after the original date range to avoid duplicates.
+async function requestMakeup({ request, visit }) {
+  makeupBusyVisitId.value = visit.visitId
+  error.value = ''
+  notice.value = ''
+  try {
+    const tomorrow = addCalendarDays(singaporeDateString(new Date()), 1)
+    const dayAfterRequest = addCalendarDays(singaporeDateString(request.endDate), 1)
+    const startDate = dayAfterRequest > tomorrow ? dayAfterRequest : tomorrow
+    // Replacement requests are routed with care visit operations.
+    const result = await auth.authorizedRequest(`/care-visits/make-up/${visit.visitId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate }),
+    })
+    notice.value = `Make-up request #${result.request.requestId} posted for ${startDate}.`
+    await load()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    makeupBusyVisitId.value = 0
+  }
+}
 </script>
 
 <template>
@@ -103,7 +143,9 @@ async function cancelRequest(request) {
         :key="request.requestId"
         :request="request"
         :busy="cancellingRequestId === request.requestId"
+        :makeup-busy-visit-id="makeupBusyVisitId"
         @cancel-request="cancelRequest"
+        @makeup-request="requestMakeup"
       />
     </section>
   </main>
