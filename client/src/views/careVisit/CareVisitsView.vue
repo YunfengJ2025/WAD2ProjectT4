@@ -5,6 +5,11 @@ import AssignedVisitCard from '@/components/careVisit/AssignedVisitCard.vue'
 import AvailableVisitCard from '@/components/careVisit/AvailableVisitCard.vue'
 import VisitHistoryCard from '@/components/careVisit/VisitHistoryCard.vue'
 
+// Separate open sitter opportunities from the visits this sitter has taken.
+const props = defineProps({
+  section: { type: String, default: 'all' },
+})
+
 const auth = useAuthStore()
 const availableVisits = ref([])
 const assignments = ref([])
@@ -15,6 +20,7 @@ const error = ref('')
 const message = ref('')
 const submittingVisitId = ref(0)
 const acceptingVisitId = ref(0)
+const optingOutVisitId = ref(0)
 
 async function load() {
   loading.value = true
@@ -54,6 +60,30 @@ async function acceptVisit(visit) {
     error.value = err.message
   } finally {
     acceptingVisitId.value = 0
+  }
+}
+
+// Confirm and release a visit, then report any late-cancellation penalty.
+async function optOutVisit(visit) {
+  const confirmed = window.confirm(
+    'Opt out of this visit? After the 24-hour cutoff, a penalty up to the visit reward will be deducted from your available tokens.',
+  )
+  if (!confirmed) return
+  optingOutVisitId.value = visit.visitId
+  error.value = ''
+  message.value = ''
+  try {
+    const result = await auth.authorizedRequest(`/care-visits/${visit.visitId}/opt-out`, { method: 'POST' })
+    message.value = result.penaltyApplies
+      ? result.penalty
+        ? `You opted out. ${result.penalty} token${result.penalty === 1 ? '' : 's'} deducted.`
+        : 'You opted out after the cutoff, but had no available tokens to deduct.'
+      : 'You opted out before the penalty cutoff.'
+    await load()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    optingOutVisitId.value = 0
   }
 }
 
@@ -119,13 +149,14 @@ async function submitVisitProof(details) {
 <template>
   <main class="visits-page">
     <header class="page-heading">
-      <h1>My sits</h1>
-      <p>Complete the visits you accepted and upload a photo as proof.</p>
+      <h1>{{ props.section === 'available' ? 'Available sits' : 'My sits' }}</h1>
+      <p v-if="props.section === 'available'">Browse open visits and accept ones that fit your schedule.</p>
+      <p v-else>Complete the visits you accepted and review your visit history.</p>
     </header>
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="message" class="alert alert-success" role="status">{{ message }}</p>
 
-    <section class="panel">
+    <section v-if="props.section !== 'mine'" class="panel">
       <div class="panel-heading">
         <div>
           <h2>Available visits</h2>
@@ -146,7 +177,7 @@ async function submitVisitProof(details) {
       </div>
     </section>
 
-    <section class="panel">
+    <section v-if="props.section !== 'available'" class="panel">
       <h2>Accepted visits</h2>
       <p v-if="loading" role="status">Loading visits…</p>
       <p v-else-if="!assignments.length">You have no accepted visits yet. Browse the available visits above.</p>
@@ -155,11 +186,13 @@ async function submitVisitProof(details) {
         :key="visit.visitId"
         :visit="visit"
         :busy="submittingVisitId === visit.visitId"
+        :opting-out="optingOutVisitId === visit.visitId"
         @submit-proof="submitVisitProof"
+        @opt-out="optOutVisit"
       />
     </section>
 
-    <section class="panel">
+    <section v-if="props.section !== 'available'" class="panel">
       <h2>Visit history</h2>
       <p v-if="loading" role="status">Loading history…</p>
       <p v-else-if="!history.length">No visits submitted yet.</p>

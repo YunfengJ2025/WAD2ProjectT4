@@ -86,7 +86,7 @@ const routes = [
   },
 
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
-  // Requests: "My Requests" and "My Sits" tabs (?tab=sits)
+  // Requests workspace uses query tabs for request and sitter workflows.
   { path: '/requests', name: 'requests', meta: { requiresAuth: true }, component: () => import('../views/careRequest/RequestsView.vue') },
   // Old addresses, kept so existing links still work
   { path: '/care-requests', redirect: { path: '/requests' } },

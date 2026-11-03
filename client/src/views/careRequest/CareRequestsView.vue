@@ -6,6 +6,11 @@ import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
 
+// Let the parent tabs show request creation and the owner's request list separately.
+const props = defineProps({
+  section: { type: String, default: 'all' },
+})
+
 const auth = useAuthStore()
 const plantsStore = usePlantsStore()
 const plants = computed(() => plantsStore.plants)
@@ -13,6 +18,7 @@ const owned = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const cancellingRequestId = ref(0)
+const makeupBusyVisitId = ref(0)
 const formVersion = ref(0)
 const error = ref('')
 const notice = ref('')
@@ -67,34 +73,76 @@ async function cancelRequest(request) {
     cancellingRequestId.value = 0
   }
 }
+
+// Format replacement request dates in Singapore time, matching server policy dates.
+function singaporeDateString(value) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(value))
+  const date = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${date.year}-${date.month}-${date.day}`
+}
+
+function addCalendarDays(value, days) {
+  const [year, month, day] = value.split('-').map(Number)
+  const result = new Date(Date.UTC(year, month - 1, day + days))
+  return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}-${String(result.getUTCDate()).padStart(2, '0')}`
+}
+
+// Post a one-day make-up request after the original date range to avoid duplicates.
+async function requestMakeup({ request, visit }) {
+  makeupBusyVisitId.value = visit.visitId
+  error.value = ''
+  notice.value = ''
+  try {
+    const tomorrow = addCalendarDays(singaporeDateString(new Date()), 1)
+    const dayAfterRequest = addCalendarDays(singaporeDateString(request.endDate), 1)
+    const startDate = dayAfterRequest > tomorrow ? dayAfterRequest : tomorrow
+    // Replacement requests are routed with care visit operations.
+    const result = await auth.authorizedRequest(`/care-visits/make-up/${visit.visitId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate }),
+    })
+    notice.value = `Make-up request #${result.request.requestId} posted for ${startDate}.`
+    await load()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    makeupBusyVisitId.value = 0
+  }
+}
 </script>
 
 <template>
   <main class="care-page">
     <header class="page-heading">
-      <h1>Care requests</h1>
-      <p>Choose one or more of your plants and create a care request for them.</p>
+      <h1>{{ props.section === 'mine' ? 'My requests' : 'Care requests' }}</h1>
+      <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
+      <p v-else>View and manage the care requests you have posted.</p>
     </header>
 
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="notice" class="alert alert-success" role="status">{{ notice }}</p>
 
-    <section class="panel">
+    <section v-if="props.section !== 'mine'" class="panel">
       <h2>Your tokens</h2>
       <TokenBalance />
     </section>
 
-    <p v-if="loading" role="status">Loading your plants…</p>
-    <CareRequestForm
-      v-else
-      :key="formVersion"
-      :plants="plants"
-      :available-balance="auth.user?.availableTokenBalance ?? auth.user?.tokenBalance ?? 0"
-      :saving="saving"
-      @create-request="createRequest"
-    />
+    <template v-if="props.section !== 'mine'">
+      <p v-if="loading" role="status">Loading your plants…</p>
+      <CareRequestForm
+        v-else
+        :key="formVersion"
+        :plants="plants"
+        :available-balance="auth.user?.availableTokenBalance ?? auth.user?.tokenBalance ?? 0"
+        :saving="saving"
+        @create-request="createRequest"
+      />
+    </template>
 
-    <section class="panel requests-list">
+    <section v-if="props.section !== 'create'" class="panel requests-list">
       <h2>My requests</h2>
       <p v-if="loading" role="status">Loading requests…</p>
       <p v-else-if="!owned.length">You haven’t posted a request yet.</p>
@@ -103,7 +151,9 @@ async function cancelRequest(request) {
         :key="request.requestId"
         :request="request"
         :busy="cancellingRequestId === request.requestId"
+        :makeup-busy-visit-id="makeupBusyVisitId"
         @cancel-request="cancelRequest"
+        @makeup-request="requestMakeup"
       />
     </section>
   </main>

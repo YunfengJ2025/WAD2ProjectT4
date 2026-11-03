@@ -13,7 +13,8 @@ const requestItemSchema = new mongoose.Schema({
   completedSteps: { type: [{ type: String, trim: true, maxlength: 500 }], default: [] },
   status: {
     type: String,
-    enum: ["pending", "accepted", "completed", "cancelled"],
+    // Record that plant items belonged to a visit the sitter missed.
+    enum: ["pending", "accepted", "completed", "cancelled", "missed"],
     default: "pending",
   },
   originalDueAt: { type: Date, required: true },
