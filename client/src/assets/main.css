@@ -376,6 +376,17 @@ img {
   transform: translateY(0);
 }
 
+/* Bootstrap gives .btn-primary a blue border and blue focus glow.
+   These are Bootstrap's own variables, set to our green so every state matches.
+   .btn.btn-primary (2 classes) wins over Bootstrap's .btn-primary (1 class). */
+.btn.btn-primary {
+  --bs-btn-border-color: var(--color-primary-600);
+  --bs-btn-hover-border-color: var(--color-primary-500);
+  --bs-btn-active-border-color: var(--color-primary-600);
+  --bs-btn-disabled-border-color: var(--color-primary-600);
+  --bs-btn-focus-shadow-rgb: 34, 197, 94;
+}
+
 .btn-ghost {
   background: rgba(255, 255, 255, 0.3);
   color: var(--color-neutral-700);

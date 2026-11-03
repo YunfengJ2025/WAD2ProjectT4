@@ -2,8 +2,8 @@
 import { reactive, ref } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): same helper as the owner's plant page, so both split
-// the care notes the same way (one step per line)
-import { getCareSteps } from '@/utils/careSteps'
+// the steps the same way (one per line). Uses this request's instructions, else the plant's notes
+import { getRequestSteps } from '@/utils/careSteps'
 
 const waterSourceLabels = {
   left_out: 'Water left outside',
@@ -28,7 +28,7 @@ const plants = items.map((item) => item.plant).filter(Boolean)
 const careSteps = {}
 const ticked = reactive({})
 for (const item of items) {
-  careSteps[item.plantId] = getCareSteps(item.plant?.wateringInfo?.notes)
+  careSteps[item.plantId] = getRequestSteps(item)
   ticked[item.plantId] = []
 }
 
@@ -38,17 +38,18 @@ function choosePhoto(event, plantId) {
 
 function submit() {
   error.value = ''
-  if (items.some((item) => !actions[item.plantId]?.trim())) {
-    error.value = 'Describe the care you completed for each plant.'
-    return
-  }
   if (items.some((item) => !photos[item.plantId])) {
     error.value = 'Choose a proof photo for each plant.'
     return
   }
   emit('submit-proof', {
     visit: props.visit,
-    actions: Object.fromEntries(items.map((item) => [item.plantId, actions[item.plantId].trim()])),
+    // Care checklist (Carolyn): the note is optional now (the checklist shows what was done).
+    // It is saved in the existing "action" field, which the server requires, so a blank
+    // note is sent as "Care done".
+    actions: Object.fromEntries(
+      items.map((item) => [item.plantId, actions[item.plantId]?.trim() || 'Care done']),
+    ),
     photos: Object.fromEntries(items.map((item) => [item.plantId, photos[item.plantId]])),
     completedSteps: ticked, // Care checklist (Carolyn): e.g. { 5: ["Water the soil"] }
   })
@@ -77,8 +78,9 @@ function date(value) {
           <span>{{ item.plant?.plantName || 'Plant' }}</span>
         </div>
         <p>Water {{ item.amountToWater ?? 0 }} ml each visit</p>
-        <p v-if="item.careInstructions">{{ item.careInstructions }}</p>
-        <!-- Care checklist (Carolyn): the owner's care notes as tick boxes (optional) -->
+        <!-- Care checklist (Carolyn): plain text only when there is no checklist (avoids showing the steps twice) -->
+        <p v-if="item.careInstructions && !careSteps[item.plantId].length">{{ item.careInstructions }}</p>
+        <!-- Care checklist (Carolyn): the owner's instructions as tick boxes (optional) -->
         <fieldset v-if="careSteps[item.plantId].length" class="care-checklist">
           <legend>
             Care checklist
@@ -89,9 +91,10 @@ function date(value) {
             <span>{{ step }}</span>
           </label>
         </fieldset>
+        <!-- Care checklist (Carolyn): optional note for the owner (max 100 characters) -->
         <label>
-          Action completed for this plant
-          <input v-model="actions[item.plantId]" maxlength="100" required placeholder="e.g. Watered and checked the soil" />
+          <span>Note for the owner <small class="optional">(optional)</small></span>
+          <input v-model="actions[item.plantId]" maxlength="100" placeholder="e.g. Soil was very dry, leaves look healthy" />
         </label>
         <label>
           Proof photo for this plant
@@ -134,6 +137,7 @@ p { margin: 0.3rem 0; color: #59665c; }
 .care-checklist { margin: 0; padding: 0.5rem 0.65rem; border: 1px solid #e2e8e2; border-radius: 8px; background: #fff; }
 .care-checklist legend { float: left; width: 100%; margin-bottom: 0.25rem; font-size: 0.9rem; font-weight: 700; color: #34463a; }
 .care-checklist legend small { margin-left: 0.35rem; font-weight: 400; color: #68766b; }
+.optional { font-weight: 400; color: #68766b; } /* Care checklist (Carolyn) */
 .plant-care-card .care-checklist .step { display: flex; align-items: flex-start; gap: 0.5rem; font-weight: 400; cursor: pointer; }
 .care-checklist .step input { width: 16px; height: 16px; margin-top: 0.2rem; accent-color: #2d6740; }
 </style>

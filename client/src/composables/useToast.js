@@ -20,9 +20,10 @@ export function useToast() {
 
   // Add a toast, then remove it after `ms` milliseconds (3.5 s by default).
   // type: 'success' (green), 'error' (red) or 'info'
-  function show(message, type = 'success', ms = 3500) {
+  // action (optional): a button in the toast, e.g. { label: 'Undo', onClick: undoIt }
+  function show(message, type = 'success', ms = 3500, action = null) {
     const id = nextId++
-    toasts.push({ id, message, type })
+    toasts.push({ id, message, type, action })
     setTimeout(() => dismiss(id), ms)
   }
 

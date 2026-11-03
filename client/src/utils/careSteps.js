@@ -15,6 +15,13 @@ export function getCareSteps(notes) {
   return steps
 }
 
+// Steps for one plant in a care request (sitter side).
+// Uses the owner's instructions for that request; if they left it empty,
+// falls back to the plant's own care notes.
+export function getRequestSteps(item) {
+  return getCareSteps(item.careInstructions || item.plant?.wateringInfo?.notes)
+}
+
 // The owner's ticks are kept in localStorage until the plant is watered again, e.g.
 // "care-checklist-5" ->
 //   {"wateredAt":"2026-11-02T03:00:00.000Z","savedOn":"2026-11-02","done":["Water the soil"]}

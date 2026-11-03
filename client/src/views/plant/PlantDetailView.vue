@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import StatusPill from '@/components/plant/StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PlantIcon from '@/components/plant/PlantIcon.vue'
 import { usePlantsStore } from '@/stores/plants'
 import {
   getWateringStatus,
@@ -63,8 +63,22 @@ function onWaterClick() {
     markWatered()
   }
 }
-// true if the photo link is broken, so we show the leaf placeholder instead
+// true if the photo link is broken, so we show the "No photo yet" icon instead
 const photoFailed = ref(false)
+
+// No photo: show a random plant icon (picked once when the page opens)
+const ICON_TYPES = [
+  'leafy',
+  'cactus',
+  'flower',
+  'herb',
+  'tree',
+  'snake',
+  'monstera',
+  'vine',
+  'succulent',
+]
+const randomIcon = ICON_TYPES[Math.floor(Math.random() * ICON_TYPES.length)]
 
 // Get the latest copy of this plant from the server (it may not be in the store yet,
 // e.g. when the page is opened directly or refreshed)
@@ -86,8 +100,10 @@ async function load() {
 const careSteps = computed(() => (plant.value ? getCareSteps(plant.value.wateringInfo.notes) : []))
 const doneSteps = ref([]) // the steps ticked today
 // Only count ticks for steps that are still in the notes
-const doneCount = computed(() => careSteps.value.filter((step) => doneSteps.value.includes(step)).length)
-// e.g. 4 of 7 done -> 57
+const doneCount = computed(
+  () => careSteps.value.filter((step) => doneSteps.value.includes(step)).length,
+)
+// e.g. 1 of 2 done -> 50
 const donePercent = computed(() => {
   if (careSteps.value.length === 0) return 0
   return Math.round((doneCount.value / careSteps.value.length) * 100)
@@ -127,12 +143,12 @@ const frequency = computed(() => {
   return `${amountMl} ml, ${often}`
 })
 
-// "Indoor", "Outdoor · Exposed to rain" or "Outdoor · Sheltered"
+// "Inside my home", or "Outside my door" + rain
 // (older plants have no isOutdoor saved, so they count as outdoor)
 const placement = computed(() => {
-  if (plant.value.isOutdoor === false) return 'Indoor'
-  if (plant.value.rainExposed) return 'Outdoor · Exposed to rain'
-  return 'Outdoor · Sheltered'
+  if (plant.value.isOutdoor === false) return 'Inside my home'
+  if (plant.value.rainExposed) return 'Outside my door · Exposed to rain'
+  return 'Outside my door · Sheltered'
 })
 
 // The next four waterings. Anything already due or overdue counts as today.
@@ -151,6 +167,37 @@ const schedule = computed(() => {
   return dates
 })
 
+// Banner under the title: one message for the plant's status
+const banner = computed(() => {
+  const amount = plant.value.wateringInfo.amountMl
+  const water = amount ? `Water ${amount} ml` : 'Water it'
+  if (wateredToday.value) {
+    return {
+      tone: 'ok',
+      icon: '✓',
+      text: `Watered today · Next: ${formatShortDate(status.value.nextDate)}`,
+    }
+  }
+  if (status.value.key === 'overdue') {
+    return { tone: 'overdue', icon: '⚠', text: `${status.value.label} · ${water} today` }
+  }
+  if (status.value.key === 'due') {
+    return { tone: 'due', icon: '💧', text: `${status.value.label} · ${water} today` }
+  }
+  return {
+    tone: 'ok',
+    icon: '✓',
+    text: `All good · Next watering ${formatShortDate(status.value.nextDate)}`,
+  }
+})
+
+// Small text under each date: "Now" (overdue), "Today", or the month
+function dayLabel(s, i) {
+  if (i === 0 && status.value.key === 'overdue') return 'Now'
+  if (s.isToday) return 'Today'
+  return s.date.toLocaleDateString('en-SG', { month: 'short' })
+}
+
 // "Delete" in the confirm pop-up: delete on the server, then go back to My Plants
 async function onDelete() {
   deleting.value = true
@@ -168,80 +215,129 @@ async function onDelete() {
 
 <template>
   <main class="detail-page">
-    <RouterLink to="/plants" class="back">← My Plants</RouterLink>
+    <RouterLink to="/plants" class="back"><span class="arrow">←</span> My Plants</RouterLink>
 
-    <div v-if="loading" class="layout" aria-busy="true">
-      <div class="photo skeleton"></div>
-      <div class="info">
-        <div class="skeleton line wide"></div>
-        <div class="skeleton line"></div>
+    <div v-if="loading" aria-busy="true">
+      <div class="skeleton line wide"></div>
+      <div class="skeleton banner-skeleton"></div>
+      <div class="grid">
+        <div class="skeleton card-skeleton"></div>
+        <div class="skeleton card-skeleton"></div>
       </div>
     </div>
 
     <div v-else-if="loadError" class="state" role="alert">
       <h1>Couldn't load this plant</h1>
       <p>{{ loadError }}</p>
-      <RouterLink to="/plants" class="btn">Back to My Plants</RouterLink>
+      <RouterLink to="/plants" class="btn btn-outline">Back to My Plants</RouterLink>
     </div>
 
-    <article v-else-if="plant" class="layout">
-      <div class="photo">
-        <img
-          v-if="plant.photoUrl && !photoFailed"
-          :src="plant.photoUrl"
-          :alt="`Photo of ${plant.plantName}`"
-          @error="photoFailed = true"
-        />
-        <svg v-else class="placeholder" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 21v-8m0 0c0-4 3-7 8-7 0 4-3 7-8 7Zm0 0C12 9 9 6 4 6c0 4 3 7 8 7Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+    <article v-else-if="plant">
+      <!-- Header: name, Edit and Delete -->
+      <header class="page-head">
+        <div>
+          <h1>{{ plant.plantName }}</h1>
+          <p class="added">Added {{ fullDate(plant.createdAt) }}</p>
+        </div>
+        <div class="head-actions">
+          <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn edit-btn">Edit</RouterLink>
+          <button type="button" class="btn delete-btn" @click="confirmingDelete = true">
+            Delete
+          </button>
+        </div>
+      </header>
+
+      <!-- One status banner with the main action -->
+      <div class="banner" :class="banner.tone" role="status">
+        <p class="banner-text">
+          <span aria-hidden="true">{{ banner.icon }}</span> {{ banner.text }}
+        </p>
+        <button
+          v-if="!wateredToday"
+          type="button"
+          class="btn btn-primary water-btn"
+          :disabled="watering"
+          @click="onWaterClick"
+        >
+          {{ waterLabel }}
+        </button>
       </div>
 
-      <div class="info">
-        <header>
-          <StatusPill :status="status" />
-          <h1>{{ plant.plantName }}</h1>
-        </header>
+      <!-- Left: photo + upcoming. Right: details + checklist -->
+      <div class="grid">
+        <div class="col">
+          <div class="card photo-card">
+            <img
+              v-if="plant.photoUrl && !photoFailed"
+              :src="plant.photoUrl"
+              :alt="`Photo of ${plant.plantName}`"
+              class="plant-photo"
+              @error="photoFailed = true"
+            />
+            <!-- Not called "placeholder": Bootstrap's .placeholder makes a solid block -->
+            <div v-else class="no-photo">
+              <PlantIcon :type="randomIcon" :size="120" />
+              <span>No photo yet</span>
+            </div>
+          </div>
 
-        <div class="facts">
-          <div>
-            <p class="label">Where to find it</p>
-            <p class="value">{{ plant.plantLocation }}</p>
-          </div>
-          <div>
-            <p class="label">Placement</p>
-            <p class="value">{{ placement }}</p>
-          </div>
-          <div>
-            <p class="label">Watering</p>
-            <p class="value">{{ frequency }}</p>
-          </div>
-          <div>
-            <p class="label">Last watered</p>
-            <p class="value">{{ plant.lastWateredAt ? fullDate(plant.lastWateredAt) : 'Not yet' }}</p>
-          </div>
+          <section class="card">
+            <h2>Upcoming waterings</h2>
+            <ol class="schedule">
+              <li
+                v-for="(s, i) in schedule"
+                :key="i"
+                :class="{
+                  first: i === 0,
+                  today: s.isToday,
+                  late: i === 0 && status.key === 'overdue',
+                }"
+              >
+                <span class="day">{{
+                  s.date.toLocaleDateString('en-SG', { weekday: 'short' })
+                }}</span>
+                <span class="date">{{ s.date.getDate() }}</span>
+                <span class="month">{{ dayLabel(s, i) }}</span>
+              </li>
+            </ol>
+          </section>
         </div>
 
-        <section class="block">
-          <h2>Care checklist</h2>
-          <template v-if="careSteps.length">
-            <ul class="checklist">
-              <li v-for="step in careSteps" :key="step">
-                <label>
-                  <input v-model="doneSteps" type="checkbox" :value="step" @change="onStepChange" />
-                  <span :class="{ done: doneSteps.includes(step) }">{{ step }}</span>
-                </label>
-              </li>
-            </ul>
+        <div class="col">
+          <section class="card">
+            <h2>Details</h2>
+            <div class="facts">
+              <div class="fact wide">
+                <p class="label"><span aria-hidden="true">📍</span> Where to find it</p>
+                <p class="value">{{ plant.plantLocation }}</p>
+              </div>
+              <div class="fact">
+                <p class="label"><span aria-hidden="true">☀️</span> Placement</p>
+                <p class="value">{{ placement }}</p>
+              </div>
+              <div class="fact">
+                <p class="label"><span aria-hidden="true">💧</span> Watering</p>
+                <p class="value">{{ frequency }}</p>
+              </div>
+              <div class="fact wide">
+                <p class="label"><span aria-hidden="true">🗓️</span> Last watered</p>
+                <p class="value">
+                  {{ plant.lastWateredAt ? fullDate(plant.lastWateredAt) : 'Not yet' }}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Care checklist</h2>
+              <span v-if="careSteps.length" class="count"
+                >{{ doneCount }} of {{ careSteps.length }} done</span
+              >
+            </div>
             <!-- Bootstrap progress bar: the width follows the percentage done -->
             <div
+              v-if="careSteps.length"
               class="progress care-progress"
               role="progressbar"
               aria-label="Care checklist progress"
@@ -251,44 +347,20 @@ async function onDelete() {
             >
               <div class="progress-bar bg-success" :style="{ width: donePercent + '%' }"></div>
             </div>
-            <p class="muted small">
-              Done {{ doneCount }} of {{ careSteps.length }} since last watering ·
-              <strong>{{ donePercent }}%</strong>
+            <ul v-if="careSteps.length" class="checklist">
+              <li v-for="step in careSteps" :key="step">
+                <label>
+                  <input v-model="doneSteps" type="checkbox" :value="step" @change="onStepChange" />
+                  <span :class="{ done: doneSteps.includes(step) }">{{ step }}</span>
+                </label>
+              </li>
+            </ul>
+            <p v-else class="muted">
+              No care steps yet.
+              <RouterLink :to="`/plants/${plant.plantId}/edit`">Add some</RouterLink>
             </p>
-          </template>
-          <p v-else class="muted">
-            No notes yet.
-            <RouterLink :to="`/plants/${plant.plantId}/edit`">Add some</RouterLink>
-          </p>
-        </section>
-
-        <section class="block">
-          <h2>Upcoming waterings</h2>
-          <ol class="schedule">
-            <li v-for="(s, i) in schedule" :key="i" :class="{ first: i === 0, today: s.isToday }">
-              <span class="day">{{ s.date.toLocaleDateString('en-SG', { weekday: 'short' }) }}</span>
-              <span class="date">{{ s.date.getDate() }}</span>
-              <span class="month">
-                {{ s.isToday ? 'Today' : s.date.toLocaleDateString('en-SG', { month: 'short' }) }}
-              </span>
-            </li>
-          </ol>
-        </section>
-
-        <div class="actions">
-          <button
-            type="button"
-            class="btn btn-primary"
-            :disabled="watering || wateredToday"
-            @click="onWaterClick"
-          >
-            {{ waterLabel }}
-          </button>
-          <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn">Edit</RouterLink>
-          <button type="button" class="btn delete" @click="confirmingDelete = true">Delete</button>
+          </section>
         </div>
-
-        <p class="added">Added {{ fullDate(plant.createdAt) }}</p>
       </div>
     </article>
 
@@ -308,7 +380,11 @@ async function onDelete() {
       v-if="plant"
       :open="confirmingEarly"
       :title="`Water ${plant.plantName} early?`"
-      :message="status.nextDate ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?` : ''"
+      :message="
+        status.nextDate
+          ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?`
+          : ''
+      "
       confirm-label="Water anyway"
       confirm-class="btn-primary"
       busy-label="Saving…"
@@ -320,137 +396,265 @@ async function onDelete() {
 </template>
 
 <style scoped>
+/* Sizes: text 32 / 18 / 15 / 13px, spacing in steps of 8px */
 .detail-page {
-  max-width: 1080px;
-  margin: 0 auto;
+  --text-dark: #1f3a2b;
+  --text-soft: #4d5b52; /* darker grey so small text is readable */
+  --line: #e1e8e3;
+  font-size: 15px;
+  color: var(--text-dark);
 }
 
 .back {
-  display: inline-block;
-  margin-bottom: 1rem;
-  color: var(--muted);
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 860px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 2.5rem;
-    align-items: start;
-  }
-  .photo {
-    position: sticky;
-    top: 1.5rem;
-  }
-}
-
-.photo {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 30% 20%, var(--accent-soft), transparent 70%),
-    var(--color-background-mute);
+.back:hover {
+  background: transparent;
   color: var(--accent);
-  box-shadow: var(--shadow);
 }
 
-.photo img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* contain = show the whole photo inside the same 4:3 frame (no cropping);
-     any spare space shows the frame's soft green background */
-  object-fit: contain;
+.back .arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
 }
 
-.placeholder {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 72px;
-  height: 72px;
-  transform: translate(-50%, -50%);
-  opacity: 0.6;
+.back:hover .arrow {
+  transform: translateX(-3px);
 }
 
-.info {
-  display: grid;
-  gap: 1.5rem;
-  min-width: 0;
-}
-
-header {
-  display: grid;
-  justify-items: start;
-  gap: 0.6rem;
+/* Header */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 h1 {
-  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  margin: 0;
+  font-size: 32px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--color-heading);
   overflow-wrap: anywhere;
 }
 
-.facts {
+.head-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Buttons: same height, no glow */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  box-shadow: none;
+}
+
+.btn-outline {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text-dark);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  background: #fff;
+  color: var(--accent);
+}
+
+/* Edit: green outline, fills green on hover */
+.edit-btn {
+  border: 1.5px solid var(--accent);
+  background: #fff;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.edit-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Delete: red outline, fills red on hover */
+.delete-btn {
+  border: 1.5px solid var(--danger);
+  background: #fff;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.delete-btn:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.water-btn,
+.water-btn:hover {
+  box-shadow: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Status banner */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.banner-text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.banner.overdue {
+  border-color: #f3c4bf;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.banner.due {
+  border-color: #f2dc9b;
+  background: #fff8e1;
+  color: #7a5200;
+}
+
+.banner.ok {
+  color: var(--accent);
+}
+
+/* Layout */
+.grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-border);
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.col {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+  min-width: 0;
+}
+
+/* Same card style for every section */
+.card {
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-head .count {
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.care-progress {
+  height: 8px;
+  margin-bottom: 16px;
+}
+
+/* Photo: one crop that fills the frame */
+.card.photo-card {
+  padding: 0;
   overflow: hidden;
 }
 
-.facts div {
-  padding: 0.75rem 1rem;
-  background: var(--surface);
+.plant-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.no-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 4 / 3;
+  background: #f3f7f4;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* Details: each fact is a soft tile, 2 per row */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fact {
+  padding: 16px;
+  border-radius: 12px;
+  background: #f3f7f4;
+}
+
+/* Long facts take the whole row */
+.fact.wide {
+  grid-column: 1 / -1;
 }
 
 .label {
-  margin: 0;
-  font-size: 0.75rem;
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 .value {
   margin: 0;
   font-weight: 600;
-  color: var(--color-heading);
+  color: var(--text-dark);
+  overflow-wrap: anywhere;
 }
 
-.block h2 {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 0.5rem;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.muted.small {
-  margin: 0.4rem 0 0;
-  font-size: 0.85rem;
-}
-
-/* Care checklist: one row per step */
+/* Care checklist */
 .checklist {
   margin: 0;
   padding: 0;
@@ -458,41 +662,41 @@ h1 {
 }
 
 .checklist li + li {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--line);
 }
 
 .checklist label {
   display: flex;
   align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.45rem 0;
-  line-height: 1.5;
+  gap: 8px;
+  padding: 8px 0;
   cursor: pointer;
 }
 
 .checklist input {
   width: 18px;
   height: 18px;
-  margin-top: 0.15rem;
+  margin-top: 2px;
   flex-shrink: 0;
   accent-color: var(--accent);
 }
 
-.care-progress {
-  height: 8px;
-  margin-top: 0.6rem;
-}
-
-/* Ticked steps are crossed out */
 .checklist .done {
   text-decoration: line-through;
-  color: var(--muted);
+  color: var(--text-soft);
 }
 
+.muted {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+/* Upcoming waterings */
 .schedule {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -500,11 +704,10 @@ h1 {
 .schedule li {
   display: grid;
   justify-items: center;
-  padding: 0.6rem 0.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--surface);
-  line-height: 1.25;
+  padding: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  line-height: 1.3;
 }
 
 .schedule li.first {
@@ -514,12 +717,12 @@ h1 {
 
 .schedule .day,
 .schedule .month {
-  font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .schedule .date {
-  font-size: 1.35rem;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-heading);
 }
@@ -529,61 +732,83 @@ h1 {
   font-weight: 700;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-/* Phones: Edit and Delete share the row */
-@media (max-width: 520px) {
-  .actions > .btn {
-    flex: 1;
-  }
-}
-
-.delete {
-  color: var(--danger);
-}
-
-.delete:hover {
+/* Overdue: first box says "Now" in red */
+.schedule li.late {
+  border-color: var(--danger);
   background: var(--danger-soft);
 }
 
-.added {
-  font-size: 0.85rem;
-  color: var(--muted);
+.schedule li.late .month {
+  color: var(--danger);
+  font-weight: 700;
 }
 
+.added {
+  margin: 8px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+/* Error state */
 .state {
   display: grid;
   justify-items: start;
-  gap: 0.75rem;
+  gap: 16px;
 }
 
 .state h1 {
-  font-size: 1.5rem;
+  font-size: 24px;
 }
 
+/* Loading placeholders */
 .skeleton {
-  border-radius: var(--radius);
+  border-radius: 16px;
   background: var(--color-background-mute);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
-.skeleton.line {
-  height: 1.5rem;
+.skeleton.line.wide {
   width: 50%;
+  height: 40px;
+  margin-bottom: 24px;
 }
 
-.skeleton.line.wide {
-  height: 2.5rem;
-  width: 80%;
+.banner-skeleton {
+  height: 64px;
+  margin-bottom: 24px;
+}
+
+.card-skeleton {
+  height: 320px;
 }
 
 @keyframes pulse {
   50% {
     opacity: 0.5;
+  }
+}
+
+/* Big screens: two columns */
+@media (min-width: 860px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* Phones */
+@media (max-width: 520px) {
+  .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .banner,
+  .card {
+    padding: 16px;
+  }
+
+  .banner .water-btn {
+    width: 100%;
   }
 }
 
