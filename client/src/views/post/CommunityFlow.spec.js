@@ -408,3 +408,35 @@ it('disables personal filters for guests and resets private selection on logout'
   expect(buttons[1].element.disabled).toBe(true)
   expect(buttons[2].element.disabled).toBe(true)
 })
+
+it('sorts by creation order and likes, retaining search and filter constraints', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => reply([
+    { postId: 1, creatorId: 3, title: 'Fern A', content: '', likedCount: 5 },
+    { postId: 3, creatorId: 3, title: 'Fern C', content: '', likedCount: 5 },
+    { postId: 2, creatorId: 2, title: 'Orchid', content: '', likedCount: 9 },
+    { postId: 4, creatorId: 3, title: 'Fern D', content: '' },
+  ])))
+  await open(CommunityView)
+  const titles = () => wrapper.findAll('.post-card-title').map(card => card.text())
+  expect(titles()).toEqual(['Fern D', 'Fern C', 'Orchid', 'Fern A'])
+  expect(wrapper.get('#community-sort option:checked').text()).toBe('✓ Newest first')
+  await wrapper.get('#community-sort').setValue('oldest')
+  expect(wrapper.get('#community-sort option:checked').text()).toBe('✓ Oldest first')
+  expect(titles()).toEqual(['Fern A', 'Orchid', 'Fern C', 'Fern D'])
+  await wrapper.get('#community-sort').setValue('most-liked')
+  expect(titles()).toEqual(['Orchid', 'Fern C', 'Fern A', 'Fern D'])
+  expect(wrapper.get('#community-sort option:checked').text()).toBe('✓ Most liked')
+  expect(wrapper.findAll('#community-sort option').filter(option => option.text().startsWith('✓'))).toHaveLength(1)
+  await wrapper.get('#community-sort').setValue('least-liked')
+  expect(titles()).toEqual(['Fern D', 'Fern C', 'Fern A', 'Orchid'])
+  await wrapper.get('#community-search').setValue('Fern')
+  await wrapper.get('#community-sort').setValue('most-liked')
+  expect(titles()).toEqual(['Fern C', 'Fern A', 'Fern D'])
+  const likes = useLikesStore()
+  likes.states[1] = { liked: true, likedCount: 10 }
+  await flushPromises()
+  expect(titles()).toEqual(['Fern A', 'Fern C', 'Fern D'])
+  likes.loaded = true
+  await wrapper.findAll('.community-filters button').find(button => button.text() === 'Liked').trigger('click')
+  expect(titles()).toEqual(['Fern A'])
+})

@@ -1113,3 +1113,67 @@
     transform: none; /* Disable button movement and icon rotation. */
   } /* End the reduced-motion rules. */
 } /* End the motion-preference condition. */
+
+/* The native select keeps sorting accessible with mouse, touch and keyboard. */
+.community-feed-sort { /* Align the label and selector below the search toolbar. */
+  align-items: center; /* Center the label vertically alongside the select. */
+  gap: .6rem; /* Separate the label from the sorting control. */
+  flex-wrap: wrap; /* Allow controls to wrap instead of overflowing on narrow screens. */
+} /* End the sorting-row adjustments. */
+.community-feed-sort label { /* Emphasize the selector's purpose. */
+  font-weight: 600; /* Make the label distinguishable from the selected option. */
+} /* End the sorting label. */
+.community-feed-sort select { /* Match the search and filter control styling. */
+  min-height: 44px; /* Provide a comfortable touch target. */
+  max-width: 100%; /* Keep the selector inside its container on phones. */
+  padding: .55rem .8rem; /* Leave space around the selected option. */
+  border: 1px solid var(--color-border-hover); /* Define the control boundary using the shared palette. */
+  border-radius: 10px; /* Match the rounded toolbar controls. */
+  background: var(--surface); /* Keep the selected option readable against the page background. */
+  color: var(--color-text); /* Inherit the app's standard text contrast. */
+  font: inherit; /* Match surrounding type size and family. */
+  cursor: pointer; /* Indicate that the options can be opened. */
+} /* End the sorting selector. */
+.community-feed-sort select:focus-visible { /* Make keyboard focus visible. */
+  outline: 2px solid var(--accent); /* Draw a contrasting green focus ring. */
+  outline-offset: 3px; /* Separate the ring from the control border. */
+} /* End the sorting focus state. */
+
+/* Keep the sort icon aligned with its label and visually connected to the selected value. */
+.community-feed-sort .community-sort-label { /* Override the label layout only in this sorting control. */
+  display: inline-flex; /* Place the icon and label on one line. */
+  align-items: center; /* Center the icon vertically with the text. */
+  gap: .4rem; /* Separate the icon from the label. */
+  color: var(--accent); /* Match the selected sorting control's green palette. */
+} /* End the icon-label layout. */
+.community-sort-label svg { /* Draw a compact descending-lines sorting symbol. */
+  width: 20px; /* Keep the icon proportional to the label. */
+  height: 20px; /* Maintain a square icon viewport. */
+  fill: none; /* Draw strokes rather than a filled shape. */
+  stroke: currentColor; /* Inherit the label's accent color. */
+  stroke-width: 2; /* Keep the lines legible at this size. */
+  stroke-linecap: round; /* Round the ends for a softer appearance. */
+} /* End the sorting icon. */
+.community-feed-sort select { /* Highlight the currently selected sorting value. */
+  background: var(--accent-soft); /* Use pale green to distinguish the active sort. */
+  color: var(--accent); /* Make the selected text consistent with the app palette. */
+  border-color: #bfd8c5; /* Add a complementary green border. */
+  font-weight: 600; /* Emphasize the current selection. */
+} /* End the selected-value styling. */
+.community-feed-sort option { /* Keep unselected options visually neutral where native styling permits. */
+  background: var(--surface); /* Use a white option-menu background. */
+  color: var(--color-text); /* Preserve standard menu-text contrast. */
+} /* End the default option styling. */
+.community-feed-sort option:checked { /* Reinforce the text checkmark where the browser permits option styling. */
+  background: var(--accent-soft); /* Highlight the selected menu item with pale green. */
+  color: var(--accent); /* Use green for the chosen option. */
+} /* End the selected menu-option styling. */
+/* TransitionGroup applies a temporary transform from each old card position to its new one. */
+.community-posts > .post-card.community-filter-move { /* Take precedence over the shared card hover transition. */
+  transition: transform 380ms cubic-bezier(.22, .61, .36, 1); /* Ease reordered cards smoothly into their new grid positions. */
+} /* End the card-reordering animation. */
+@media (prefers-reduced-motion: reduce) { /* Respect visitors who prefer immediate layout updates. */
+  .community-posts > .post-card.community-filter-move { /* Match the reordering rule's specificity. */
+    transition: none; /* Disable movement animation while preserving the new sort order. */
+  } /* End the reordering override. */
+} /* End the accessibility condition. */
