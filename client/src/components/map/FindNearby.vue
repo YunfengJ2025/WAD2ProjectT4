@@ -6,6 +6,8 @@ import { useToast } from '@/composables/useToast'
 import RequestMap from '../map/RequestMap.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
+// Care checklist (Carolyn): splits the instructions into steps (one per line)
+import { getCareSteps } from '@/utils/careSteps'
 
 
 const auth = useAuthStore()
@@ -287,7 +289,13 @@ async function acceptVisit(visit) {
                   <span v-if="waterText(p)" class="tag tagWater">{{ waterText(p) }}</span>
                   <span v-if="p.rainExposed" class="tag tagRain">Rain-exposed</span>
                 </div>
-                <p v-if="p.careInstructions" class="instructions">{{ p.careInstructions }}</p>
+                <!-- Care checklist (Carolyn): steps as a list (tick boxes come after accepting) -->
+                <div v-if="getCareSteps(p.careInstructions).length" class="instructions">
+                  <p class="stepsTitle">Care steps ({{ getCareSteps(p.careInstructions).length }})</p>
+                  <ul class="stepsList">
+                    <li v-for="step in getCareSteps(p.careInstructions)" :key="step">{{ step }}</li>
+                  </ul>
+                </div>
                 <p v-if="p.weatherNote" class="weatherNote">{{ p.weatherNote }}</p>
               </div>
             </article>
@@ -800,6 +808,27 @@ h1 {
 .weatherNote {
   margin: 0;
   font-size: 0.82rem;
+}
+
+/* Care checklist (Carolyn): care steps list */
+.stepsTitle {
+  margin: 0.35rem 0 0.25rem;
+  color: #637466;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stepsList {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.stepsList li::marker {
+  color: #34834c;
 }
 
 .weatherNote {

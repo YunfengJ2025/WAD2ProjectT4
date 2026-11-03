@@ -3,33 +3,30 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PlantCard from '@/components/plant/PlantCard.vue'
 import TodayPanel from '@/components/plant/TodayPanel.vue'
+import PlantGarden from '@/components/plant/PlantGarden.vue' // Garden view (try-out)
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { storeToRefs } from 'pinia'
 import { usePlantsStore } from '@/stores/plants'
 import { getWateringStatus, compareByWateringStatus } from '@/utils/wateringStatus'
 import { useToast } from '@/composables/useToast'
 
-// MyPlantsView: the "My Plants" page (/plants).
-// Loads the user's plants from the store, then shows the Today panel,
-// a search box + status tabs, and one PlantCard per plant.
-
-// show(message) pops up a small message at the bottom (see composables/useToast.js)
 const { show: toast } = useToast()
 
-// Pinia store that holds the plants (shared with the detail and edit pages).
-// storeToRefs keeps `plants` reactive after taking it out of the store.
 const plantsStore = usePlantsStore()
+// storeToRefs: keeps plants reactive after taking it out of the store
 const { plants } = storeToRefs(plantsStore)
-const loading = ref(true) // true while waiting for the server
-const loadError = ref('') // error message if loading failed
+const loading = ref(true)
+const loadError = ref('')
 
-const search = ref('') // text typed in the search box (v-model)
-const statusFilter = ref('all') // which tab is selected
+const search = ref('')
+const statusFilter = ref('all')
 
-const pendingDelete = ref(null) // the plant waiting for "Delete?" confirmation
-const deleting = ref(false) // true while the delete request is running
+const pendingDelete = ref(null)
+const deleting = ref(false)
 
-// The filter tabs above the grid. v-for in the template makes one button per tab.
+// Garden view: 'grid' or 'garden'
+const viewMode = ref('grid')
+
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
   { value: 'overdue', label: 'Overdue' },
@@ -37,8 +34,6 @@ const STATUS_TABS = [
   { value: 'upcoming', label: 'Upcoming' },
 ]
 
-// Fetch the plants from the server (async/await + try/catch/finally).
-// Also used by the "Try again" button if loading failed.
 async function load() {
   loading.value = true
   loadError.value = ''
@@ -47,28 +42,22 @@ async function load() {
   } catch (err) {
     loadError.value = err.message
   } finally {
-    loading.value = false // runs whether it worked or not
+    loading.value = false
   }
 }
 onMounted(load)
 
-// Each plant paired with its watering status, e.g. { plant, status: { key: 'due', ... } }.
-// computed: re-runs automatically whenever a plant changes (e.g. after Mark watered).
 const withStatus = computed(() =>
   plants.value.map((plant) => ({ plant, status: getWateringStatus(plant) })),
 )
 
-// How many plants are in each tab, e.g. { all: 6, overdue: 1, due: 2, upcoming: 3 }
 const counts = computed(() => {
   const c = { all: withStatus.value.length, overdue: 0, due: 0, upcoming: 0 }
   for (const { status } of withStatus.value) c[status.key]++
   return c
 })
 
-// The plants actually shown in the grid:
-// 1. keep only names containing the search text (not case-sensitive)
-// 2. keep only the selected tab (unless "All")
-// 3. sort: overdue first, then due, then upcoming (see compareByWateringStatus)
+// Search + tab filter, then most urgent first
 const visible = computed(() => {
   const term = search.value.trim().toLowerCase()
   return withStatus.value
@@ -80,14 +69,11 @@ const visible = computed(() => {
     .sort(compareByWateringStatus)
 })
 
-// Resets the search box and goes back to the "All" tab
 function clearFilters() {
   search.value = ''
   statusFilter.value = 'all'
 }
 
-// Runs when "Delete" is clicked in the confirm dialog.
-// PlantCard only emits 'delete'; this page owns the dialog and does the deleting.
 async function confirmDelete() {
   const plant = pendingDelete.value
   deleting.value = true
@@ -120,22 +106,16 @@ async function confirmDelete() {
       <RouterLink to="/plants/new" class="btn btn-primary">+ Add plant</RouterLink>
     </header>
 
-    <!-- v-if / v-else-if / v-else: only ONE of these 4 states shows:
-         loading -> error -> no plants -> the real list -->
-
-    <!-- Loading: 4 grey "skeleton" boxes shaped like cards -->
     <ul v-if="loading" class="grid" aria-busy="true" aria-label="Loading plants">
       <li v-for="n in 4" :key="n" class="skeleton"></li>
     </ul>
 
-    <!-- Load error -->
     <section v-else-if="loadError" class="state">
       <h2>Couldn't load your plants</h2>
       <p>{{ loadError }}</p>
       <button type="button" class="btn" @click="load">Try again</button>
     </section>
 
-    <!-- Empty: no plants at all -->
     <section v-else-if="plants.length === 0" class="state">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
@@ -153,7 +133,6 @@ async function confirmDelete() {
     </section>
 
     <template v-else>
-      <!-- Needs water today (water several at once) + watered today -->
       <TodayPanel :plants="plants" />
 
       <section class="toolbar" aria-label="Search and filter plants">
@@ -167,7 +146,6 @@ async function confirmDelete() {
             autocomplete="off"
           />
         </div>
-        <!-- One button per tab; clicking sets statusFilter, which re-runs `visible` -->
         <div class="status-tabs" role="group" aria-label="Filter by watering status">
           <button
             v-for="tab in STATUS_TABS"
@@ -182,23 +160,53 @@ async function confirmDelete() {
         </div>
       </section>
 
-      <p class="result-count" aria-live="polite">
-        Showing {{ visible.length }} of {{ plants.length }} plant{{ plants.length === 1 ? '' : 's' }}
-      </p>
+      <div class="result-row">
+        <p class="result-count" aria-live="polite">
+          Showing {{ visible.length }} of {{ plants.length }} plant{{ plants.length === 1 ? '' : 's' }}
+        </p>
+        <!-- Garden view (try-out): Cards / Garden switch -->
+        <div class="view-toggle" role="group" aria-label="Choose view">
+          <button
+            type="button"
+            :class="{ active: viewMode === 'grid' }"
+            :aria-pressed="viewMode === 'grid'"
+            @click="viewMode = 'grid'"
+          >
+            ▦ Cards
+          </button>
+          <button
+            type="button"
+            :class="{ active: viewMode === 'garden' }"
+            :aria-pressed="viewMode === 'garden'"
+            @click="viewMode = 'garden'"
+          >
+            🌳 Garden
+          </button>
+        </div>
+      </div>
 
-      <!-- No results for the current filters -->
       <section v-if="visible.length === 0" class="state">
         <h2>No plants match</h2>
         <p>Try a different name or another tab.</p>
         <button type="button" class="btn" @click="clearFilters">Show all plants</button>
       </section>
 
-      <!-- TransitionGroup: Vue's built-in animation wrapper, so cards fade/slide
-           when they are added, removed or re-ordered (styles: .card-enter-active etc.) -->
-      <TransitionGroup v-else tag="ul" name="card" class="grid">
-        <li v-for="item in visible" :key="item.plant.plantId">
-          <!-- props down (:plant), event up (@delete): the card asks, this page deletes.
-               $event is the plant the card sent with emit('delete', plant) -->
+      <!-- Garden view (try-out) -->
+      <PlantGarden
+        v-else-if="viewMode === 'garden'"
+        :plants="visible.map((item) => item.plant)"
+      />
+
+      <!-- TransitionGroup: animates cards in, out and when re-ordered -->
+      <!-- :key="statusFilter": switching tab rebuilds the list, so every card fades in again.
+           appear: also fade in when the page first shows. --i: each card starts a bit later. -->
+      <TransitionGroup v-else :key="statusFilter" appear tag="ul" name="card" class="grid">
+        <li
+          v-for="(item, index) in visible"
+          :key="item.plant.plantId"
+          :style="{ '--i': Math.min(index, 8) }"
+        >
+          <!-- $event = the plant sent by emit('delete', plant) -->
           <PlantCard
             :plant="item.plant"
             @delete="pendingDelete = $event"
@@ -207,8 +215,7 @@ async function confirmDelete() {
       </TransitionGroup>
     </template>
 
-    <!-- "Delete plant?" pop-up. It's open while pendingDelete holds a plant
-         (!! turns the plant/null into true/false). -->
+    <!-- !! turns the plant (or null) into true / false -->
     <ConfirmDialog
       :open="!!pendingDelete"
       :title="`Delete ${pendingDelete?.plantName ?? 'plant'}?`"
@@ -275,6 +282,45 @@ h1 {
   outline-offset: 2px;
 }
 
+/* Garden view (try-out) */
+.result-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.result-row .result-count {
+  margin: 0;
+}
+
+.view-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.view-toggle button {
+  transition: transform 0.1s ease;
+  padding: 0.25rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .status-tabs {
   display: flex;
   gap: 0.4rem;
@@ -282,8 +328,17 @@ h1 {
   scrollbar-width: none;
 }
 
+/* Small press effect: buttons shrink a little while held down */
+.tab:active,
+.view-toggle button:active,
+.page-head .btn:active,
+.state .btn:active {
+  transform: scale(0.96);
+}
+
 .tab {
   flex-shrink: 0;
+  transition: transform 0.1s ease;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -411,7 +466,6 @@ h1 {
   max-width: 40ch;
 }
 
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -433,7 +487,12 @@ h1 {
 .card-enter-from,
 .card-leave-to {
   opacity: 0;
-  transform: scale(0.97);
+  transform: translateY(10px) scale(0.98);
+}
+
+/* Stagger: card number i waits i x 40ms, so they fade in one after another */
+.card-enter-active {
+  transition-delay: calc(var(--i, 0) * 40ms);
 }
 
 .card-leave-active {

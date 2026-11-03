@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
-import { getCareSteps } from '@/utils/careSteps'
+import { getRequestSteps } from '@/utils/careSteps'
 
 const props = defineProps({
   request: { type: Object, required: true },
@@ -30,7 +30,7 @@ function date(value) {
 // Care checklist (Carolyn): how many care steps the sitter ticked on a finished visit,
 // e.g. "3/5 steps", or '' if the plant has no care steps or the visit isn't done yet
 function stepsSummary(item) {
-  const total = getCareSteps(item.plant?.wateringInfo?.notes).length
+  const total = getRequestSteps(item).length
   if (total === 0 || item.status !== 'completed') return ''
   return `${(item.completedSteps || []).length}/${total} steps`
 }

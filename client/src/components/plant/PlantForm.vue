@@ -17,7 +17,7 @@ const NOTES_MAX = 500
 // Choices for "Where is this plant?" (value is what gets saved as isOutdoor)
 const PLACE_OPTIONS = [
   { value: false, label: 'Inside my home' },
-  { value: true, label: 'Outside my door (corridor)' },
+  { value: true, label: 'Outside my door' },
 ]
 // Choices for "Does this spot get rain?" (value is what gets saved as rainExposed)
 const RAIN_OPTIONS = [
@@ -51,6 +51,13 @@ const form = ref({
   weatherAdjustmentEnabled: props.plant?.weatherAdjustmentEnabled ?? false,
   notes: props.plant?.wateringInfo.notes ?? '',
   lastWateredAt: initialLastWatered,
+})
+
+// Care notes box grows with the text: one row per line that has words (empty lines
+// from pressing Enter don't count), plus one spare row, at least 4
+const notesRows = computed(() => {
+  const filled = form.value.notes.split('\n').filter((line) => line.trim() !== '')
+  return Math.max(4, filled.length + 1)
 })
 
 const photoFile = ref(null)
@@ -124,21 +131,18 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
-// Runs when the user picks a file. Checks type and size straight away;
-function onPhotoChange(event) {
-  const file = event.target.files[0]
+// Checks a chosen or pasted file (type and size), then previews it.
+// Returns false if the file isn't allowed.
+function acceptPhoto(file) {
   delete errors.value.photo
-  if (!file) return
 
   let message = ''
   if (!PHOTO_TYPES.includes(file.type)) message = 'Photo must be a JPG, PNG or WebP image'
   else if (file.size > MAX_PHOTO_BYTES) message = 'Photo must be 2MB or smaller'
 
-  // Bad file: show the error and clear the file input
   if (message) {
     errors.value.photo = message
-    event.target.value = ''
-    return
+    return false
   }
 
   // Good file: keep it for submit, then read it so <img> can preview it
@@ -146,6 +150,28 @@ function onPhotoChange(event) {
   const reader = new FileReader()
   reader.onload = () => (photoPreview.value = reader.result)
   reader.readAsDataURL(file)
+  return true
+}
+
+// Runs when the user picks a file with "Choose photo"
+function onPhotoChange(event) {
+  const file = event.target.files[0]
+  delete errors.value.photo
+  if (!file) return
+  // Bad file: clear the file input
+  if (!acceptPhoto(file)) event.target.value = ''
+}
+
+// Ctrl+V on the photo box. clipboardData.files holds a copied image
+// (e.g. a screenshot), as the same kind of File that "Choose photo" gives.
+function onPhotoPaste(event) {
+  const file = event.clipboardData.files[0]
+  if (!file) {
+    errors.value.photo = 'Nothing to paste. Copy an image first.'
+    return
+  }
+  event.preventDefault()
+  acceptPhoto(file)
 }
 
 // "Undo" button: drop the new photo and go back to the original one (if any)
@@ -179,7 +205,9 @@ function buildFormData() {
     data.append('rainExposed', 'false')
   }
   data.append('weatherAdjustmentEnabled', String(form.value.weatherAdjustmentEnabled))
-  data.append('notes', form.value.notes.trim())
+  // Drop empty lines so the checklist only gets real steps
+  const noteLines = form.value.notes.split('\n').filter((line) => line.trim() !== '')
+  data.append('notes', noteLines.join('\n').trim())
   // When editing, only send the date if it changed so the stored time is kept.
   if (!isEdit.value || form.value.lastWateredAt !== initialLastWatered) {
     data.append('lastWateredAt', lastWateredToISO(form.value.lastWateredAt))
@@ -221,254 +249,388 @@ async function onSubmit() {
     (.prevent = event.preventDefault()).
   -->
   <form class="plant-form" novalidate @submit.prevent="onSubmit">
+    <!-- Title with Cancel / Save on the same line.
+         Buttons are disabled while saving so the form can't be sent twice. -->
+    <div class="form-head">
+      <h1>{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary-outline"
+          :disabled="saving"
+          @click="emit('cancel')"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary save-btn" :disabled="saving">
+          {{ saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add plant' }}
+        </button>
+      </div>
+    </div>
+
     <!-- Summary message at the top. role="alert" makes screen readers read it out. -->
     <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
 
-    <div class="field">
-      <label for="plantName">Plant name <span class="req" aria-hidden="true">*</span></label>
-      <input
-        id="plantName"
-        v-model="form.plantName"
-        type="text"
-        maxlength="100"
-        autocomplete="off"
-        placeholder="e.g. Monstera"
-        required
-        :aria-invalid="!!errors.plantName"
-        :aria-describedby="errors.plantName ? 'plantName-error' : undefined"
-      />
-      <!-- v-if: only shown when this field has an error -->
-      <p v-if="errors.plantName" id="plantName-error" class="error">{{ errors.plantName }}</p>
-    </div>
+    <!-- Two cards side by side on big screens (stacked on phones) -->
+    <div class="form-grid">
+      <!-- Left card: Basics + Location -->
+      <div class="form-card">
+        <!-- ===== Basics ===== -->
+        <section class="form-section">
+          <h2>Basics</h2>
 
-    <!-- Inside / outside: only outside plants can be looked after by a neighbour -->
-    <fieldset
-      class="field"
-      :aria-describedby="errors.isOutdoor ? 'isOutdoor-error' : undefined"
-    >
-      <legend>Where is this plant? <span class="req" aria-hidden="true">*</span></legend>
-      <div class="segmented" :class="{ invalid: errors.isOutdoor }">
-        <label v-for="opt in PLACE_OPTIONS" :key="String(opt.value)">
-          <input v-model="form.isOutdoor" type="radio" name="isOutdoor" :value="opt.value" />
-          <span>{{ opt.label }}</span>
-        </label>
+          <div class="field">
+            <label for="plantName">Plant name</label>
+            <input
+              id="plantName"
+              v-model="form.plantName"
+              type="text"
+              maxlength="100"
+              autocomplete="off"
+              placeholder="e.g. Monstera"
+              required
+              :aria-invalid="!!errors.plantName"
+              :aria-describedby="errors.plantName ? 'plantName-error' : undefined"
+            />
+            <!-- v-if: only shown when this field has an error -->
+            <p v-if="errors.plantName" id="plantName-error" class="error">{{ errors.plantName }}</p>
+          </div>
+
+          <!-- Photo: small preview + upload box (choose a file, or click the box and paste) -->
+          <div class="field">
+            <span class="label" id="photo-label"
+              >Photo <span class="optional">(optional)</span></span
+            >
+            <div class="photo-row">
+              <div class="preview" :class="{ empty: !photoPreview }">
+                <img v-if="photoPreview" :src="photoPreview" alt="Selected plant photo preview" />
+                <span v-else>No photo</span>
+              </div>
+              <!-- tabindex="0": clicking the box focuses it, so Ctrl+V pastes into it -->
+              <div
+                class="photo-controls"
+                tabindex="0"
+                aria-label="Photo box. Press Ctrl+V to paste a photo."
+                @paste="onPhotoPaste"
+              >
+                <div class="photo-buttons">
+                  <!-- The real file input is hidden; this label acts as the button and opens it -->
+                  <label class="btn btn-secondary-outline" for="photo">{{
+                    photoPreview ? 'Change photo' : 'Choose photo'
+                  }}</label>
+                  <input
+                    id="photo"
+                    ref="photoInput"
+                    class="visually-hidden"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    aria-labelledby="photo-label"
+                    :aria-invalid="!!errors.photo"
+                    :aria-describedby="errors.photo ? 'photo-error' : undefined"
+                    @change="onPhotoChange"
+                  />
+                  <!-- Undo only appears after a new photo is chosen -->
+                  <button
+                    v-if="photoFile"
+                    type="button"
+                    class="btn btn-secondary-outline"
+                    @click="clearNewPhoto"
+                  >
+                    Undo
+                  </button>
+                </div>
+                <!-- Text swaps when the box is focused (see .paste-ready in the CSS) -->
+                <p class="paste-text">
+                  <span class="paste-idle">📷 or click here and paste a photo (Ctrl+V)</span>
+                  <span class="paste-ready">📋 Ready, press Ctrl+V to paste</span>
+                </p>
+                <p class="hint">JPG, PNG or WebP, up to 2MB</p>
+              </div>
+            </div>
+            <p v-if="errors.photo" id="photo-error" class="error">{{ errors.photo }}</p>
+          </div>
+        </section>
+
+        <!-- ===== Location ===== -->
+        <section class="form-section">
+          <h2>Location</h2>
+
+          <!-- Inside / outside: only outside plants can be looked after by a neighbour -->
+          <fieldset
+            class="field"
+            :aria-describedby="errors.isOutdoor ? 'isOutdoor-error' : undefined"
+          >
+            <legend>Where is it?</legend>
+            <div class="segmented" :class="{ invalid: errors.isOutdoor }">
+              <label v-for="opt in PLACE_OPTIONS" :key="String(opt.value)">
+                <input v-model="form.isOutdoor" type="radio" name="isOutdoor" :value="opt.value" />
+                <span>{{ opt.label }}</span>
+              </label>
+            </div>
+            <p class="hint">Neighbours can only care for plants outside your door.</p>
+            <p v-if="errors.isOutdoor" id="isOutdoor-error" class="error">{{ errors.isOutdoor }}</p>
+          </fieldset>
+
+          <!-- Where to find it: free text so the helper knows exactly which plant -->
+          <div class="field">
+            <label for="plantLocation">Where to find it</label>
+            <input
+              id="plantLocation"
+              v-model="form.plantLocation"
+              type="text"
+              maxlength="100"
+              autocomplete="off"
+              placeholder="e.g. Floor pot beside the shoe rack"
+              required
+              :aria-invalid="!!errors.plantLocation"
+              :aria-describedby="errors.plantLocation ? 'plantLocation-error' : undefined"
+            />
+            <p v-if="errors.plantLocation" id="plantLocation-error" class="error">
+              {{ errors.plantLocation }}
+            </p>
+          </div>
+
+          <!-- Rain: only shown for outdoor plants (indoor plants never get rain) -->
+          <fieldset
+            v-if="form.isOutdoor"
+            class="field"
+            :aria-describedby="errors.rainExposed ? 'rainExposed-error' : undefined"
+          >
+            <legend>Rain exposure</legend>
+            <div class="segmented" :class="{ invalid: errors.rainExposed }">
+              <label v-for="opt in RAIN_OPTIONS" :key="String(opt.value)">
+                <input
+                  v-model="form.rainExposed"
+                  type="radio"
+                  name="rainExposed"
+                  :value="opt.value"
+                />
+                <span>{{ opt.label }}</span>
+              </label>
+            </div>
+            <p class="hint">Exposed means the pot is in the open, not under the shelter.</p>
+            <p v-if="errors.rainExposed" id="rainExposed-error" class="error">
+              {{ errors.rainExposed }}
+            </p>
+          </fieldset>
+        </section>
       </div>
-      <p class="hint">Neighbours can only care for plants outside your door.</p>
-      <p v-if="errors.isOutdoor" id="isOutdoor-error" class="error">{{ errors.isOutdoor }}</p>
-    </fieldset>
 
-    <!-- Where to find it: free text so the helper knows exactly which plant -->
-    <div class="field">
-      <label for="plantLocation">
-        Where to find it <span class="req" aria-hidden="true">*</span>
-      </label>
-      <input
-        id="plantLocation"
-        v-model="form.plantLocation"
-        type="text"
-        maxlength="100"
-        autocomplete="off"
-        placeholder="e.g. Floor pot beside the shoe rack"
-        required
-        :aria-invalid="!!errors.plantLocation"
-        :aria-describedby="errors.plantLocation ? 'plantLocation-error' : undefined"
-      />
-      <p v-if="errors.plantLocation" id="plantLocation-error" class="error">
-        {{ errors.plantLocation }}
-      </p>
-    </div>
+      <!-- Right card: Watering + Care (care notes stretch to fill the card) -->
+      <div class="form-card fill-card">
+        <!-- ===== Watering ===== -->
+        <section class="form-section">
+          <h2>Watering</h2>
 
-    <!-- Photo: preview box + choose/undo buttons -->
-    <div class="field">
-      <span class="label" id="photo-label">Photo</span>
-      <div class="photo-row">
-        <div class="preview" :class="{ empty: !photoPreview }">
-          <img v-if="photoPreview" :src="photoPreview" alt="Selected plant photo preview" />
-          <span v-else>No photo</span>
-        </div>
-        <div class="photo-controls">
-          <!-- The real file input is hidden; this label acts as the button and opens it -->
-          <label class="btn" for="photo">{{
-            photoPreview ? 'Change photo' : 'Choose photo'
-          }}</label>
-          <input
-            id="photo"
-            ref="photoInput"
-            class="visually-hidden"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-labelledby="photo-label"
-            :aria-invalid="!!errors.photo"
-            :aria-describedby="errors.photo ? 'photo-error' : undefined"
-            @change="onPhotoChange"
-          />
-          <!-- Undo only appears after a new photo is chosen -->
-          <button v-if="photoFile" type="button" class="btn" @click="clearNewPhoto">Undo</button>
-          <p class="hint">JPG, PNG or WebP, up to 2MB.</p>
-        </div>
+          <!-- Frequency and amount side by side, unit shown inside the box -->
+          <div class="pair">
+            <div class="field">
+              <label for="frequencyDays">Water every</label>
+              <!-- Bootstrap input-group: puts "days" inside the box -->
+              <div class="input-group">
+                <input
+                  id="frequencyDays"
+                  v-model="form.frequencyDays"
+                  class="form-control"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="30"
+                  step="1"
+                  placeholder="7"
+                  required
+                  :aria-invalid="!!errors.frequencyDays"
+                  :aria-describedby="errors.frequencyDays ? 'frequencyDays-error' : undefined"
+                />
+                <span class="input-group-text">days</span>
+              </div>
+              <p v-if="errors.frequencyDays" id="frequencyDays-error" class="error">
+                {{ errors.frequencyDays }}
+              </p>
+            </div>
+
+            <div class="field">
+              <label for="amountMl">Amount</label>
+              <div class="input-group">
+                <input
+                  id="amountMl"
+                  v-model="form.amountMl"
+                  class="form-control"
+                  type="number"
+                  inputmode="numeric"
+                  min="10"
+                  max="5000"
+                  step="10"
+                  placeholder="250"
+                  required
+                  :aria-invalid="!!errors.amountMl"
+                  :aria-describedby="errors.amountMl ? 'amountMl-error' : undefined"
+                />
+                <span class="input-group-text">ml</span>
+              </div>
+              <p v-if="errors.amountMl" id="amountMl-error" class="error">{{ errors.amountMl }}</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="lastWateredAt">Last watered <span class="optional">(optional)</span></label>
+            <input
+              id="lastWateredAt"
+              v-model="form.lastWateredAt"
+              class="date-input"
+              type="date"
+              :max="today"
+              :aria-invalid="!!errors.lastWateredAt"
+              :aria-describedby="errors.lastWateredAt ? 'lastWateredAt-error' : undefined"
+            />
+            <p class="hint">Leave blank if it hasn't been watered yet.</p>
+            <p v-if="errors.lastWateredAt" id="lastWateredAt-error" class="error">
+              {{ errors.lastWateredAt }}
+            </p>
+          </div>
+
+          <!-- Weather adjustment as a Bootstrap switch (a styled checkbox) -->
+          <div class="field">
+            <div class="form-check form-switch switch-row">
+              <label class="form-check-label" for="weatherAdjustmentEnabled"
+                >Adjust for the weather</label
+              >
+              <input
+                id="weatherAdjustmentEnabled"
+                v-model="form.weatherAdjustmentEnabled"
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                aria-describedby="weatherAdjustmentEnabled-hint"
+              />
+            </div>
+            <p id="weatherAdjustmentEnabled-hint" class="hint">
+              Skips watering when rain is forecast (only if the spot gets rain), and adds an extra
+              watering on very hot days.
+            </p>
+          </div>
+        </section>
+
+        <!-- ===== Care ===== -->
+        <section class="form-section care-section">
+          <h2>Care</h2>
+
+          <div class="field notes-field">
+            <label for="notes">Care notes <span class="optional">(optional)</span></label>
+            <!-- :rows grows with the number of lines so nothing gets cut off -->
+            <textarea
+              id="notes"
+              v-model="form.notes"
+              :rows="notesRows"
+              :maxlength="NOTES_MAX"
+              placeholder="e.g. Let the top soil dry out first"
+              :aria-invalid="!!errors.notes"
+              :aria-describedby="errors.notes ? 'notes-error' : 'notes-hint'"
+            ></textarea>
+            <!-- Helper text and counter on one line -->
+            <div class="notes-footer">
+              <p id="notes-hint" class="hint">Each line becomes a checklist item</p>
+              <p class="hint counter" :class="{ over: form.notes.length >= NOTES_MAX }">
+                {{ form.notes.length }}/{{ NOTES_MAX }}
+              </p>
+            </div>
+            <p v-if="errors.notes" id="notes-error" class="error">{{ errors.notes }}</p>
+          </div>
+        </section>
       </div>
-      <p v-if="errors.photo" id="photo-error" class="error">{{ errors.photo }}</p>
-    </div>
-
-    <!-- Watering frequency in days (1-30) -->
-    <div class="field narrow">
-      <label for="frequencyDays">
-        Water every (days) <span class="req" aria-hidden="true">*</span>
-      </label>
-      <input
-        id="frequencyDays"
-        v-model="form.frequencyDays"
-        type="number"
-        inputmode="numeric"
-        min="1"
-        max="30"
-        step="1"
-        placeholder="7"
-        required
-        :aria-invalid="!!errors.frequencyDays"
-        :aria-describedby="errors.frequencyDays ? 'frequencyDays-error' : undefined"
-      />
-      <p v-if="errors.frequencyDays" id="frequencyDays-error" class="error">
-        {{ errors.frequencyDays }}
-      </p>
-    </div>
-
-    <!-- Amount of water each time, in ml (10-5000) -->
-    <div class="field narrow">
-      <label for="amountMl">
-        Amount each time (ml) <span class="req" aria-hidden="true">*</span>
-      </label>
-      <input
-        id="amountMl"
-        v-model="form.amountMl"
-        type="number"
-        inputmode="numeric"
-        min="10"
-        max="5000"
-        step="10"
-        placeholder="250"
-        required
-        :aria-invalid="!!errors.amountMl"
-        :aria-describedby="errors.amountMl ? 'amountMl-error' : undefined"
-      />
-      <p v-if="errors.amountMl" id="amountMl-error" class="error">{{ errors.amountMl }}</p>
-    </div>
-
-    <!-- Rain: fieldset + legend groups the radio buttons under one question.
-         Only shown for outdoor plants (indoor plants never get rain). -->
-    <fieldset
-      v-if="form.isOutdoor"
-      class="field"
-      :aria-describedby="errors.rainExposed ? 'rainExposed-error' : undefined"
-    >
-      <legend>Does this spot get rain? <span class="req" aria-hidden="true">*</span></legend>
-      <div class="segmented" :class="{ invalid: errors.rainExposed }">
-        <!-- v-for makes one radio per option -->
-        <label v-for="opt in RAIN_OPTIONS" :key="String(opt.value)">
-          <input v-model="form.rainExposed" type="radio" name="rainExposed" :value="opt.value" />
-          <span>{{ opt.label }}</span>
-        </label>
-      </div>
-      <p class="hint">Exposed means the pot is in the open, not under the shelter.</p>
-      <p v-if="errors.rainExposed" id="rainExposed-error" class="error">
-        {{ errors.rainExposed }}
-      </p>
-    </fieldset>
-
-    <!-- Weather adjustment: used by the watering schedule (rain skips, hot-day extras) -->
-    <div class="field">
-      <label class="checkbox" for="weatherAdjustmentEnabled">
-        <input
-          id="weatherAdjustmentEnabled"
-          v-model="form.weatherAdjustmentEnabled"
-          type="checkbox"
-          aria-describedby="weatherAdjustmentEnabled-hint"
-        />
-        <span>Adjust watering for the weather</span>
-      </label>
-      <p id="weatherAdjustmentEnabled-hint" class="hint">
-        Skips watering when rain is forecast (only if the spot gets rain), and adds an extra
-        watering on very hot days.
-      </p>
-    </div>
-
-    <div class="field">
-      <label for="notes">Care notes</label>
-      <textarea
-        id="notes"
-        v-model="form.notes"
-        rows="3"
-        :maxlength="NOTES_MAX"
-        placeholder="e.g. Let the top soil dry out first"
-        :aria-invalid="!!errors.notes"
-        :aria-describedby="errors.notes ? 'notes-error' : 'notes-hint'"
-      ></textarea>
-      <!-- Each line becomes one checklist item on the plant's page -->
-      <p id="notes-hint" class="hint">Put each step on a new line. They'll show as a checklist.</p>
-      <p class="hint counter" :class="{ over: form.notes.length >= NOTES_MAX }">
-        {{ form.notes.length }}/{{ NOTES_MAX }}
-      </p>
-      <p v-if="errors.notes" id="notes-error" class="error">{{ errors.notes }}</p>
-    </div>
-
-    <div class="field narrow">
-      <label for="lastWateredAt">Last watered</label>
-      <input
-        id="lastWateredAt"
-        v-model="form.lastWateredAt"
-        type="date"
-        :max="today"
-        :aria-invalid="!!errors.lastWateredAt"
-        :aria-describedby="errors.lastWateredAt ? 'lastWateredAt-error' : undefined"
-      />
-      <p class="hint">Leave blank if it hasn't been watered yet.</p>
-      <p v-if="errors.lastWateredAt" id="lastWateredAt-error" class="error">
-        {{ errors.lastWateredAt }}
-      </p>
-    </div>
-
-    <!-- Buttons are disabled while saving so the form can't be sent twice -->
-    <div class="form-actions">
-      <button type="button" class="btn" :disabled="saving" @click="emit('cancel')">Cancel</button>
-      <button type="submit" class="btn btn-primary" :disabled="saving">
-        {{ saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add plant' }}
-      </button>
     </div>
   </form>
 </template>
 
 <style scoped>
+/* Sizes: text 18 / 15 / 13px, spacing in steps of 8px */
 .plant-form {
+  --text-dark: #1f3a2b;
+  --text-soft: #4d5b52;
+  --line: #d5ded8;
   display: grid;
-  gap: 1.25rem;
+  gap: 24px;
+  font-size: 15px;
+  color: var(--text-dark);
+}
+
+/* Two cards: stacked on small screens, side by side on big ones */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: stretch; /* both cards as tall as the taller one */
+}
+
+/* Same card style as the plant page */
+.form-card {
+  display: grid;
+  gap: 32px; /* between sections */
+  align-content: start; /* keep the fields at the top, spare space at the bottom */
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #e1e8e3;
+  border-radius: 16px;
+  background: #fff;
+}
+
+@media (min-width: 860px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Each section: heading + its fields, 16px apart */
+.form-section {
+  display: grid;
+  gap: 16px;
+}
+
+.form-section + .form-section {
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.form-section h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .field {
   display: grid;
-  gap: 0.35rem;
+  gap: 8px;
   min-width: 0;
+  margin: 0;
   border: 0;
   padding: 0;
 }
 
-.field.narrow {
-  max-width: 220px;
-}
-
+/* One label style for every field (legend included) */
 label,
 legend,
 .label {
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--color-heading);
+  color: var(--text-dark);
 }
 
+/* Bootstrap makes legend big and floated; reset it to look like a label */
 legend {
+  float: none;
+  width: auto;
   padding: 0;
-  margin-bottom: 0.35rem;
+  margin-bottom: 8px;
+  line-height: inherit;
 }
 
-.req {
-  color: var(--danger);
+.optional {
+  color: var(--text-soft);
+  font-weight: 400;
 }
 
 input[type='text'],
@@ -477,16 +639,17 @@ input[type='date'],
 textarea {
   width: 100%;
   min-height: 44px;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--color-border-hover);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--color-text);
+  background: #fff;
+  color: var(--text-dark);
   font: inherit;
 }
 
 textarea {
   resize: vertical;
+  line-height: 1.5;
 }
 
 input:focus-visible,
@@ -494,6 +657,7 @@ textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-color: var(--accent);
+  box-shadow: none;
 }
 
 [aria-invalid='true'] {
@@ -501,8 +665,9 @@ textarea:focus-visible {
 }
 
 .error {
+  margin: 0;
   color: var(--danger);
-  font-size: 0.875rem;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -511,76 +676,155 @@ textarea:focus-visible {
 }
 
 .hint {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.counter {
-  justify-self: end;
-}
-
-.counter.over {
-  color: var(--danger);
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .form-error {
-  padding: 0.7rem 0.9rem;
+  margin: 0;
+  padding: 8px 16px;
   border-radius: 8px;
   background: var(--danger-soft);
   color: var(--danger);
   font-weight: 600;
 }
 
-/* Photo */
-.photo-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
+/* Two fields side by side (Water every + Amount) */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.preview {
-  width: 200px;
-  max-width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--accent-soft);
-  display: grid;
-  place-items: center;
+/* Number + unit on one line: the input shares the row instead of taking 100% */
+.input-group {
+  flex-wrap: nowrap;
+}
+
+.input-group input {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 8px 0 0 8px;
+}
+
+/* Unit box ("days" / "ml") joined to the right of the input */
+.input-group-text {
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: #f3f7f4;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.date-input {
+  max-width: 220px;
+}
+
+/* Care notes: helper on the left, counter on the right */
+.notes-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.counter {
   flex-shrink: 0;
 }
 
-.preview.empty {
-  border: 1px dashed var(--color-border-hover);
-  color: var(--muted);
-  font-size: 0.85rem;
+.counter.over {
+  color: var(--danger);
 }
 
-/* contain = show the whole photo (no cropping); spare space shows the box colour */
+/* Photo: small square thumbnail with the buttons beside it */
+.photo-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.preview {
+  width: 136px;
+  height: 136px;
+  position: relative; /* so the photo can be pinned inside */
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f3f7f4;
+}
+
+.preview.empty {
+  border: 1px dashed var(--line);
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+/* Pinned to all 4 edges of the frame (inset: 0), then contain shows
+   the whole photo inside it, no cropping */
 .preview img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-/* flex: 1 1 160px = take the space beside the photo; only drop below it
-   when there's less than 160px left (e.g. small phones) */
+/* Upload box: dashed area filling the space beside the photo */
 .photo-controls {
-  flex: 1 1 160px;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch; /* same height as the photo beside it */
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: #fafcfb;
+  cursor: pointer;
+}
+
+.photo-controls:hover {
+  border-color: var(--accent);
+}
+
+/* Focused (clicked) box: green, ready for Ctrl+V */
+.photo-controls:focus {
+  outline: none;
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
+.paste-text {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Only one message shows: "click here…" normally, "Ready…" when focused */
+.paste-ready {
+  display: none;
+  color: var(--accent);
+}
+
+.photo-controls:focus .paste-idle {
+  display: none;
+}
+
+.photo-controls:focus .paste-ready {
+  display: inline;
+}
+
+.photo-buttons {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.photo-controls .hint {
-  flex-basis: 100%;
-}
-
-.photo-controls label.btn {
-  font-weight: 600;
-  color: var(--color-text);
+  gap: 8px;
 }
 
 .photo-controls:focus-within label.btn {
@@ -597,24 +841,66 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-/* Checkbox with its label text beside it */
-.checkbox {
+/* Buttons: same height, no glow */
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* Secondary: white with a border, so it clearly looks clickable */
+.btn-secondary-outline {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.btn-secondary-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.save-btn,
+.save-btn:hover {
+  box-shadow: none;
+}
+
+/* Weather switch: label on the left, switch on the right */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   min-height: 44px;
-  cursor: pointer;
-}
-
-.checkbox input {
-  width: 1.15rem;
-  height: 1.15rem;
   margin: 0;
-  accent-color: var(--accent);
+  padding: 0;
+}
+
+.switch-row .form-check-input {
+  float: none;
+  width: 2.75em;
+  height: 1.5em;
+  margin: 0;
   cursor: pointer;
 }
 
-.checkbox input:focus-visible {
+.switch-row .form-check-input:checked {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+.switch-row .form-check-input:focus {
+  box-shadow: none;
+}
+
+.switch-row .form-check-input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -623,7 +909,7 @@ textarea:focus-visible {
 .segmented {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .segmented label {
@@ -642,12 +928,12 @@ textarea:focus-visible {
 .segmented span {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0.4rem 1rem;
-  border: 1px solid var(--color-border-hover);
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--color-text);
+  background: #fff;
+  color: var(--text-dark);
 }
 
 .segmented.invalid span {
@@ -666,16 +952,71 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-.form-actions {
+/* Title on the left, Cancel / Save on the right */
+.form-head {
   display: flex;
-  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
+.form-head h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Right card: flex column so the Care section can take the leftover height,
+   then the notes box grows to fill it (no empty gap at the bottom) */
+.form-card.fill-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* flex: 1 = take the spare space only (starts at normal size, never forces the card taller) */
+.care-section,
+.notes-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.care-section {
+  gap: 16px;
+}
+
+.notes-field {
+  gap: 8px;
+}
+
+/* Grows up to about 10 lines, then scrolls inside so the card stays balanced */
+.notes-field textarea {
+  flex: 1;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Phones: stack the pair, full-width buttons */
 @media (max-width: 480px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card {
+    padding: 16px;
+  }
+
+  .form-actions {
+    width: 100%;
+  }
+
   .form-actions .btn {
     flex: 1;
   }

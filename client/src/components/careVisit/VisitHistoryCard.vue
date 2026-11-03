@@ -1,7 +1,7 @@
 <script setup>
 import plantPlaceholder from '@/assets/plant.png'
 import { computed } from 'vue'
-import { getCareSteps } from '@/utils/careSteps'
+import { getRequestSteps } from '@/utils/careSteps'
 const props = defineProps({
   visit: { type: Object, required: true },
   paid: { type: Boolean, default: false },
@@ -16,7 +16,7 @@ function date(value) {
 
 // Care checklist (Carolyn): "3 of 5 care steps", or '' if the plant has no care steps
 function stepsSummary(item) {
-  const total = getCareSteps(item.plant?.wateringInfo?.notes).length
+  const total = getRequestSteps(item).length
   if (total === 0) return ''
   return `${(item.completedSteps || []).length} of ${total} care steps`
 }
