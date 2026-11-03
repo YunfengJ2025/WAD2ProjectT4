@@ -30,6 +30,9 @@ function configure() {
 // folder defaults to plants so existing plant code keeps working.
 async function uploadImage(buffer, folder = FOLDERS.plants) {
   configure();
+  // Cloudinary's upload_stream uses a callback, not async/await.
+  // Wrapping it in a Promise lets the model simply write `await uploadImage(...)`:
+  // resolve(...) = success (the await gets { url, publicId }), reject(...) = error.
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
@@ -48,6 +51,7 @@ async function uploadImage(buffer, folder = FOLDERS.plants) {
         resolve({ url: result.secure_url, publicId: result.public_id });
       },
     );
+    // Send the photo's bytes (kept in memory by multer) to Cloudinary
     stream.end(buffer);
   });
 }

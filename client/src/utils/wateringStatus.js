@@ -15,6 +15,12 @@ export const startOfDay = (date) => {
   return d
 }
 
+// true if the plant's last watered date is today
+export function isWateredToday(plant) {
+  if (!plant.lastWateredAt) return false
+  return startOfDay(plant.lastWateredAt).getTime() === startOfDay(new Date()).getTime()
+}
+
 // "Thu 15 Oct"
 export const formatShortDate = (date) =>
   `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`

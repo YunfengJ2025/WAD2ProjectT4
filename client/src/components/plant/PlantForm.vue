@@ -14,6 +14,11 @@ const plantsStore = usePlantsStore()
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2MB in bytes
 const NOTES_MAX = 500
+// Choices for "Where is this plant?" (value is what gets saved as isOutdoor)
+const PLACE_OPTIONS = [
+  { value: false, label: 'Inside my home' },
+  { value: true, label: 'Outside my door (corridor)' },
+]
 // Choices for "Does this spot get rain?" (value is what gets saved as rainExposed)
 const RAIN_OPTIONS = [
   { value: true, label: 'Exposed to rain' },
@@ -37,6 +42,9 @@ const form = ref({
   plantLocation: props.plant?.plantLocation ?? '',
   frequencyDays: props.plant ? String(props.plant.wateringInfo.frequencyDays) : '',
   amountMl: props.plant?.wateringInfo.amountMl ? String(props.plant.wateringInfo.amountMl) : '',
+  // null = not chosen yet (new plant); editing starts with the saved true/false.
+  // Older plants have no isOutdoor saved, so anything except false counts as outdoor.
+  isOutdoor: props.plant ? props.plant.isOutdoor !== false : null,
   // null = not chosen yet (new plant); editing starts with the saved true/false
   rainExposed: props.plant ? props.plant.rainExposed : null,
   // Lets the watering schedule change with the weather (off unless ticked)
@@ -93,8 +101,13 @@ function validate() {
     errors.value.amountMl = 'Enter a whole number of ml from 10 to 5000'
   }
 
-  // Rain: one option must be chosen
-  if (form.value.rainExposed === null) {
+  // Inside / outside: one option must be chosen
+  if (form.value.isOutdoor === null) {
+    errors.value.isOutdoor = 'Please choose where this plant is'
+  }
+
+  // Rain: only asked for outdoor plants, then one option must be chosen
+  if (form.value.isOutdoor === true && form.value.rainExposed === null) {
     errors.value.rainExposed = 'Please choose whether this spot gets rain'
   }
 
@@ -158,7 +171,13 @@ function buildFormData() {
   data.append('plantLocation', form.value.plantLocation.trim())
   data.append('frequencyDays', String(form.value.frequencyDays).trim())
   data.append('amountMl', String(form.value.amountMl).trim())
-  data.append('rainExposed', String(form.value.rainExposed)) // "true" or "false"
+  data.append('isOutdoor', String(form.value.isOutdoor)) // "true" or "false"
+  // Indoor plants never get rain, so they are always saved as sheltered
+  if (form.value.isOutdoor) {
+    data.append('rainExposed', String(form.value.rainExposed))
+  } else {
+    data.append('rainExposed', 'false')
+  }
   data.append('weatherAdjustmentEnabled', String(form.value.weatherAdjustmentEnabled))
   data.append('notes', form.value.notes.trim())
   // When editing, only send the date if it changed so the stored time is kept.
@@ -221,6 +240,22 @@ async function onSubmit() {
       <!-- v-if: only shown when this field has an error -->
       <p v-if="errors.plantName" id="plantName-error" class="error">{{ errors.plantName }}</p>
     </div>
+
+    <!-- Inside / outside: only outside plants can be looked after by a neighbour -->
+    <fieldset
+      class="field"
+      :aria-describedby="errors.isOutdoor ? 'isOutdoor-error' : undefined"
+    >
+      <legend>Where is this plant? <span class="req" aria-hidden="true">*</span></legend>
+      <div class="segmented" :class="{ invalid: errors.isOutdoor }">
+        <label v-for="opt in PLACE_OPTIONS" :key="String(opt.value)">
+          <input v-model="form.isOutdoor" type="radio" name="isOutdoor" :value="opt.value" />
+          <span>{{ opt.label }}</span>
+        </label>
+      </div>
+      <p class="hint">Neighbours can only care for plants outside your door.</p>
+      <p v-if="errors.isOutdoor" id="isOutdoor-error" class="error">{{ errors.isOutdoor }}</p>
+    </fieldset>
 
     <!-- Where to find it: free text so the helper knows exactly which plant -->
     <div class="field">
@@ -319,8 +354,10 @@ async function onSubmit() {
       <p v-if="errors.amountMl" id="amountMl-error" class="error">{{ errors.amountMl }}</p>
     </div>
 
-    <!-- Rain: fieldset + legend groups the radio buttons under one question -->
+    <!-- Rain: fieldset + legend groups the radio buttons under one question.
+         Only shown for outdoor plants (indoor plants never get rain). -->
     <fieldset
+      v-if="form.isOutdoor"
       class="field"
       :aria-describedby="errors.rainExposed ? 'rainExposed-error' : undefined"
     >
@@ -364,8 +401,10 @@ async function onSubmit() {
         :maxlength="NOTES_MAX"
         placeholder="e.g. Let the top soil dry out first"
         :aria-invalid="!!errors.notes"
-        :aria-describedby="errors.notes ? 'notes-error' : undefined"
+        :aria-describedby="errors.notes ? 'notes-error' : 'notes-hint'"
       ></textarea>
+      <!-- Each line becomes one checklist item on the plant's page -->
+      <p id="notes-hint" class="hint">Put each step on a new line. They'll show as a checklist.</p>
       <p class="hint counter" :class="{ over: form.notes.length >= NOTES_MAX }">
         {{ form.notes.length }}/{{ NOTES_MAX }}
       </p>
@@ -501,8 +540,9 @@ textarea:focus-visible {
 }
 
 .preview {
-  width: 120px;
-  aspect-ratio: 4 / 3;
+  width: 200px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 10px;
   overflow: hidden;
   background: var(--accent-soft);
@@ -517,13 +557,17 @@ textarea:focus-visible {
   font-size: 0.85rem;
 }
 
+/* contain = show the whole photo (no cropping); spare space shows the box colour */
 .preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
+/* flex: 1 1 160px = take the space beside the photo; only drop below it
+   when there's less than 160px left (e.g. small phones) */
 .photo-controls {
+  flex: 1 1 160px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

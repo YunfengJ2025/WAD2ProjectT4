@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
+import { getCareSteps } from '@/utils/careSteps'
 
 const props = defineProps({
   request: { type: Object, required: true },
@@ -22,6 +23,14 @@ const plants = computed(() =>
 
 function date(value) {
   return new Date(value).toLocaleDateString('en-GB')
+}
+
+// Care checklist (Carolyn): how many care steps the sitter ticked on a finished visit,
+// e.g. "3/5 steps", or '' if the plant has no care steps or the visit isn't done yet
+function stepsSummary(item) {
+  const total = getCareSteps(item.plant?.wateringInfo?.notes).length
+  if (total === 0 || item.status !== 'completed') return ''
+  return `${(item.completedSteps || []).length}/${total} steps`
 }
 </script>
 
@@ -64,6 +73,8 @@ function date(value) {
         {{ date(visit.visitDate) }} · {{ visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Plant' }} · {{ visit.status }}
         <span v-for="item in visit.items || []" :key="item.requestItemId">
           <a v-if="item.proofUrl" :href="item.proofUrl" target="_blank" rel="noopener noreferrer">{{ item.plant?.plantName || 'Plant' }} proof</a>
+          <!-- Care checklist (Carolyn) -->
+          <small v-if="stepsSummary(item)" class="steps-done"> ({{ stepsSummary(item) }})</small>
         </span>
       </li>
     </ul>

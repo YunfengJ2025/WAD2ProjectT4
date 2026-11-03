@@ -15,6 +15,12 @@ const FIELD_NAMES = {
   wateringInfo: "frequencyDays",
 };
 
+// One place that turns any error into the right HTTP response:
+// 1. our own errors with a status (e.g. 404 "Plant not found" from the model)
+// 2. Mongoose ValidationError -> 400 with a message per form field, e.g.
+//    { message: "...", errors: { plantName: "Plant name is required" } }
+//    so the form can show each message under the right input
+// 3. anything else -> 500 "Server error" (details only in the server console)
 const handleError = (err, res) => {
   if (err.status) {
     return res.status(err.status).json({ message: err.message });
@@ -36,6 +42,10 @@ const handleError = (err, res) => {
   console.log(err);
   res.status(500).json({ message: "Server error" });
 };
+
+// Each handler below: read the request, call a model function, send JSON back.
+// req.userId is set by middleware/requireUser.js (the logged-in user),
+// so users can only ever see or change their own plants.
 
 // GET /plants
 exports.getMyPlants = async (req, res) => {

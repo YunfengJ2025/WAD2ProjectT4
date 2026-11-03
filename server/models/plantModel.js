@@ -75,6 +75,10 @@ const plantSchema = new mongoose.Schema(
         // true = the pot is in the open and gets rained on; false = sheltered.
         // Set by the owner in the form; used by the weather-based checklist.
         rainExposed: { type: Boolean, default: false },
+        // true = outside the unit (e.g. corridor), so a neighbour can reach it.
+        // Indoor plants still get watering reminders but can't be in a care request.
+        // Defaults to true because plants added before this field were corridor plants.
+        isOutdoor: { type: Boolean, default: true },
         weatherAdjustmentEnabled: { type: Boolean, default: false },
         lastWateredAt: {
             type: Date,
@@ -120,9 +124,11 @@ const httpError = (status, message) => {
 // grouped into the wateringInfo sub-document here.
 function pickPlantFields(body = {}) {
     const data = {};
-    for (const field of ["plantName", "plantLocation", "rainExposed", "weatherAdjustmentEnabled"]) {
+    for (const field of ["plantName", "plantLocation", "rainExposed", "weatherAdjustmentEnabled", "isOutdoor"]) {
         if (field in body) data[field] = body[field];
     }
+    // An indoor plant never gets rained on. (The form sends "true"/"false" as text.)
+    if (String(data.isOutdoor) === "false") data.rainExposed = false;
     if ("frequencyDays" in body || "amountMl" in body || "notes" in body) {
         data.wateringInfo = {
             frequencyDays: body.frequencyDays,

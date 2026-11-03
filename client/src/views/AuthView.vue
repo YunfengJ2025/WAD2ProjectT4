@@ -4,19 +4,27 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
+// AuthView: ONE page for both sign in (/signin) and create account (/register).
+// The router passes createAccount: true on /register (props in router/index.js),
+// and v-if in the template shows the extra fields (username + address) only then.
 const props = defineProps({ createAccount: Boolean })
 const router = useRouter()
+// One ref per input box, linked with v-model
 const userName = ref('')
 const email = ref('')
 const password = ref('')
 const postalCode = ref('')
 const block = ref('')
 const unitNumber = ref('')
+// The auth store (Pinia) does the actual login/register request and keeps the user + token.
+// storeToRefs: take `error` and `submitting` out of the store but keep them reactive,
+// so error.value = '' changes the store's error too.
 const auth = useAuthStore()
 const { error, submitting } = storeToRefs(auth)
 const route = useRoute()
-error.value = ''
+error.value = '' // clear any old error when the page opens
 
+// Runs on form submit (@submit.prevent stops the page reloading)
 async function submit() {
   if (submitting.value) return
   error.value = ''
@@ -31,6 +39,10 @@ async function submit() {
     }
     if (props.createAccount) await auth.register(credentials)
     else await auth.login(credentials)
+    // "Redirect back after login" (Week 11): the route guard sent the user here as
+    // /signin?redirect=/plants/5, so after logging in we go back to /plants/5.
+    // Only follow it if it's a page inside our app (starts with one "/") that needs
+    // login; otherwise go to /plants. This stops links sending users to other websites.
     const redirect = route.query.redirect
     const destination = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
       && router.resolve(redirect).meta.requiresAuth ? redirect : '/plants'

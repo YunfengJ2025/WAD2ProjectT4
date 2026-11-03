@@ -7,7 +7,6 @@ import WeatherHeader from '../components/schedule/WeatherHeader.vue'
 import ScheduleCalendar from '../components/schedule/ScheduleCalendar.vue'
 import ScheduleList from '../components/schedule/ScheduleList.vue'
 import ScheduleAlertBanner from '../components/schedule/ScheduleAlertBanner.vue'
-import OpenRequestsPreview from '../components/schedule/OpenRequestsPreview.vue'
 import { buildSchedule } from '../composables/schedule/buildSchedule'
 import { useWeather } from '../composables/schedule/useWeather'
 import { applyWeatherAdjustments } from '../composables/schedule/applyWeatherAdjustments'
@@ -147,9 +146,6 @@ onMounted(async () => {
         </div>
       </Transition>
     </template>
-
-    <!-- Home page: a few open requests, "View more" goes to Find Nearby -->
-    <OpenRequestsPreview />
   </div>
 </template>
 
