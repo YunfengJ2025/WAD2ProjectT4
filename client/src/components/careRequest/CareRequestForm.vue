@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
+import { buildRequestPlan } from '@/composables/schedule/buildRequestPlan'
+import { toDateInputValue } from '@/utils/wateringStatus'
 
 const props = defineProps({
   plants: { type: Array, default: () => [] },
@@ -17,19 +19,39 @@ const form = ref({
   note: '',
   waterSource: 'tap_available',
   tokenReward: 1,
+  healthCheck: false, // added for health check
 })
 const animatedCalendar = ref('')
 const selectionError = ref('')
 let calendarAnimationTimer
 
-const totalReward = computed(() => {
-  const start = form.value.startDate
-  const end = form.value.endDate
-  if (!start || !end || end < start) return 0
-  const days = Math.round((new Date(end) - new Date(start)) / 86_400_000) + 1
-  return days * Number(form.value.tokenReward)
-})
 const selectedPlants = computed(() => props.plants.filter((plant) => form.value.plantIds.includes(plant.plantId)))
+const plantById = computed(() => Object.fromEntries(props.plants.map((plant) => [plant.plantId, plant])))
+const todayISO = toDateInputValue(new Date()) // local date, so no UTC off-by-one in Singapore
+
+// is there enough input to work out a plan?
+const planReady = computed(() =>
+  form.value.plantIds.length > 0 &&
+  !!form.value.startDate &&
+  !!form.value.endDate &&
+  form.value.endDate >= form.value.startDate
+)
+const periodDays = computed(() =>
+  planReady.value ? Math.round((new Date(form.value.endDate) - new Date(form.value.startDate)) / 86_400_000) + 1 : 0
+)
+
+// the visit plan is a computed, so it updates itself when the plants or dates change
+const plan = computed(() =>
+  planReady.value
+    ? buildRequestPlan(selectedPlants.value, form.value.startDate, form.value.endDate)
+    : [],
+)
+const visitCount = computed(() => plan.value.length)
+const totalReward = computed(() => visitCount.value * Number(form.value.tokenReward || 0))
+
+function formatDay(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+}
 
 function animateCalendar(field) {
   animatedCalendar.value = field
@@ -40,6 +62,9 @@ function animateCalendar(field) {
 }
 
 function submit() {
+  if (!visitCount.value) {
+    return
+  }
   if (!form.value.plantIds.length) {
     selectionError.value = 'Select at least one plant for this request.'
     return
@@ -120,6 +145,7 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
           v-model="form.startDate"
           type="date"
           lang="en-GB"
+          :min="todayISO"
           required
           :class="{ 'calendar-bounce': animatedCalendar === 'start' }"
           @click="animateCalendar('start')"
@@ -141,9 +167,40 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
         Reward per visit (tokens)
         <input v-model.number="form.tokenReward" type="number" min="1" step="1" required />
       </label>
-      <p class="wide reward-preview">
-        {{ totalReward }} tokens will be frozen for this request (one visit per day).
-      </p>
+      <section class="wide visit-plan" aria-live="polite">
+        <h3>Visit plan</h3>
+        <p v-if="!planReady" class="plan-note">Choose plants and a start and end date to see which days need a visit.</p>
+        <p v-else-if="!visitCount" class="plan-note">
+          None of the selected plants need watering between these dates, so there is nothing to request. Try a longer period.
+        </p>
+        <template v-else>
+          <p class="plan-note">
+            {{ visitCount }} visit{{ visitCount === 1 ? '' : 's' }} over {{ periodDays }} days. Days with nothing due are skipped.
+          </p>
+          <ul class="plan-list">
+            <li v-for="day in plan" :key="day.date">
+              <strong>{{ formatDay(day.date) }}</strong>
+              <span class="plan-thumbs">
+                <img
+                  v-for="id in day.plantIds"
+                  :key="id"
+                  :src="plantById[id]?.photoUrl || plantPlaceholder"
+                  :alt="plantById[id]?.plantName"
+                  :title="plantById[id]?.plantName"
+                  @error="$event.target.src = plantPlaceholder"
+                />
+              </span>
+            </li>
+          </ul>
+          <p class="reward-preview">
+            {{ visitCount }} × {{ form.tokenReward }} = <strong>{{ totalReward }} tokens</strong> will be frozen for this request.
+          </p>
+          <p v-if="totalReward > availableBalance" class="selection-error" role="alert">
+            You only have {{ availableBalance }} tokens available.
+          </p>
+        </template>
+      </section>
+
       <fieldset class="wide water-source">
         <legend>Water for the visit</legend>
         <div class="water-source-options">
@@ -161,7 +218,12 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
           placeholder="Care instructions for the sitter"
         ></textarea>
       </label>
-      <button class="btn btn-primary" :disabled="saving || totalReward <= 0 || totalReward > availableBalance">
+      <label class="wide health-option">
+        <input v-model="form.healthCheck" type="checkbox" />
+        Run a plant health check on the sitter's photos
+        <small>(results are for you only)</small>
+      </label>
+      <button class="btn btn-primary" :disabled="saving || !visitCount || totalReward > availableBalance">
         {{ saving ? 'Posting…' : 'Post request' }}
       </button>
     </form>
@@ -179,6 +241,8 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
 h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .request-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .request-form label { display: grid; gap: 0.35rem; font-weight: 600; }
+.request-form .health-option { display: flex; align-items: center; gap: 0.5rem; }
+.request-form .health-option input { width: auto; }
 .request-form input,
 .request-form textarea {
   width: 100%;
@@ -231,6 +295,15 @@ h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .plant-name { display: block; margin: 0.5rem 0 0.15rem; color: inherit; font-weight: 700; }
 .plant-location { display: block; overflow: hidden; color: #637466; font-size: 0.8rem; text-overflow: ellipsis; white-space: nowrap; }
 .selection-error { margin: 0.65rem 0 0; color: #b42318; font-size: 0.9rem; }
+
+.visit-plan { padding: 0.9rem; border: 1px solid #d7e1d8; border-radius: 10px; background: #f8fbf8; }
+.visit-plan h3 { margin: 0 0 0.35rem; font-size: 1rem; font-weight: 700; }
+.plan-note { margin: 0 0 0.5rem; color: #637466; font-size: 0.9rem; }
+.plan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; margin: 0.5rem 0 0.75rem; padding: 0; list-style: none; }
+.plan-list li { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.5rem 0.6rem; border: 1px solid #d7e1d8; border-radius: 9px; background: #fff; font-size: 0.85rem; }
+.plan-thumbs { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.plan-thumbs img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #edf3ed; }
+
 @keyframes calendarIconBounce {
   0%, 100% { transform: scale(1) rotate(0); }
   35% { transform: scale(1.2) rotate(-12deg); }

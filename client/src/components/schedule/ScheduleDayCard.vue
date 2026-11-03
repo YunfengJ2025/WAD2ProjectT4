@@ -1,17 +1,21 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Tooltip } from 'bootstrap'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
     item: {
         type: Object,
         required: true,
+    },
+    layout: {
+        type: String,
+        default: 'stack', // 'stack' = big photo on top (calendar columns), 'row' = photo on the left (mobile list)
     }
 })
 
 const ICONS = {'skipped-rain': '🌧️', 'extra-heat': '☀️'}
 const icon = computed(() => ICONS[props.item.adjustmentType] ?? null)
-const isMoved = computed(() => props.item.originalDueAt !== props.item.dueAt)
 const isExtraHeat = computed(() => props.item.adjustmentType === 'extra-heat')
 
 const STATUS_CLASS = {
@@ -23,58 +27,46 @@ const STATUS_CLASS = {
 
 const statusClass = computed(() => STATUS_CLASS[props.item.status] ?? 'text-bg-light')
 
-function formatDate(iso) {
-    // standardising T00:00:00 keep it in local time so the day does not shift
-    return new Date(iso + "T00:00:00").toLocaleDateString('en-SG', {
-        weekday: 'short', 
-        day: 'numeric',
-        month: 'short',
-    })
-}
-
 const iconEl = ref(null)
 let tip
-onMounted(() => { if (iconEl.value) tip = new Tooltip(iconEl.value, {conatiner: 'body'}) })
+onMounted(() => { if (iconEl.value) tip = new Tooltip(iconEl.value, {container: 'body'}) })
 onBeforeUnmount(() => tip?.dispose())
 </script>
 
 <template>
-  <div
+  <RouterLink
+    :to="item.link ?? { name: 'plant-detail', params: { plantId: item.plantId } }"
     class="plant-card h-100"
-    :class="[`is-${item.status}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
+    :class="[`is-${item.status}`, `layout-${layout}`, { adjusted: item.adjustmentType, 'is-extra-heat': isExtraHeat }]"
   >
-    <img
-      v-if="item.photoUrl"
-      :src="item.photoUrl"
-      :alt="item.plantName"
-      class="plant-photo"
-    />
-    <div v-else class="plant-photo plant-photo-fallback" aria-hidden="true">🪴</div>
+    <div class="photo-wrap">
+      <img
+        v-if="item.photoUrl"
+        :src="item.photoUrl"
+        :alt="item.plantName"
+        class="plant-photo"
+      />
+      <div v-else class="plant-photo plant-photo-fallback" aria-hidden="true">🪴</div>
 
-    <span
-        v-if="icon"
-        ref="iconEl"
-        tabindex="0"
-        data-bs-toggle="tooltip"
-        :title="item.adjustmentReason"
-        role="img"
-        aria-label="Weather adjusted. Hover or tap for the reason"
-        class="adjust-icon"
-    >{{ icon }}</span>
+      <span
+          v-if="icon"
+          ref="iconEl"
+          tabindex="0"
+          data-bs-toggle="tooltip"
+          :title="item.adjustmentReason"
+          role="img"
+          aria-label="Weather adjusted. Hover or tap for the reason"
+          class="adjust-icon"
+          @click.prevent.stop 
+      >{{ icon }}</span> <!-- tapping the icon to read the tooltip on a phone would also open the plant page. 
+                              with @click.prevent.stop, the icon still shows its tooltip and the rest of the card navigates -->
+    </div>
 
     <div class="plant-info">
-        <strong class="plant-name d-block">{{ item.plantName }}</strong>
-        
-        <div v-if="item.plantLocation" class="small text-muted">{{ item.plantLocation }}</div>
-        
-        <!-- only shown when rain moved it, so the old date is useful rather than repeated noise -->
-        <div v-if="isMoved" class="small text-muted">
-            was <span class="text-decoration-line-through">{{ formatDate(item.originalDueAt) }}</span>
-        </div>
-        
-        <span class="badge text-capitalize mt-1" :class="statusClass">{{ item.status }}</span>
+        <strong class="plant-name">{{ item.plantName }}</strong>       
+        <span class="badge text-capitalize" :class="statusClass">{{ item.status }}</span>
     </div>
-  </div>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -82,15 +74,26 @@ onBeforeUnmount(() => tip?.dispose())
   position: relative;
   overflow: hidden;
   display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
+  flex-direction: column;       /* stack layout: photo on top */
+  gap: 0.5rem;
   padding: var(--space-sm);
-  padding-right: 2rem;
   border-radius: var(--radius-lg);
   border-left: 4px solid transparent;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--shadow-md);
   transition: transform var(--transition-bounce), box-shadow var(--transition-base);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.plant-card:focus-visible {
+  outline: 2px solid #0d6efd;      /* keyboard users can see which card is focused */
+  outline-offset: 2px;
+}
+.plant-card.layout-row {        /* row layout: photo on the left */
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
 }
 .plant-card:hover {
   transform: translateY(-4px) scale(1.01);
@@ -110,42 +113,56 @@ onBeforeUnmount(() => tip?.dispose())
   outline-offset: -2px;
 }
 
+/* ---------- photo ---------- */
+.photo-wrap { position: relative; flex-shrink: 0; }
 .plant-photo {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
+  display: block;
   border-radius: var(--radius-md);
   object-fit: cover;
 }
+.layout-stack .plant-photo { width: 100%; aspect-ratio: 1 / 1; }   /* fills the column */
+.layout-row .plant-photo   { width: 72px; height: 72px; }
 .plant-photo-fallback {
   display: grid;
   place-items: center;
-  font-size: 1.5rem;
+  font-size: 2rem;
   background: rgba(25, 135, 84, 0.12);
 }
 
-.plant-info { min-width: 0; flex: 1; }
-.plant-info .small { line-height: 1.3; }
-
-.plant-name { 
-    overflow-wrap: break-word;  /* only breaks a word if it cant fit */
-    line-height: 1.2;
-    font-size: 0.95rem;
-}
-
-.adjust-icon { 
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: 1.1rem;
-    line-height: 1;
-    cursor: help;
-    z-index: 1; /* show above shimmer overlay */
+/* weather icon sits on the photo corner, on a small white disc so it reads on any picture */
+.adjust-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: help;
+  z-index: 1;                   /* show above the shimmer overlay */
 }
 .adjust-icon:focus-visible {
   outline: 2px solid #0d6efd;
   outline-offset: 2px;
-  border-radius: 4px;
+}
+
+/* ---------- name and badge ---------- */
+.plant-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.plant-name { 
+    overflow-wrap: break-word;  /* only breaks a word if it cant fit */
+    line-height: 1.2;
+    font-size: 0.95rem;
 }
 
 /* sun-glint sweep across extra-heat cards, using the same  foilShimmer keyframe from main.css */

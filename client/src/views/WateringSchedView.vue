@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
 import WeatherHeader from '../components/schedule/WeatherHeader.vue'
@@ -9,14 +10,47 @@ import ScheduleAlertBanner from '../components/schedule/ScheduleAlertBanner.vue'
 import { buildSchedule } from '../composables/schedule/buildSchedule'
 import { useWeather } from '../composables/schedule/useWeather'
 import { applyWeatherAdjustments } from '../composables/schedule/applyWeatherAdjustments'
+import ScheduleViewToggle from '../components/schedule/ScheduleViewToggle.vue'
+import { buildSitterSchedule } from '../composables/schedule/buildSitterSchedule'
 
 const auth = useAuthStore()
 const plantsStore = usePlantsStore()
+const route = useRoute()
+const router = useRouter()
 
+const view = computed({
+  get: () => (route.query.view === 'sitting' ? 'sitting' : 'mine'),
+  set: (value) => router.replace({ query: { ...route.query, view: value === 'sitting' ? 'sitting' : undefined } }),
+})
+
+// my plants
 const loading = ref(true)
 const errorMessage = ref(null)
 const schedule = ref([])   // array of RequestItem-shaped objects
 const plants = computed(() => plantsStore.plants)
+
+// plants i am sitting
+const sittingVisits = ref([])
+const sittingLoading = ref(true)
+const sittingError = ref(null)
+const sittingItems = computed(() => buildSitterSchedule(sittingVisits.value))
+const sittingTodo = computed(() => sittingItems.value.filter((i) => i.status === 'due' || i.status === 'overdue').length)
+
+// what the calendar, list and banner show right now
+const activeItems = computed(() => (isHelper.value ? sittingItems.value : adjustedSchedule.value))
+const busy = computed(() => (view.value === 'sitting' ? sittingLoading.value : loading.value))
+const failure = computed(() => (view.value === 'sitting' ? sittingError.value : errorMessage.value))
+
+async function loadSitting() {
+  try {
+    const data = await auth.authorizedRequest('/care-visits')
+    sittingVisits.value = data.visits
+  } catch (error) {
+    sittingError.value = error.message
+  } finally {
+    sittingLoading.value = false
+  }
+}
 
 // the logged-in owner; fall back to central Singapore if lat/lng were never set
 const user = computed(() => auth.user)
@@ -24,7 +58,8 @@ const lat = auth.user?.lat ?? 1.3521
 const lng = auth.user?.lng ?? 103.8198
 
 
-const isHelper = ref(true) // placeholder, decides when the schedule alert banner shows
+// true while the sitter schedule is on screen; decides which data the alert banner reads
+const isHelper = computed(() => view.value === 'sitting')
 
 // fetch weather, shared to header and schedule logic
 const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(lat, lng)
@@ -43,6 +78,7 @@ const adjustedSchedule = computed(() =>
 )
 
 onMounted(async () => {
+  loadSitting()
   // load forecast and plants together
   fetchForecast()
   fetchTemperature()
@@ -82,17 +118,54 @@ onMounted(async () => {
       :error="weatherError"
     />
 
-    <div v-if="loading" class="text-center my-3">
+    <ScheduleViewToggle v-model="view" :badge="sittingTodo" />
+
+    <div v-if="busy" class="text-center my-3">
       <div class="spinner-border" role="status"><span class="visually-hidden">Loading…</span></div>
     </div>
-    <div v-else-if="errorMessage" class="alert alert-danger">
-      Could not load your schedule: {{ errorMessage }}
+    <div v-else-if="failure" class="alert alert-danger">
+      Could not load {{ view === 'sitting' ? 'the plants you are sitting' : 'your schedule' }}: {{ failure }}
     </div>
 
     <template v-else>
-      <ScheduleAlertBanner v-if="isHelper" :items="adjustedSchedule" />
-      <ScheduleCalendar class="d-none d-md-block" :items="adjustedSchedule" />
-      <ScheduleList class="d-md-none" :items="adjustedSchedule" />
+      <ScheduleAlertBanner :key="view" :items="isHelper ? sittingItems : adjustedSchedule" />
+
+      <!-- :key changes with the view, so Vue plays the crossfade -->
+      <Transition name="view-fade" mode="out-in">
+        <div :key="view">
+          <div v-if="view === 'sitting' && !sittingItems.length" class="sitting-empty">
+            <div class="sitting-empty-icon">🤝</div>
+            <strong>You are not sitting any plants yet</strong>
+            <p class="text-muted mb-2">Accept a request and its watering days will appear here.</p>
+            <RouterLink class="btn btn-success btn-sm" to="/find-nearby">Find plants nearby</RouterLink>
+          </div>
+          <template v-else>
+            <ScheduleCalendar class="d-none d-md-block" :items="activeItems" />
+            <ScheduleList class="d-md-none" :items="activeItems" />
+          </template>
+        </div>
+      </Transition>
     </template>
   </div>
 </template>
+
+<style scoped>
+.view-fade-enter-active, .view-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.view-fade-enter-from { opacity: 0; transform: translateY(8px); }
+.view-fade-leave-to   { opacity: 0; transform: translateY(-8px); }
+
+.sitting-empty {
+  max-width: 420px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px dashed rgba(34, 197, 94, 0.5);
+}
+.sitting-empty-icon { font-size: 2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .view-fade-enter-active, .view-fade-leave-active { transition: none; }
+}
+</style>

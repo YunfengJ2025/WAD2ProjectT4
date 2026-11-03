@@ -57,6 +57,7 @@ function stepsSummary(item) {
       {{ request.tokenReward }} tokens per visit
     </p>
     <p class="water-source">Water: {{ waterSourceLabels[request.waterSource] || 'Tap available' }}</p>
+    <p v-if="request.healthCheck" class="water-source">🌿 Plant health check on</p>
     <p v-if="request.note">{{ request.note }}</p>
     <button
       v-if="['open', 'in_progress'].includes(request.status)"
