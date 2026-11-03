@@ -74,8 +74,20 @@ async function createTransaction({
       "Care transactions need a sender, a receiver, a visitId and a requestId",
     );
   }
-  if (type === "PENALTY" && (!senderId || receiverId || !visitId || !requestId)) {
-    throw badRequest("Penalty transactions need a sitter, a visitId and a requestId");
+  if (
+    type === "PENALTY" &&
+    (!Number.isSafeInteger(senderId) ||
+      senderId < 1 ||
+      receiverId != null ||
+      typeof reason !== "string" ||
+      !reason.trim() ||
+      [visitId, requestId].some(
+        (id) => id != null && (!Number.isSafeInteger(id) || id < 1),
+      ))
+  ) {
+    throw badRequest(
+      "Penalty transactions need a positive integer senderId, a reason and no receiver; optional visitId/requestId must be positive integers",
+    );
   }
 
   const token = await TokenTransaction.create({

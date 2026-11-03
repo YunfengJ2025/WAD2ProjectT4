@@ -20,10 +20,12 @@ const handleError = (err, res) => {
 exports.createTokenTran = async (req, res) => {
   try {
     const body = req.body || {};
-    if (!["CARE", "SYSTEM_GIFT"].includes(body.type)) {
+    if (!tokenTransaction.TRANSACTION_TYPES.includes(body.type)) {
       return res
         .status(400)
-        .json({ message: "Transaction type must be CARE or SYSTEM_GIFT" });
+        .json({
+          message: "Transaction type must be CARE, SYSTEM_GIFT or PENALTY",
+        });
     }
     let txn;
     if (body.type === "SYSTEM_GIFT") {
@@ -56,6 +58,36 @@ exports.createTokenTran = async (req, res) => {
         amount: body.amount,
         reason: body.reason.trim(),
       });
+    } else if (body.type === "PENALTY") {
+      // A penalty burns the sender's tokens without crediting another account.
+      // Visit/request IDs are optional context; balanceApplied is never accepted from HTTP.
+      if (
+        !Number.isSafeInteger(body.senderId) ||
+        body.senderId < 1 ||
+        !Number.isSafeInteger(body.amount) ||
+        body.amount < 1 ||
+        typeof body.reason !== "string" ||
+        !body.reason.trim() ||
+        body.receiverId != null ||
+        [body.visitId, body.requestId].some(
+          (id) => id != null && (!Number.isSafeInteger(id) || id < 1),
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "Penalties require a positive integer senderId and amount, a reason, and no receiver; optional visitId/requestId must be positive integers",
+          });
+      }
+      txn = await tokenTransaction.createTransaction({
+        type: "PENALTY",
+        senderId: body.senderId,
+        amount: body.amount,
+        reason: body.reason.trim(),
+        visitId: body.visitId,
+        requestId: body.requestId,
+      });
     } else {
       const CareVisit = require("../models/careVisitModel");
       const CareRequest = require("../models/careRequestModel");
@@ -87,7 +119,7 @@ exports.createTokenTran = async (req, res) => {
         reason: `Reward for care visit #${visit.visitId} for request #${request.requestId}`,
       });
     }
-    // Both types use the same balance application and failed-transaction cleanup.
+    // All types use the same balance application and failed-transaction cleanup.
     try {
       const result = await userModel.applyTransactionToBalances(
         txn.transactionId,

@@ -1,0 +1,800 @@
+/* Shared palette and surfaces are reused by the composer and post detail page. */
+@import './post-shared.css';
+
+/* Create/edit composer and its reusable preview. The composer- prefix keeps
+   these rules away from the feed, post details, and other teammates' forms. */
+/* Share border, muted-text, and green colour variables between the editor and standalone preview. */
+/* Override the older 700px create-page limit to make room for a desktop preview. */
+/* Widen this composer only, leaving the existing community page widths unchanged. */
+.community-create.post-composer {
+  max-width: 1140px;
+}
+
+/* Align the page introduction and draft-status badge, with space before the editor. */
+.post-composer .community-heading {
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Scale the heading with the viewport while keeping long titles compact. */
+.post-composer .community-heading h1 {
+  font-size: clamp(1.8rem, 3.4vw, 2.7rem);
+  letter-spacing: -0.045em;
+}
+
+/* Give draft status, public visibility, and photo count a consistent pill appearance; keep each label together. */
+.composer-status,
+.composer-public,
+.composer-photo-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 30px;
+  background: #eff4e7;
+  color: #577044;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  white-space: nowrap;
+}
+
+/* Provide the reusable white card surface used by the editor and live preview. */
+
+
+/* Allow the editor to shrink inside its Bootstrap column instead of overflowing on narrow screens. */
+.composer-editor {
+  min-width: 0;
+}
+
+/* The author strip explains who is posting and the existing public visibility. */
+/* Place the avatar, author details, and visibility badge in a separated header strip. */
+.composer-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.4rem 1.65rem;
+  border-bottom: 1px solid #edf1e8;
+}
+
+/* Let author details use remaining space and wrap unusually long usernames. */
+.composer-author>div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Emphasize the author name without competing with the page heading. */
+.composer-author strong {
+  font-size: 0.93rem;
+  color: #304c31;
+}
+
+/* Keep audience information smaller and quieter beneath the author name. */
+.composer-author p {
+  font-size: 0.74rem;
+  color: var(--composer-muted);
+  margin: 0.2rem 0 0;
+}
+
+/* Make the public-visibility badge smaller than the page-level status pill. */
+.composer-public {
+  font-size: 0.65rem;
+  padding: 0.3rem 0.6rem;
+}
+
+/* Fieldset keeps native disabled behaviour while section headings group the form. */
+/* Remove the fieldset border while preserving its native grouped disabled behaviour and inner spacing. */
+.composer-fields {
+  border: 0;
+  margin: 0;
+  padding: 0 1.65rem;
+  min-width: 0;
+}
+
+/* Separate story and photo fields with comfortable vertical padding. */
+.composer-section {
+  padding: 1.6rem 0;
+}
+
+/* Add a divider only between neighbouring sections, avoiding a line above the first section. */
+.composer-section+.composer-section {
+  border-top: 1px solid #edf1e8;
+}
+
+/* Arrange the step number, heading, help text, and optional counter in one flexible row. */
+.composer-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-bottom: 1.3rem;
+}
+
+/* Allow the heading and description to wrap without pushing the counter outside the card. */
+.composer-section-heading>div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Center the section number in a fixed-size badge that does not shrink beside longer headings. */
+.composer-step {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: #f0f4e9;
+  border-radius: 9px;
+  color: #6e8757;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Use compact green headings to establish the form-section hierarchy. */
+.composer-section h2 {
+  font-size: 1.08rem;
+  margin: 0.15rem 0 0.3rem;
+  color: #344f32;
+}
+
+/* Style section descriptions as readable secondary guidance with no extra paragraph margin. */
+.composer-section-heading p {
+  font-size: 0.78rem;
+  color: var(--composer-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Distinguish optional fields with a small, low-emphasis label beside the section title. */
+.composer-optional {
+  font-size: 0.65rem;
+  color: var(--composer-muted);
+  font-weight: 400;
+  margin-left: 0.3rem;
+}
+
+/* Place the title label and character count on opposite ends of the same text baseline. */
+.composer-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Style ordinary field labels without overriding the upload label that behaves like a button. */
+.composer-fields label:not(.composer-upload-button) {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+  color: #3d533a;
+}
+
+/* Give the required-field marker a softer green accent. */
+.composer-fields label>span {
+  color: #71875b;
+}
+
+/* Use equal-width digits so the character counter does not shift as its value changes. */
+.composer-counter {
+  color: var(--composer-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Give writing fields a quiet paper surface and an explicit keyboard focus ring. */
+/* Customize Bootstrap inputs inside this composer with a paper-like background and comfortable writing space. */
+.post-composer .form-control {
+  border: 1px solid #dce5d7;
+  border-radius: 11px;
+  padding: 0.85rem 0.95rem;
+  background: #fcfdf9;
+  color: #30452e;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+/* Keep example text visually distinct from the text the user has entered. */
+.post-composer .form-control::placeholder {
+  color: #8d9a86;
+}
+
+/* Highlight the active writing field with a green border and a soft outer focus ring. */
+.post-composer .form-control:focus {
+  border-color: #88a26e;
+  box-shadow: 0 0 0 3px #8ca36d20;
+  background: white;
+}
+
+/* Provide initial writing room and allow vertical resizing without breaking the column width. */
+.post-composer textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+/* Place small, readable writing guidance directly below its field. */
+.composer-field-help {
+  font-size: 0.73rem;
+  line-height: 1.6;
+  color: var(--composer-muted);
+  margin: 0.6rem 0 0;
+}
+
+/* Keep the native file input focusable. Its label opens the picker, and focus
+   inside the upload area draws an outline around the entire visible control. */
+/* Center upload guidance in a dashed panel; animate colour changes to indicate interaction. */
+.composer-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 1.6rem 1rem;
+  border: 1.5px dashed #becdab;
+  border-radius: 15px;
+  background: #f8faf3;
+  text-align: center;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+/* Reinforce the upload area on hover with a stronger green border and background. */
+.composer-upload:hover {
+  background: #f1f6e8;
+  border-color: #779361;
+}
+
+/* Outline the visible upload panel when its visually hidden file input receives keyboard focus. */
+.composer-upload:focus-within {
+  outline: 2px solid #6c8c54;
+  outline-offset: 3px;
+}
+
+/* Center the photo icon on a softly coloured square above the upload instructions. */
+.composer-upload-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #eaf1df;
+  color: #6b8751;
+  margin-bottom: 0.85rem;
+}
+
+/* Draw the upload illustration using rounded strokes that inherit the icon colour. */
+.composer-upload-icon svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Emphasize the main upload prompt above the file requirements. */
+.composer-upload strong {
+  color: #49613e;
+  font-size: 0.87rem;
+}
+
+/* Keep file-type, count, and size requirements compact, with space before the picker button. */
+.composer-upload p {
+  color: var(--composer-muted);
+  font-size: 0.69rem;
+  line-height: 1.6;
+  margin: 0.5rem 0 1rem;
+}
+
+/* Make the file-input label look clickable while retaining native label-to-input activation. */
+.composer-upload-button {
+  padding: 0.6rem 1rem;
+  border: 1px solid #c6d3b7;
+  border-radius: 9px;
+  background: white;
+  font-size: 0.78rem;
+  color: #456137;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Visually hide the native picker without removing it from keyboard navigation or assistive technology. */
+.composer-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Visually disable the picker label when the photo limit is reached or the form is saving. */
+.composer-upload-full .composer-upload-button,
+.composer-fields:disabled .composer-upload-button {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Square thumbnails keep mixed aspect ratios aligned. object-fit affects only
+   the preview crop; the original uploaded file is preserved. */
+/* Arrange photos in three equal columns that can shrink without overflowing the editor. */
+.composer-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+/* Create a square, rounded container that clips each thumbnail and its overlays. */
+.post-composer .composer-thumbnail {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eff3e8;
+}
+
+/* Fill the square thumbnail with a cropped preview while leaving the original image file unchanged. */
+.post-composer .composer-thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Position a high-contrast remove button over the top-right corner of each photo. */
+.post-composer .composer-thumbnail button {
+  position: absolute;
+  right: 0.35rem;
+  top: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #ffffffa0;
+  border-radius: 50%;
+  background: #20311fc9;
+  color: white;
+  font-size: 1.35rem;
+}
+
+/* Identify the actual first photo with a readable badge over the lower-left corner. */
+.post-composer .composer-cover-badge {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  background: #fffef0f2;
+  color: #516632;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+/* Actions stay in document flow: the mobile keyboard cannot cover the form
+   with a fixed footer. Buttons grow to comfortable targets on small screens. */
+/* Separate the final sharing actions with a pale footer that follows the card corners. */
+.composer-actions {
+  padding: 1.3rem 1.65rem;
+  border-top: 1px solid #edf1e8;
+  background: #fafcf6;
+  border-radius: 0 0 22px 22px;
+}
+
+/* Stack the readiness message above its audience reminder. */
+.composer-ready {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+/* Emphasize the final readiness question before publishing. */
+.composer-ready strong {
+  font-size: 0.85rem;
+  color: #405a36;
+}
+
+/* Keep the public-audience reminder secondary to the publish action. */
+.composer-ready>span {
+  font-size: 0.73rem;
+  color: var(--composer-muted);
+}
+
+/* Align cancel and publish actions to the right with consistent spacing. */
+.composer-action-buttons {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+/* Keep the primary action, arrow, and loading spinner centered in a touch-friendly green button. */
+.post-composer .composer-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #4e713b;
+  border: 1px solid #4e713b;
+  box-shadow: 0 3px 10px #4e713b25;
+}
+
+/* Lift and darken the publish button only when it is enabled. */
+.post-composer .composer-submit:hover:not(:disabled) {
+  background: #3d5f2e;
+  transform: translateY(-1px);
+}
+
+/* Present cancellation as a neutral secondary action with the same minimum height as publish. */
+.post-composer .composer-cancel {
+  min-height: 44px;
+  border: 1px solid #d6dfce;
+  background: white;
+  border-radius: 10px;
+  color: #6b7e5e;
+}
+
+/* Align form-level error messages with the editor padding. */
+.post-composer .community-error {
+  margin: 0.8rem 1.65rem;
+}
+
+/* Avoid double horizontal padding for upload errors already inside the fieldset. */
+.composer-fields .community-error {
+  margin: 0.8rem 0;
+}
+
+/* Align the loading spinner and status text while an existing post is fetched. */
+.composer-loading {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  color: var(--composer-muted);
+}
+
+/* The desktop preview follows scrolling until its containing column ends.
+   It becomes an explicit disclosure below Bootstrap's lg breakpoint. */
+/* Keep the preview visible during desktop scrolling, constrained by its Bootstrap row. */
+.composer-sidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* Align the preview heading and mobile disclosure button with a small gap. */
+.composer-preview-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.3rem 0 1.2rem;
+}
+
+/* Use a compact introductory label above the preview heading. */
+.composer-preview-heading .community-eyebrow {
+  font-size: 0.61rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Style the preview heading below the page title in the visual hierarchy. */
+.composer-preview-heading h2 {
+  font-size: 1.1rem;
+  color: #4a623c;
+  margin: 0;
+}
+
+/* Provide an easy-to-tap mobile preview control whose label stays on one line. */
+.composer-preview-toggle {
+  border: 1px solid #cad8bc;
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+  background: white;
+  color: #4a6638;
+  font: inherit;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* Clip the preview image to the shared card corners. */
+.composer-draft {
+  overflow: hidden;
+}
+
+/* Reserve a stable 4:3 cover area so the preview does not jump as photos load. */
+.composer-draft-cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #eff4e5;
+}
+
+/* Crop the active photo to fill the preview cover without stretching it. */
+.composer-draft-cover>img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Center an illustration and guidance in the cover when no usable image is available. */
+.composer-draft-placeholder {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  background: radial-gradient(ellipse at 70% 20%, #f9f8e6, transparent 65%), #edf3e3;
+}
+
+/* Render the decorative plant symbol large enough to anchor the empty preview. */
+.composer-draft-placeholder>span {
+  font-size: 5rem;
+  line-height: 1.2;
+  color: #a6b88b;
+}
+
+/* Constrain the placeholder text width for short, readable lines. */
+.composer-draft-placeholder p {
+  font-size: 0.78rem;
+  max-width: 180px;
+  color: #7e906b;
+  line-height: 1.7;
+  margin: 0.6rem 0 0;
+}
+
+/* Overlay compact, readable preview-status and image-count badges on the cover. */
+.composer-preview-tag,
+.composer-draft-photo-count {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  background: #fffffff0;
+  color: #6b8059;
+  font-size: 0.62rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 7px;
+}
+
+/* Move the photo counter to the right so it does not overlap the preview-status badge. */
+.composer-draft-photo-count {
+  left: auto;
+  right: 0.8rem;
+}
+
+/* Inset the author details, title, text, and image controls from the preview border. */
+.composer-draft-body {
+  padding: 1.3rem;
+}
+
+/* Align the preview author avatar and identity with room before the post title. */
+.composer-draft-author {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+/* Stack author name and audience information, allowing long names to wrap. */
+.composer-draft-author>div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Emphasize the author name within the preview metadata. */
+.composer-draft-author strong {
+  font-size: 0.8rem;
+  color: #3f5936;
+}
+
+/* Style the preview audience line as secondary metadata. */
+.composer-draft-author span {
+  font-size: 0.66rem;
+  color: var(--composer-muted);
+}
+
+/* Display the draft title prominently and wrap long words or URLs within the card. */
+.composer-draft h3 {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: #3a5431;
+  margin-bottom: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+/* Preserve typed newlines and wrap long content so the live preview follows the draft text safely. */
+.composer-draft-text {
+  color: #596a51;
+  font-size: 0.83rem;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-bottom: 0;
+}
+
+/* Use muted text to distinguish placeholder copy from the actual draft. */
+.composer-draft-hint {
+  color: #8c9982;
+}
+
+/* Wrap photo-navigation thumbnails onto additional rows when the preview is narrow. */
+.composer-preview-thumbnails {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 1.2rem;
+}
+
+/* Reserve a stable border around each photo selector so selection does not change its size. */
+.composer-preview-thumbnails button {
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+}
+
+/* Highlight the currently selected preview photo using its accessible pressed state. */
+.composer-preview-thumbnails button[aria-pressed='true'] {
+  border-color: #719253;
+}
+
+/* Crop each navigation thumbnail to its small rounded button. */
+.composer-preview-thumbnails img {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+/* Place the optional writing encouragement in a softly tinted panel below the preview. */
+.composer-tip {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+  padding: 1.1rem;
+  border: 1px solid #e0e8d5;
+  border-radius: 15px;
+  background: #f4f8ec;
+}
+
+/* Give the decorative tip icon enough presence without overpowering its message. */
+.composer-tip>span {
+  font-size: 1.8rem;
+  color: #87a068;
+}
+
+/* Emphasize the short encouragement heading. */
+.composer-tip strong {
+  font-size: 0.78rem;
+  color: #5d7447;
+}
+
+/* Keep the supporting encouragement readable and visually secondary. */
+.composer-tip p {
+  font-size: 0.72rem;
+  color: #7a8c68;
+  line-height: 1.7;
+  margin: 0.35rem 0 0;
+}
+
+/* Motion communicates adding/removing photos without delaying form actions. */
+/* Animate opacity and scale while Vue adds or removes keyed photo thumbnails. */
+.composer-photo-enter-active,
+.composer-photo-leave-active {
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+/* Start entering photos slightly smaller and transparent; use the same state when they leave. */
+.composer-photo-enter-from,
+.composer-photo-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+/* Provide a visible keyboard focus outline on composer actions and navigation links. */
+.post-composer button:focus-visible,
+.post-composer a:focus-visible {
+  outline: 2px solid #6b8c50;
+  outline-offset: 3px;
+}
+
+/* Tablet/mobile layout: replace the sticky desktop preview with a disclosure below lg. */
+@media (max-width: 991.98px) {
+  /* Remove sticky positioning on tablet and phone layouts where the preview follows the editor. */
+  .composer-sidebar {
+    position: static;
+  }
+
+  /* Hide the optional preview on smaller screens until the user chooses to open it. */
+  .composer-preview-content {
+    display: none;
+  }
+
+  /* Reveal the mobile preview when Vue applies the disclosure state class. */
+  .composer-preview-content.is-open {
+    display: block;
+  }
+}
+
+/* Phone layout: adapt spacing and controls below Bootstrap's sm breakpoint. */
+@media (max-width: 575.98px) {
+  /* Stack the introduction and status badge on phones to avoid squeezing the heading. */
+  .post-composer .community-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  /* Reduce author-strip padding to preserve writing space on phones. */
+  .composer-author {
+    padding: 1.15rem;
+  }
+
+  /* Reduce horizontal field spacing to fit narrow phone viewports. */
+  .composer-fields {
+    padding: 0 1.15rem;
+  }
+
+  /* Match the action-footer padding to the mobile form fields. */
+  .composer-actions {
+    padding: 1.15rem;
+  }
+
+  /* Share the available mobile action-row width equally between cancel and publish. */
+  .composer-action-buttons>.btn {
+    flex: 1;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  /* Hide the redundant visibility pill on phones; the author text still states that the post is public. */
+  .composer-public {
+    display: none;
+  }
+
+  /* Reduce upload-panel padding while retaining readable instructions on phones. */
+  .composer-upload {
+    padding: 1.3rem 0.7rem;
+  }
+
+  /* Tighten thumbnail spacing so all three columns fit small screens. */
+  .composer-photo-grid {
+    gap: 0.45rem;
+  }
+
+  /* Keep photo removal controls compact within smaller mobile thumbnails. */
+  .post-composer .composer-thumbnail button {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Shrink the cover label to fit mobile thumbnails without covering most of the image. */
+  .post-composer .composer-cover-badge {
+    font-size: 0.54rem;
+    padding: 0.2rem 0.3rem;
+  }
+}
+
+/* Accessibility: respect reduced-motion preferences without changing form behaviour. */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Remove transitions when the visitor requests reduced motion. */
+  .composer-photo-enter-active,
+  .composer-photo-leave-active,
+  .composer-upload,
+  .post-composer .composer-submit {
+    transition: none;
+  }
+
+  /* Keep the publish button stationary on hover when reduced motion is enabled. */
+  .post-composer .composer-submit:hover:not(:disabled) {
+    transform: none;
+  }
+}

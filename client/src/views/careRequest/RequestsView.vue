@@ -30,7 +30,8 @@ const tabs = [
           :aria-selected="tab === item.id"
           :aria-current="tab === item.id ? 'page' : undefined"
           :to="{ path: '/requests', query: { tab: item.id } }"
-        >{{ item.label }}</RouterLink>
+          >{{ item.label }}</RouterLink
+        >
       </li>
     </ul>
 
@@ -51,7 +52,9 @@ const tabs = [
 .requests-tabs .nav-link {
   color: #526354;
   font-weight: 600;
-  transition: color 0.18s ease, background-color 0.18s ease;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 .requests-tabs .nav-link:hover {
   color: #245b34;

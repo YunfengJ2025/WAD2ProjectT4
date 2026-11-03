@@ -195,7 +195,10 @@ async function deductAvailableTokens(userId, requestedAmount) {
       (sum, item) => sum + (item.amount || 0),
       0,
     );
-    const deduction = Math.min(requestedAmount, Math.max(0, user.tokenBalance - reserved));
+    const deduction = Math.min(
+      requestedAmount,
+      Math.max(0, user.tokenBalance - reserved),
+    );
     if (!deduction) return 0;
     const result = await User.updateOne(
       {
@@ -333,14 +336,40 @@ async function applyTransactionToBalances(transactionId) {
     throw httpError(404, "Transaction not found or balance already updated");
   }
 
-  const { senderId, receiverId, amount, requestId } = txn;
+  const { senderId, receiverId, amount, requestId, type } = txn;
   let debited = false;
 
   try {
     // Care payments consume this request's reserved funds. Reduce total and frozen
     // tokens together so the owner's available balance stays unchanged by the payout.
     // System gifts have no sender and skip this debit.
-    if (senderId) {
+    if (type === "PENALTY") {
+      // Burn only available tokens. Frozen rewards must remain funded, and the
+      // check and debit must happen atomically to prevent concurrent overspending.
+      const result = await User.updateOne(
+        {
+          userId: senderId,
+          $expr: {
+            $gte: [
+              {
+                $subtract: [
+                  "$tokenBalance",
+                  { $sum: { $ifNull: ["$tokenReservations.amount", []] } },
+                ],
+              },
+              amount,
+            ],
+          },
+        },
+        { $inc: { tokenBalance: -amount } },
+      );
+      if (!result.modifiedCount)
+        throw httpError(
+          400,
+          "Insufficient available tokens for penalty or sender not found",
+        );
+      debited = true;
+    } else if (senderId) {
       const res = await User.updateOne(
         {
           userId: senderId,
@@ -379,12 +408,21 @@ async function applyTransactionToBalances(transactionId) {
     // Undo whatever already happened so balances stay consistent
     if (debited) {
       // Restore both the owner's total and reservation if crediting the sitter failed.
-      await User.updateOne(
-        { userId: senderId, "tokenReservations.requestId": requestId },
-        {
-          $inc: { tokenBalance: amount, "tokenReservations.$.amount": amount },
-        },
-      );
+      if (type === "PENALTY") {
+        await User.updateOne(
+          { userId: senderId },
+          { $inc: { tokenBalance: amount } },
+        );
+      } else
+        await User.updateOne(
+          { userId: senderId, "tokenReservations.requestId": requestId },
+          {
+            $inc: {
+              tokenBalance: amount,
+              "tokenReservations.$.amount": amount,
+            },
+          },
+        );
     }
     await TokenTransaction.updateOne(
       { _id: txn._id },

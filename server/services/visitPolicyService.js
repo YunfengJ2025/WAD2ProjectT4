@@ -1,6 +1,6 @@
 const Notification = require("../models/notificationModel");
 const tokenModel = require("../models/tokenModel");
-const { User, deductAvailableTokens } = require("../models/userModel");
+const userModel = require("../models/userModel");
 
 // Create an in-app notification for a single account.
 function notifyUser(userId, type, message, visitId) {
@@ -9,22 +9,31 @@ function notifyUser(userId, type, message, visitId) {
 
 // Burn up to the visit reward, capped by the sitter's available token balance.
 async function burnSitterPenalty({ sitterId, visitId, requestId, requestedAmount }) {
-  const amount = await deductAvailableTokens(sitterId, requestedAmount);
+  if (!Number.isSafeInteger(requestedAmount) || requestedAmount < 1) return 0;
+  const sitter = await userModel.User.findOne({ userId: sitterId })
+    .select("tokenBalance tokenReservations").lean();
+  if (!sitter) return 0;
+  // Cap the penalty at available funds; the token backend checks this balance
+  // atomically again when applying the debit, protecting frozen care rewards.
+  const amount = Math.min(requestedAmount, Math.max(0, userModel.tokenSummary(sitter).availableTokenBalance));
   if (!amount) return 0;
+  const txn = await tokenModel.createTransaction({
+    visitId,
+    requestId,
+    reason: `Penalty for missed or late-cancelled visit #${visitId}`,
+    type: "PENALTY",
+    senderId: sitterId,
+    receiverId: null,
+    amount,
+  });
   try {
-    await tokenModel.createTransaction({
-      visitId,
-      requestId,
-      reason: `Penalty for missed or late-cancelled visit #${visitId}`,
-      type: "PENALTY",
-      senderId: sitterId,
-      receiverId: null,
-      amount,
-      balanceApplied: true,
-    });
+    // Use the same transaction-to-balance path as POST /token/. Do not debit
+    // separately or mark the transaction applied before this call succeeds.
+    await userModel.applyTransactionToBalances(txn.transactionId);
     return amount;
   } catch (err) {
-    await User.updateOne({ userId: sitterId }, { $inc: { tokenBalance: amount } });
+    // Balance application handles rollback; remove the unpaid ledger record too.
+    await tokenModel.TokenTransaction.deleteOne({ _id: txn._id });
     throw err;
   }
 }

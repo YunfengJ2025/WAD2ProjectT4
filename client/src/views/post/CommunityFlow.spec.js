@@ -90,6 +90,41 @@ it('offers retry after a feed error and then shows the empty state', async () =>
   expect(wrapper.text()).toContain('Every community starts with a hello')
 })
 
+it('updates the live preview without saving and toggles its mobile disclosure', async () => {
+  vi.stubGlobal('fetch', vi.fn())
+  await open(CreatePostView, '/community/new')
+  await wrapper.get('#post-title').setValue('A little fern update')
+  await wrapper.get('#post-content').setValue('One new leaf today!')
+  expect(wrapper.get('.composer-draft h3').text()).toBe('A little fern update')
+  expect(wrapper.get('.composer-draft-text').text()).toBe('One new leaf today!')
+  expect(wrapper.get('#title-count').text()).toBe('20/150')
+  await wrapper.get('.composer-preview-toggle').trigger('click')
+  expect(wrapper.get('.composer-preview-toggle').attributes('aria-expanded')).toBe('true')
+  expect(wrapper.get('#draft-preview').classes()).toContain('is-open')
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('keeps the cover on retained images before moving it to a new upload', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => reply({
+    postId: 5, creatorId: 3, title: 'Original', content: 'Hello',
+    postImages: ['https://example.com/cover.jpg'],
+  })))
+  await open(CreatePostView, '/community/5/edit')
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:new-photo')
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  Object.defineProperty(wrapper.get('#post-photos').element, 'files', {
+    value: [new File(['photo'], 'new.jpg', { type: 'image/jpeg' })], configurable: true,
+  })
+  await wrapper.get('#post-photos').trigger('change')
+  expect(wrapper.findAll('.composer-cover-badge')).toHaveLength(1)
+  expect(wrapper.get('.composer-cover-badge').element.parentElement.querySelector('img').src).toBe('https://example.com/cover.jpg')
+  expect(wrapper.get('.composer-draft-cover img').attributes('src')).toBe('https://example.com/cover.jpg')
+  await wrapper.get('[aria-label="Remove current photo 1"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.get('.composer-cover-badge').element.parentElement.querySelector('img').src).toBe('blob:new-photo')
+  expect(wrapper.get('.composer-draft-cover img').attributes('src')).toBe('blob:new-photo')
+})
+
 it('publishes authenticated text and image then returns to the feed', async () => {
   vi.stubGlobal(
     'fetch',
