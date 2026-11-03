@@ -7,6 +7,9 @@ router.use(requireUser);
 router.get("/", controller.myVisits);
 router.get("/available", controller.availableVisits);
 router.get("/assignments", controller.myAssignments);
+// Register named routes above the visit ID route.
+router.get("/:visitId", controller.getVisitDetail);
+router.post("/:visitId/review", controller.reviewVisit);
 // Keep replacement visit requests with the other visit operations.
 router.post("/make-up/:visitId", controller.makeUpRequest);
 router.post("/:visitId/accept", controller.acceptVisit);

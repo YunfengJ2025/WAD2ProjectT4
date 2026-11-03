@@ -49,7 +49,8 @@ async function enrichVisits(visits) {
       .select("plantId plantName photoUrl plantLocation")
       .lean(),
     User.find({ userId: { $in: ownerIds } })
-      .select("userId userName block postalCode")
+      // Include the public profile photo for the shared UserAvatar component.
+      .select("userId userName photoUrl block postalCode")
       .lean(),
   ]);
   const requestById = new Map(requests.map((request) => [request.requestId, request]));
@@ -405,3 +406,114 @@ exports.myAssignments = async (req, res) => {
 };
 
 exports.enrichVisits = enrichVisits;
+
+// Owners and assigned sitters can inspect their visits. Other users can only
+// inspect open opportunities belonging to an active request.
+exports.getVisitDetail = async (req, res) => {
+  try {
+    const visitId = Number(req.params.visitId);
+    if (!Number.isSafeInteger(visitId) || visitId < 1) {
+      throw fail(404, "Visit not found");
+    }
+    const visit = await CareVisit.findOne({ visitId }).lean();
+    if (!visit) {
+      throw fail(404, "Visit not found");
+    }
+    const [detail] = await enrichVisits([visit]);
+    const participant = detail.request?.ownerId === req.userId || visit.sitterId === req.userId;
+    const available = visit.status === "open" &&
+      ["open", "in_progress"].includes(detail.request?.status);
+    if (!participant && !available) {
+      throw fail(404, "Visit not found");
+    }
+    // Only public profile fields are needed to identify the sitter.
+    detail.sitter = await User.findOne({ userId: visit.sitterId })
+      .select("userId userName photoUrl -_id")
+      .lean();
+    const { Review } = require("../models/reviewModel");
+    // Calculate both participants' ratings from all received care reviews,
+    // matching the public profile's rating range and published-review filter.
+    const participants = [detail.owner, detail.sitter].filter(Boolean);
+    const ratingSummaries = await Review.aggregate([
+      {
+        $match: {
+          receiverId: { $in: participants.map((user) => user.userId) },
+          type: "VISIT",
+          reviewId: { $ne: null },
+          rating: { $gte: 1, $lte: 5 },
+        },
+      },
+      {
+        $group: {
+          _id: "$receiverId",
+          averageRating: { $avg: "$rating" },
+          reviewCount: { $sum: 1 },
+        },
+      },
+    ]);
+    for (const user of participants) {
+      const summary = ratingSummaries.find((item) => item._id === user.userId);
+      user.averageRating = summary?.averageRating ?? null;
+      user.reviewCount = summary?.reviewCount ?? 0;
+    }
+    const reviews = await Review.find({ visitId, type: "VISIT", reviewId: { $ne: null } })
+      .select("reviewId creatorId receiverId rating comment createdAt -_id")
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({ visit: detail, reviews });
+  } catch (err) {
+    handleError(err, res);
+  }
+};
+
+// Use the signed-in identity and derive the receiver on the server. A care
+// review uses the existing VISIT type so it also appears under My reviews.
+exports.reviewVisit = async (req, res) => {
+  try {
+    const visitId = Number(req.params.visitId);
+    if (!Number.isSafeInteger(visitId) || visitId < 1) {
+      throw fail(404, "Visit not found");
+    }
+    const visit = await CareVisit.findOne({ visitId, status: "completed" }).lean();
+    if (!visit) {
+      throw fail(404, "Completed visit not found");
+    }
+    const request = await CareRequest.findOne({ requestId: visit.requestId }).lean();
+    let receiverId;
+    if (request && request.ownerId === req.userId) {
+      receiverId = visit.sitterId;
+    } else if (request && visit.sitterId === req.userId) {
+      receiverId = request.ownerId;
+    } else {
+      throw fail(403, "Only the owner and sitter can review this visit");
+    }
+    if (!receiverId) {
+      throw fail(409, "The other participant is unavailable");
+    }
+    const { rating, comment } = req.body;
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw fail(400, "Choose a rating between 1 and 5");
+    }
+    if (typeof comment !== "string" || !comment.trim() || comment.trim().length > 1000) {
+      throw fail(400, "Write a review between 1 and 1000 characters");
+    }
+    const reviewModel = require("../models/reviewModel");
+    if (await reviewModel.Review.exists({ visitId, creatorId: req.userId })) {
+      throw fail(409, "You have already reviewed this visit");
+    }
+    const review = await reviewModel.createReview({
+      type: "VISIT",
+      visitId,
+      creatorId: req.userId,
+      receiverId,
+      rating,
+      comment: comment.trim(),
+    });
+    res.status(201).json({ review });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "You have already reviewed this visit" });
+    }
+    handleError(err, res);
+  }
+};

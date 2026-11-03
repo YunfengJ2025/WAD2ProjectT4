@@ -1,4 +1,5 @@
 <script setup>
+import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
@@ -467,7 +468,8 @@ async function save() {
           </div>
         </section>
       </div>
-    </main>
+      <ScrollToTop />
+  </main>
 </template>
 
 <style scoped>

@@ -1,0 +1,17 @@
+/* Shared create/edit/detail palette. Defining tokens on each root also lets the
+   draft preview render independently inside future pages. */
+.post-composer,
+.composer-draft,
+.post-detail {
+  --composer-border: #dce5d7;
+  --composer-muted: #70816e;
+  --composer-green: #335d36;
+}
+
+/* Reuse one card surface instead of duplicating borders, corners, and shadows. */
+.composer-surface {
+  background: white;
+  border: 1px solid var(--composer-border);
+  border-radius: 22px;
+  box-shadow: 0 5px 24px #334b2410;
+}

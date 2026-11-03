@@ -63,8 +63,10 @@ async function acceptVisit(visit) {
   }
 }
 
-// Confirm and release a visit, then report any late-cancellation penalty.
+// The opt-out backend creates and applies any PENALTY transaction itself.
+// Do not also POST /token/ here: that would charge the same cancellation twice.
 async function optOutVisit(visit) {
+  if (optingOutVisitId.value) return
   const confirmed = window.confirm(
     'Opt out of this visit? After the 24-hour cutoff, a penalty up to the visit reward will be deducted from your available tokens.',
   )
@@ -73,7 +75,9 @@ async function optOutVisit(visit) {
   error.value = ''
   message.value = ''
   try {
-    const result = await auth.authorizedRequest(`/care-visits/${visit.visitId}/opt-out`, { method: 'POST' })
+    const result = await auth.authorizedRequest(`/care-visits/${visit.visitId}/opt-out`, {
+      method: 'POST',
+    })
     message.value = result.penaltyApplies
       ? result.penalty
         ? `You opted out. ${result.penalty} token${result.penalty === 1 ? '' : 's'} deducted.`
@@ -150,7 +154,9 @@ async function submitVisitProof(details) {
   <main class="visits-page">
     <header class="page-heading">
       <h1>{{ props.section === 'available' ? 'Available sits' : 'My sits' }}</h1>
-      <p v-if="props.section === 'available'">Browse open visits and accept ones that fit your schedule.</p>
+      <p v-if="props.section === 'available'">
+        Browse open visits and accept ones that fit your schedule.
+      </p>
       <p v-else>Complete the visits you accepted and review your visit history.</p>
     </header>
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
@@ -180,7 +186,9 @@ async function submitVisitProof(details) {
     <section v-if="props.section !== 'available'" class="panel">
       <h2>Accepted visits</h2>
       <p v-if="loading" role="status">Loading visits…</p>
-      <p v-else-if="!assignments.length">You have no accepted visits yet. Browse the available visits above.</p>
+      <p v-else-if="!assignments.length">
+        You have no accepted visits yet. Browse the available visits above.
+      </p>
       <AssignedVisitCard
         v-for="visit in assignments"
         :key="visit.visitId"
@@ -209,14 +217,54 @@ async function submitVisitProof(details) {
 </template>
 
 <style scoped>
-.visits-page { max-width: 900px; margin: 0 auto; padding: 0 1rem 3rem; }
-.page-heading { margin-bottom: 1.25rem; }
-h1 { font-weight: 700; }
-.panel { padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--color-border, #dce5dc); border-radius: 12px; background: var(--surface, #fff); }
-.panel h2 { margin-bottom: 1rem; font-size: 1.2rem; }
-.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.panel-heading h2 { margin-bottom: 0.2rem; }
-.panel-heading p { margin: 0; color: #637466; }
-.count { padding: 0.25rem 0.65rem; border-radius: 999px; background: #e7f3e9; color: #28623a; font-size: 0.83rem; font-weight: 700; white-space: nowrap; }
-.available-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem; margin-top: 1rem; }
+.visits-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+.page-heading {
+  margin-bottom: 1.25rem;
+}
+h1 {
+  font-weight: 700;
+}
+.panel {
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border, #dce5dc);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+.panel h2 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.panel-heading h2 {
+  margin-bottom: 0.2rem;
+}
+.panel-heading p {
+  margin: 0;
+  color: #637466;
+}
+.count {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #e7f3e9;
+  color: #28623a;
+  font-size: 0.83rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.available-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
 </style>

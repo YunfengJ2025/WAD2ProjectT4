@@ -7,6 +7,7 @@ import UserAvatar from '@/components/user/UserAvatar.vue'
 import LikeButton from '@/components/post/LikeButton.vue'
 import ReviewCard from '@/components/review/ReviewCard.vue'
 import '@/assets/community.css'
+import '@/assets/post-detail.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -172,11 +173,13 @@ async function shareReview() {
 </script>
 
 <template>
-  <main class="community-detail">
+  <main class="community-detail post-detail">
     <button type="button" class="community-back community-back-button" @click="goBack">
       ← Back
     </button>
-    <p v-if="loading" role="status" class="community-state">Loading post…</p>
+    <p v-if="loading" role="status" class="community-state">
+      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading post…
+    </p>
     <div v-else-if="error" role="alert" class="community-panel community-state">
       <h1>Couldn't load this post</h1>
       <p>{{ error }}</p>
@@ -184,9 +187,10 @@ async function shareReview() {
     </div>
     <article
       v-else-if="post"
-      class="community-detail-layout community-panel"
+      class="community-detail-layout composer-surface"
       :class="{ 'community-no-images': !images.length }"
     >
+      <!-- Keep the existing swipe, arrow, and keyboard gallery; styling only changes its frame. -->
       <section
         v-if="images.length"
         class="community-gallery"
@@ -259,25 +263,39 @@ async function shareReview() {
           </button>
         </div>
       </section>
-      <section class="community-detail-discussion">
-        <header class="community-author">
-          <RouterLink
-            :to="`/profile/${post.creatorId}`"
-            :aria-label="`View ${author(post).userName}'s profile`"
-            ><UserAvatar :user="author(post)" :size="44"
-          /></RouterLink>
-          <div>
-            <RouterLink :to="`/profile/${post.creatorId}`" class="community-author-name">{{
-              author(post).userName
-            }}</RouterLink>
-            <p class="community-muted">Community member</p>
+      <!-- The right column scrolls independently on desktop; mobile keeps normal page scrolling. -->
+      <div class="post-detail-sidebar">
+        <!-- Keep the story and its conversation in the same column. -->
+        <section class="community-detail-discussion">
+          <p class="post-detail-eyebrow">FROM THE COMMUNITY</p>
+          <header class="community-author">
+            <RouterLink
+              :to="`/profile/${post.creatorId}`"
+              :aria-label="`View ${author(post).userName}'s profile`"
+              ><UserAvatar :user="author(post)" :size="44"
+            /></RouterLink>
+            <div>
+              <RouterLink :to="`/profile/${post.creatorId}`" class="community-author-name">{{
+                author(post).userName
+              }}</RouterLink>
+              <p class="community-muted">Community member · Public</p>
+            </div>
+          </header>
+          <h1 class="community-detail-title">{{ post.title }}</h1>
+          <p class="community-content">{{ post.content }}</p>
+          <div class="post-detail-reactions">
+            <LikeButton :post="post" /><a
+              href="#post-reviews-heading"
+              class="post-detail-comment-link"
+              >{{ comments.length }} {{ comments.length === 1 ? 'review' : 'reviews' }}
+              <span aria-hidden="true">↘</span></a
+            >
           </div>
-        </header>
-        <h1 class="community-detail-title">{{ post.title }}</h1>
-        <p class="community-content">{{ post.content }}</p>
-        <LikeButton :post="post" />
+        </section>
+        <!-- Reviews follow the story on the right, or below the photo on mobile. -->
         <section class="community-review-thread" aria-labelledby="post-reviews-heading">
-          <h2 id="post-reviews-heading">
+          <p class="post-detail-eyebrow">GROW THE CONVERSATION</p>
+          <h2 id="post-reviews-heading" tabindex="-1">
             Reviews <span class="community-muted">({{ comments.length }})</span>
           </h2>
           <div v-if="reviewError" role="alert" class="community-error">
@@ -285,7 +303,7 @@ async function shareReview() {
             <button type="button" class="btn" @click="loadReviews">Reload reviews</button>
           </div>
           <p v-if="!reviews.length && !reviewError" class="community-muted">
-            No reviews yet. Start the conversation!
+            Every conversation starts with a hello. Share a thought or a little advice.
           </p>
           <ReviewCard
             v-for="review in comments"
@@ -297,33 +315,42 @@ async function shareReview() {
             :busy="replying !== null"
             @reply="shareReply(review, $event)"
           />
+          <form
+            v-if="auth.isAuthenticated"
+            class="community-review-form"
+            @submit.prevent="shareReview"
+          >
+            <div class="post-detail-compose-heading">
+              <UserAvatar :user="auth.user" :size="34" /><label for="new-review"
+                >Add a review</label
+              >
+            </div>
+            <textarea
+              id="new-review"
+              v-model="comment"
+              rows="3"
+              maxlength="1000"
+              required
+              placeholder="Share a thought or a little advice…"
+              :disabled="saving"
+            ></textarea>
+            <button class="btn btn-primary" type="submit" :disabled="saving || !comment.trim()">
+              <span
+                v-if="saving"
+                class="spinner-border spinner-border-sm me-2"
+                aria-hidden="true"
+              ></span
+              >{{ saving ? 'Sharing…' : 'Share review' }}
+            </button>
+          </form>
+          <RouterLink
+            v-else
+            :to="{ name: 'sign-in', query: { redirect: route.fullPath } }"
+            class="btn community-signin"
+            >Sign in to leave a review</RouterLink
+          >
         </section>
-        <form
-          v-if="auth.isAuthenticated"
-          class="community-review-form"
-          @submit.prevent="shareReview"
-        >
-          <label for="new-review">Add a review</label>
-          <textarea
-            id="new-review"
-            v-model="comment"
-            rows="3"
-            maxlength="1000"
-            required
-            placeholder="Share a thought or a little advice…"
-            :disabled="saving"
-          ></textarea>
-          <button class="btn btn-primary" type="submit" :disabled="saving || !comment.trim()">
-            {{ saving ? 'Sharing…' : 'Share review' }}
-          </button>
-        </form>
-        <RouterLink
-          v-else
-          :to="{ name: 'sign-in', query: { redirect: route.fullPath } }"
-          class="btn community-signin"
-          >Sign in to leave a review</RouterLink
-        >
-      </section>
+      </div>
     </article>
   </main>
 </template>

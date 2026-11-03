@@ -1,4 +1,5 @@
 <script setup>
+import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublicProfileStore } from '@/stores/publicProfile'
@@ -120,6 +121,7 @@ const average = computed(() =>
         </div>
       </div>
     </template>
+    <ScrollToTop />
   </main>
 </template>
 

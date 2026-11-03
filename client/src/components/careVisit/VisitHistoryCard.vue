@@ -24,6 +24,8 @@ function stepsSummary(item) {
 
 <template>
   <article class="history-card">
+    <!-- Completed visit details include photo proof and care reviews. -->
+    <RouterLink :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }">View visit details</RouterLink>
     <div>
       <strong>{{ plants.length }} plant{{ plants.length === 1 ? '' : 's' }} · {{ plants.map((plant) => plant.plantName).join(', ') || 'Plant' }}</strong>
       <p>{{ date(visit.visitDate) }}</p>

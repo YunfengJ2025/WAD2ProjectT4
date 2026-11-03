@@ -73,6 +73,8 @@ function stepsSummary(item) {
     <!-- Offer an owner a manual replacement after a visit expires or is missed. -->
     <ul v-if="request.visits?.length" class="proof-list">
       <li v-for="visit in request.visits" :key="visit.visitId">
+        <!-- Owners can inspect and review each individual visit. -->
+        <RouterLink :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }">View visit details</RouterLink>
         {{ date(visit.visitDate) }} · {{ visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Plant' }} · {{ visit.status }}
         <button
           v-if="['missed', 'expired'].includes(visit.status) && !visit.makeupRequestId"

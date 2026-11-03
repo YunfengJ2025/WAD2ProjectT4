@@ -1,1013 +1,1179 @@
 /* Constrain the section width and separate it from surrounding content. */
-.community-page {
-  max-width: 820px;
-  margin: 2.5rem auto;
-}
+.community-page { /* Apply the enclosed declarations to elements matching this selector. */
+  max-width: 820px; /* Limit the width so content stays within the intended layout. */
+  margin: 2.5rem auto; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Style page headings and supporting text using the app palette. */
 
-.community-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
+.community-heading { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+  justify-content: space-between; /* Align or distribute children along the layout main axis. */
+  gap: 1rem; /* Set spacing between flex or grid children. */
+  margin-bottom: 2rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Style page headings and supporting text using the app palette. */
 
-.community-eyebrow {
-  color: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  margin-bottom: 0.65rem;
-}
+.community-eyebrow { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+  font-size: 0.72rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 700; /* Set how bold the text appears. */
+  letter-spacing: 0.16em; /* Adjust spacing between letters. */
+  margin-bottom: 0.65rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Style page headings and supporting text using the app palette. */
 
-.community-heading h1 {
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  margin-bottom: 0.6rem;
-}
+.community-heading h1 { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: clamp(2rem, 5vw, 3rem); /* Set text size; rem units follow the root font size. */
+  font-weight: 700; /* Set how bold the text appears. */
+  letter-spacing: -0.04em; /* Adjust spacing between letters. */
+  margin-bottom: 0.6rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Style page headings and supporting text using the app palette. */
 
-.community-heading h1 span {
-  color: var(--accent);
-}
+.community-heading h1 span { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Use subdued text for secondary information and field guidance. */
 
-.community-muted {
-  color: var(--muted);
-}
+.community-muted { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--muted); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Style page headings and supporting text using the app palette. */
 
-.community-heading p:last-child {
-  margin-bottom: 0;
-}
+.community-heading p:last-child { /* Apply the enclosed declarations to elements matching this selector. */
+  margin-bottom: 0; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Make create, back and sign-in navigation easy to discover. */
 
-.community-plus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: white;
-  font-size: 2rem;
-  line-height: 1;
-  box-shadow: var(--shadow);
-}
+.community-plus { /* Apply the enclosed declarations to elements matching this selector. */
+  display: inline-flex; /* Choose the layout mode for this element and its children. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+  justify-content: center; /* Align or distribute children along the layout main axis. */
+  flex-shrink: 0; /* Control how much this item shrinks when space is limited. */
+  width: 54px; /* Set the width; percentages follow the containing block. */
+  height: 54px; /* Set the height; shared variables keep image and text covers equal. */
+  border-radius: 50%; /* Round the corners; 50% makes a square element circular. */
+  background: var(--accent); /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  font-size: 2rem; /* Set text size; rem units follow the root font size. */
+  line-height: 1; /* Set line spacing; unitless values scale with font size. */
+  box-shadow: var(--shadow); /* Add a shadow without affecting layout dimensions. */
+} /* End this style rule or conditional block. */
 
 /* Highlight the control under the pointer without changing its layout. */
 
-.community-plus:hover {
-  background: var(--accent-hover);
-  color: white;
-}
+.community-plus:hover { /* Apply the enclosed declarations to elements matching this selector. */
+  background: var(--accent-hover); /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Keep keyboard focus visible for accessible navigation. */
 
-.community-page a:focus-visible,
-.community-page button:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 4px;
-}
+.community-page a:focus-visible, /* Include this selector in the shared rule continued below. */
+.community-page button:focus-visible { /* Apply the enclosed declarations to elements matching this selector. */
+  outline: 3px solid var(--accent); /* Draw a focus ring without affecting layout. */
+  outline-offset: 4px; /* Separate the focus ring from the border. */
+} /* End this style rule or conditional block. */
 
 /* Set typography, spacing and alignment for this component element. */
 
-.community-feed-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
+.community-feed-heading { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: baseline; /* Align children on the cross axis of flex or grid. */
+  justify-content: space-between; /* Align or distribute children along the layout main axis. */
+  gap: 1rem; /* Set spacing between flex or grid children. */
+  margin-bottom: 1rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Set typography, spacing and alignment for this component element. */
 
-.community-feed-heading h2 {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
+.community-feed-heading h2 { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1.2rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 600; /* Set how bold the text appears. */
+} /* End this style rule or conditional block. */
 
 /* Set typography, spacing and alignment for this component element. */
 
-.community-feed-heading > span {
-  font-size: 0.8rem;
-}
+.community-feed-heading > span { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Define the panel surface, border and spacing. */
 
-.community-panel {
-  background: var(--surface);
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-}
+.community-panel { /* Apply the enclosed declarations to elements matching this selector. */
+  background: var(--surface); /* Set the surface behind this element. */
+  border: 1px solid var(--color-border); /* Set border thickness, style and color; zero removes it. */
+  border-radius: 18px; /* Round the corners; 50% makes a square element circular. */
+  box-shadow: var(--shadow); /* Add a shadow without affecting layout dimensions. */
+} /* End this style rule or conditional block. */
 
 /* Arrange equal-sized community cards in reading order across rows. */
 
-.community-posts {
-  display: grid;
-  gap: 1.25rem;
-}
+.community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+  display: grid; /* Choose the layout mode for this element and its children. */
+  gap: 1.25rem; /* Set spacing between flex or grid children. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post {
-  padding: clamp(1.2rem, 4vw, 2rem);
-  min-width: 0;
-}
+.community-post { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: clamp(1.2rem, 4vw, 2rem); /* Set spacing between content and its border. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-author {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 1.25rem;
-}
+.community-author { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+  gap: 0.8rem; /* Set spacing between flex or grid children. */
+  margin-bottom: 1.25rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-author-name {
-  color: var(--color-heading);
-  font-weight: 600;
-  padding: 0;
-}
+.community-author-name { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--color-heading); /* Set text color and the currentColor used by icons. */
+  font-weight: 600; /* Set how bold the text appears. */
+  padding: 0; /* Set spacing between content and its border. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-author p {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-}
+.community-author p { /* Apply the enclosed declarations to elements matching this selector. */
+  margin: 0.15rem 0 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  font-size: 0.78rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-content {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.8;
-  margin-bottom: 1.25rem;
-}
+.community-content { /* Apply the enclosed declarations to elements matching this selector. */
+  white-space: pre-wrap; /* Choose whether text wraps and explicit line breaks are preserved. */
+  overflow-wrap: anywhere; /* Allow long words or URLs to wrap instead of widening the card. */
+  line-height: 1.8; /* Set line spacing; unitless values scale with font size. */
+  margin-bottom: 1.25rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post-image {
-  width: 100%;
-  max-height: 540px;
-  object-fit: contain;
-  background: var(--color-background-soft);
-  border-radius: 12px;
-}
+.community-post-image { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  max-height: 540px; /* Limit height; none removes an earlier limit. */
+  object-fit: contain; /* Contain shows the full photo; cover fills the box and may crop edges. */
+  background: var(--color-background-soft); /* Set the surface behind this element. */
+  border-radius: 12px; /* Round the corners; 50% makes a square element circular. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post-footer {
-  border-top: 1px solid var(--color-border);
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
+.community-post-footer { /* Apply the enclosed declarations to elements matching this selector. */
+  border-top: 1px solid var(--color-border); /* Draw a divider along the top edge. */
+  margin-top: 1.25rem; /* Set top outside spacing. */
+  padding-top: 1rem; /* Set top inner spacing. */
+  color: var(--muted); /* Set text color and the currentColor used by icons. */
+  font-size: 0.85rem; /* Set text size; rem units follow the root font size. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+  gap: 0.4rem; /* Set spacing between flex or grid children. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post-footer > span {
-  font-size: 1.35rem;
-  color: var(--accent);
-}
+.community-post-footer > span { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1.35rem; /* Set text size; rem units follow the root font size. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Give loading, empty and error feedback clear spacing and readable emphasis. */
 
-.community-state {
-  text-align: center;
-  padding: 3rem 1.5rem;
-}
+.community-state { /* Apply the enclosed declarations to elements matching this selector. */
+  text-align: center; /* Align text horizontally inside the element. */
+  padding: 3rem 1.5rem; /* Set spacing between content and its border. */
+} /* End this style rule or conditional block. */
 
 /* Give loading, empty and error feedback clear spacing and readable emphasis. */
 
-.community-state h2 {
-  font-size: 1.4rem;
-}
+.community-state h2 { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1.4rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Set typography, spacing and alignment for this component element. */
 
-.community-sprout {
-  display: block;
-  color: var(--accent);
-  font-size: 3rem;
-}
+.community-sprout { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+  font-size: 3rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-create {
-  max-width: 700px;
-}
+.community-create { /* Apply the enclosed declarations to elements matching this selector. */
+  max-width: 700px; /* Limit the width so content stays within the intended layout. */
+} /* End this style rule or conditional block. */
 
 /* Make create, back and sign-in navigation easy to discover. */
 
-.community-back {
-  display: inline-block;
-  margin-bottom: 1.75rem;
-  color: var(--muted);
-}
+.community-back { /* Apply the enclosed declarations to elements matching this selector. */
+  display: inline-block; /* Choose the layout mode for this element and its children. */
+  margin-bottom: 1.75rem; /* Set bottom outside spacing. */
+  color: var(--muted); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form {
-  padding: clamp(1.2rem, 4vw, 2rem);
-}
+.community-form { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: clamp(1.2rem, 4vw, 2rem); /* Set spacing between content and its border. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form fieldset {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
+.community-form fieldset { /* Apply the enclosed declarations to elements matching this selector. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  padding: 0; /* Set spacing between content and its border. */
+  margin: 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form label {
-  display: block;
-  font-weight: 600;
-  margin: 1rem 0 0.5rem;
-}
+.community-form label { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  font-weight: 600; /* Set how bold the text appears. */
+  margin: 1rem 0 0.5rem; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form label span {
-  font-size: 0.8rem;
-  font-weight: 400;
-}
+.community-form label span { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 400; /* Set how bold the text appears. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form textarea,
-.community-form input {
-  display: block;
-  width: 100%;
-  border: 1px solid var(--color-border-hover);
-  border-radius: 10px;
-  padding: 0.85rem 1rem;
-  background: white;
-  color: var(--color-text);
-  font: inherit;
-}
+.community-form textarea, /* Include this selector in the shared rule continued below. */
+.community-form input { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  border: 1px solid var(--color-border-hover); /* Set border thickness, style and color; zero removes it. */
+  border-radius: 10px; /* Round the corners; 50% makes a square element circular. */
+  padding: 0.85rem 1rem; /* Set spacing between content and its border. */
+  background: white; /* Set the surface behind this element. */
+  color: var(--color-text); /* Set text color and the currentColor used by icons. */
+  font: inherit; /* Set or inherit font properties together. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form textarea {
-  resize: vertical;
-  min-height: 160px;
-}
+.community-form textarea { /* Apply the enclosed declarations to elements matching this selector. */
+  resize: vertical; /* Choose which textarea dimensions the user can resize. */
+  min-height: 160px; /* Prevent the element from becoming shorter than this value. */
+} /* End this style rule or conditional block. */
 
 /* Keep keyboard focus visible for accessible navigation. */
 
-.community-form textarea:focus,
-.community-form input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+.community-form textarea:focus, /* Include this selector in the shared rule continued below. */
+.community-form input:focus { /* Apply the enclosed declarations to elements matching this selector. */
+  outline: 2px solid var(--accent); /* Draw a focus ring without affecting layout. */
+  outline-offset: 2px; /* Separate the focus ring from the border. */
+} /* End this style rule or conditional block. */
 
 /* Use subdued text for secondary information and field guidance. */
 
-.community-help {
-  font-size: 0.8rem;
-  margin: 0.5rem 0;
-}
+.community-help { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+  margin: 0.5rem 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-preview {
-  margin-top: 1rem;
-}
+.community-preview { /* Apply the enclosed declarations to elements matching this selector. */
+  margin-top: 1rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-preview img {
-  max-height: 300px;
-  border-radius: 10px;
-  margin: auto;
-}
+.community-preview img { /* Apply the enclosed declarations to elements matching this selector. */
+  max-height: 300px; /* Limit height; none removes an earlier limit. */
+  border-radius: 10px; /* Round the corners; 50% makes a square element circular. */
+  margin: auto; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Lay out post creation and editing fields and actions. */
 
-.community-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  border-top: 1px solid var(--color-border);
-  padding-top: 1.25rem;
-  margin-top: 1.5rem;
-}
+.community-form-actions { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  justify-content: flex-end; /* Align or distribute children along the layout main axis. */
+  gap: 0.75rem; /* Set spacing between flex or grid children. */
+  border-top: 1px solid var(--color-border); /* Draw a divider along the top edge. */
+  padding-top: 1.25rem; /* Set top inner spacing. */
+  margin-top: 1.5rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Give loading, empty and error feedback clear spacing and readable emphasis. */
 
-.community-error {
-  color: var(--danger);
-  background: var(--danger-soft);
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
-}
+.community-error { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--danger); /* Set text color and the currentColor used by icons. */
+  background: var(--danger-soft); /* Set the surface behind this element. */
+  padding: 0.8rem 1rem; /* Set spacing between content and its border. */
+  border-radius: 8px; /* Round the corners; 50% makes a square element circular. */
+  margin-top: 1rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Adjust layout and spacing for this viewport size. */
 
-@media (max-width: 575px) {
+@media (max-width: 575px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
   /* Constrain the section width and separate it from surrounding content. */
-  .community-page {
-    margin-top: 1.5rem;
-  }
+  .community-page { /* Apply the enclosed declarations to elements matching this selector. */
+    margin-top: 1.5rem; /* Set top outside spacing. */
+  } /* End this style rule or conditional block. */
 
   /* Style page headings and supporting text using the app palette. */
 
-  .community-heading {
-    align-items: flex-start;
-  }
+  .community-heading { /* Apply the enclosed declarations to elements matching this selector. */
+    align-items: flex-start; /* Align children on the cross axis of flex or grid. */
+  } /* End this style rule or conditional block. */
 
   /* Make create, back and sign-in navigation easy to discover. */
 
-  .community-plus {
-    width: 46px;
-    height: 46px;
-  }
-}
+  .community-plus { /* Apply the enclosed declarations to elements matching this selector. */
+    width: 46px; /* Set the width; percentages follow the containing block. */
+    height: 46px; /* Set the height; shared variables keep image and text covers equal. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 
 /* Photo-first community cards */
 /* Lay out post creation and editing fields and actions. */
-.community-page:not(.community-create) {
-  max-width: 1160px;
-}
+.community-page:not(.community-create) { /* Apply the enclosed declarations to elements matching this selector. */
+  max-width: 1160px; /* Limit the width so content stays within the intended layout. */
+} /* End this style rule or conditional block. */
 
 /* Arrange equal-sized community cards in reading order across rows. */
 
-.community-posts {
-  display: block;
-  columns: 3;
-  column-gap: 1.4rem;
-}
+.community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  columns: 3; /* Configure columns; later grid rules override the earlier feed layout. */
+  column-gap: 1.4rem; /* Set horizontal spacing between columns. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post {
-  display: inline-block;
-  width: 100%;
-  break-inside: avoid;
-  padding: 0;
-  overflow: hidden;
-  margin-bottom: 1.4rem;
-}
+.community-post { /* Apply the enclosed declarations to elements matching this selector. */
+  display: inline-block; /* Choose the layout mode for this element and its children. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  break-inside: avoid; /* Keep a card from splitting across CSS columns. */
+  padding: 0; /* Set spacing between content and its border. */
+  overflow: hidden; /* Control content beyond the element bounds, including clipping or scrolling. */
+  margin-bottom: 1.4rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post > .community-author {
-  padding: 1rem 1rem 0;
-  margin-bottom: 0.8rem;
-}
+.community-post > .community-author { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: 1rem 1rem 0; /* Set spacing between content and its border. */
+  margin-bottom: 0.8rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Style the community card cover and its navigation link. */
 
-.community-card-link {
-  display: block;
-  padding: 0;
-  color: inherit;
-}
+.community-card-link { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  padding: 0; /* Set spacing between content and its border. */
+  color: inherit; /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Highlight the control under the pointer without changing its layout. */
 
-.community-card-link:hover {
-  background: transparent;
-  color: inherit;
-}
+.community-card-link:hover { /* Apply the enclosed declarations to elements matching this selector. */
+  background: transparent; /* Set the surface behind this element. */
+  color: inherit; /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Style the community card cover and its navigation link. */
 
-.community-cover {
-  position: relative;
-}
+.community-cover { /* Apply the enclosed declarations to elements matching this selector. */
+  position: relative; /* Choose how this element is positioned relative to its container. */
+} /* End this style rule or conditional block. */
 
 /* Style the community card cover and its navigation link. */
 
-.community-cover .community-post-image {
-  max-height: none;
-  height: auto;
-  border-radius: 0;
-}
+.community-cover .community-post-image { /* Apply the enclosed declarations to elements matching this selector. */
+  max-height: none; /* Limit height; none removes an earlier limit. */
+  height: auto; /* Set the height; shared variables keep image and text covers equal. */
+  border-radius: 0; /* Round the corners; 50% makes a square element circular. */
+} /* End this style rule or conditional block. */
 
 /* Style the community card cover and its navigation link. */
 
-.community-card-link .community-content {
-  padding: 1rem 1rem 0;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+.community-card-link .community-content { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: 1rem 1rem 0; /* Set spacing between content and its border. */
+  margin: 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  display: -webkit-box; /* Choose the layout mode for this element and its children. */
+  -webkit-line-clamp: 3; /* Limit displayed text to this many lines with the box layout. */
+  -webkit-box-orient: vertical; /* Use vertical box orientation for multiline text truncation. */
+  overflow: hidden; /* Control content beyond the element bounds, including clipping or scrolling. */
+} /* End this style rule or conditional block. */
 
 /* Style the community card cover and its navigation link. */
 
-.community-text-cover {
-  padding: 2rem 1.25rem;
-  margin: 0;
-  background: var(--accent-soft);
-  color: var(--color-heading);
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  max-height: 300px;
-  overflow: hidden;
-}
+.community-text-cover { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: 2rem 1.25rem; /* Set spacing between content and its border. */
+  margin: 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  background: var(--accent-soft); /* Set the surface behind this element. */
+  color: var(--color-heading); /* Set text color and the currentColor used by icons. */
+  font-family: var(--font-heading); /* Choose the text font, using the theme variable where supplied. */
+  font-size: 1.5rem; /* Set text size; rem units follow the root font size. */
+  overflow-wrap: anywhere; /* Allow long words or URLs to wrap instead of widening the card. */
+  white-space: pre-wrap; /* Choose whether text wraps and explicit line breaks are preserved. */
+  max-height: 300px; /* Limit height; none removes an earlier limit. */
+  overflow: hidden; /* Control content beyond the element bounds, including clipping or scrolling. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-count {
-  position: absolute;
-  right: 0.6rem;
-  top: 0.6rem;
-  color: white;
-  background: #0009;
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-}
+.community-photo-count { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  right: 0.6rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  top: 0.6rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  background: #0009; /* Set the surface behind this element. */
+  padding: 0.2rem 0.6rem; /* Set spacing between content and its border. */
+  border-radius: 20px; /* Round the corners; 50% makes a square element circular. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Present post identity, body text and image content. */
 
-.community-post-footer {
-  margin: 1rem;
-}
+.community-post-footer { /* Apply the enclosed declarations to elements matching this selector. */
+  margin: 1rem; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-upload {
-  background: var(--color-background-soft);
-  border: 1px dashed var(--color-border-hover);
-  padding: 1rem;
-  border-radius: 12px;
-}
+.community-upload { /* Apply the enclosed declarations to elements matching this selector. */
+  background: var(--color-background-soft); /* Set the surface behind this element. */
+  border: 1px dashed var(--color-border-hover); /* Set border thickness, style and color; zero removes it. */
+  padding: 1rem; /* Set spacing between content and its border. */
+  border-radius: 12px; /* Round the corners; 50% makes a square element circular. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-upload > span {
-  font-size: 1.8rem;
-  color: var(--accent);
-}
+.community-upload > span { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1.8rem; /* Set text size; rem units follow the root font size. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-form .community-upload input {
-  background: transparent;
-  border: 0;
-  padding: 0.5rem 0;
-}
+.community-form .community-upload input { /* Apply the enclosed declarations to elements matching this selector. */
+  background: transparent; /* Set the surface behind this element. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  padding: 0.5rem 0; /* Set spacing between content and its border. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-previews {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin-top: 1rem;
-}
+.community-photo-previews { /* Apply the enclosed declarations to elements matching this selector. */
+  display: grid; /* Choose the layout mode for this element and its children. */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  gap: 0.7rem; /* Set spacing between flex or grid children. */
+  margin-top: 1rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-preview {
-  position: relative;
-}
+.community-photo-preview { /* Apply the enclosed declarations to elements matching this selector. */
+  position: relative; /* Choose how this element is positioned relative to its container. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-preview img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 10px;
-}
+.community-photo-preview img { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  aspect-ratio: 1; /* Maintain this width-to-height ratio as the element resizes. */
+  object-fit: cover; /* Contain shows the full photo; cover fills the box and may crop edges. */
+  border-radius: 10px; /* Round the corners; 50% makes a square element circular. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-preview button {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  border: 0;
-  background: #000a;
-  color: white;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-}
+.community-photo-preview button { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  top: 0.3rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  right: 0.3rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  background: #000a; /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  border-radius: 50%; /* Round the corners; 50% makes a square element circular. */
+  width: 30px; /* Set the width; percentages follow the containing block. */
+  height: 30px; /* Set the height; shared variables keep image and text covers equal. */
+} /* End this style rule or conditional block. */
 
 /* Arrange photo uploads, previews and image-selection controls. */
 
-.community-photo-preview > span {
-  position: absolute;
-  bottom: 0.4rem;
-  left: 0.4rem;
-  border-radius: 8px;
-  padding: 0.15rem 0.4rem;
-  background: #000a;
-  color: white;
-  font-size: 0.7rem;
-}
+.community-photo-preview > span { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  bottom: 0.4rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  left: 0.4rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  border-radius: 8px; /* Round the corners; 50% makes a square element circular. */
+  padding: 0.15rem 0.4rem; /* Set spacing between content and its border. */
+  background: #000a; /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  font-size: 0.7rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Arrange the post gallery and discussion, including text-only posts. */
 
-.community-detail {
-  max-width: 1200px;
-  margin: 1.5rem auto;
-}
+.community-detail { /* Apply the enclosed declarations to elements matching this selector. */
+  max-width: 1200px; /* Limit the width so content stays within the intended layout. */
+  margin: 1.5rem auto; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Arrange the post gallery and discussion, including text-only posts. */
 
-.community-detail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
-  overflow: hidden;
-  align-items: start;
-}
+.community-detail-layout { /* Apply the enclosed declarations to elements matching this selector. */
+  display: grid; /* Choose the layout mode for this element and its children. */
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  overflow: hidden; /* Control content beyond the element bounds, including clipping or scrolling. */
+  align-items: start; /* Align children on the cross axis of flex or grid. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery {
-  background: #eff2ec;
-  position: sticky;
-  top: 1rem;
-  min-width: 0;
-}
+.community-gallery { /* Apply the enclosed declarations to elements matching this selector. */
+  background: #eff2ec; /* Set the surface behind this element. */
+  position: sticky; /* Choose how this element is positioned relative to its container. */
+  top: 1rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-stage {
-  position: relative;
-  min-height: 480px;
-  height: min(74vh, 800px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+.community-gallery-stage { /* Apply the enclosed declarations to elements matching this selector. */
+  position: relative; /* Choose how this element is positioned relative to its container. */
+  min-height: 480px; /* Prevent the element from becoming shorter than this value. */
+  height: min(74vh, 800px); /* Set the height; shared variables keep image and text covers equal. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  justify-content: center; /* Align or distribute children along the layout main axis. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-stage > img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
+.community-gallery-stage > img { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  height: 100%; /* Set the height; shared variables keep image and text covers equal. */
+  object-fit: contain; /* Contain shows the full photo; cover fills the box and may crop edges. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-count {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: #0009;
-  color: white;
-  padding: 0.3rem 0.7rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-}
+.community-gallery-count { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  top: 1rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  right: 1rem; /* Position this edge relative to its containing block; percentages use that block size. */
+  background: #0009; /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  padding: 0.3rem 0.7rem; /* Set spacing between content and its border. */
+  border-radius: 20px; /* Round the corners; 50% makes a square element circular. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  border: 0;
-  background: #0008;
-  color: white;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.8rem;
-  line-height: 1;
-}
+.community-gallery-arrow { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  top: 50%; /* Position this edge relative to its containing block; percentages use that block size. */
+  transform: translateY(-50%); /* Move or scale the rendered element without reflowing nearby content. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  background: #0008; /* Set the surface behind this element. */
+  color: white; /* Set text color and the currentColor used by icons. */
+  border-radius: 50%; /* Round the corners; 50% makes a square element circular. */
+  width: 40px; /* Set the width; percentages follow the containing block. */
+  height: 40px; /* Set the height; shared variables keep image and text covers equal. */
+  font-size: 1.8rem; /* Set text size; rem units follow the root font size. */
+  line-height: 1; /* Set line spacing; unitless values scale with font size. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-arrow.previous {
-  left: 0.8rem;
-}
+.community-gallery-arrow.previous { /* Apply the enclosed declarations to elements matching this selector. */
+  left: 0.8rem; /* Position this edge relative to its containing block; percentages use that block size. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-arrow.next {
-  right: 0.8rem;
-}
+.community-gallery-arrow.next { /* Apply the enclosed declarations to elements matching this selector. */
+  right: 0.8rem; /* Position this edge relative to its containing block; percentages use that block size. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-dots {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.8rem;
-  overflow-x: auto;
-  justify-content: center;
-}
+.community-gallery-dots { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  gap: 0.5rem; /* Set spacing between flex or grid children. */
+  padding: 0.8rem; /* Set spacing between content and its border. */
+  overflow-x: auto; /* Control horizontal overflow separately. */
+  justify-content: center; /* Align or distribute children along the layout main axis. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-dots button {
-  flex-shrink: 0;
-  padding: 3px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-}
+.community-gallery-dots button { /* Apply the enclosed declarations to elements matching this selector. */
+  flex-shrink: 0; /* Control how much this item shrinks when space is limited. */
+  padding: 3px; /* Set spacing between content and its border. */
+  border: 2px solid transparent; /* Set border thickness, style and color; zero removes it. */
+  border-radius: 8px; /* Round the corners; 50% makes a square element circular. */
+  background: transparent; /* Set the surface behind this element. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-dots button[aria-pressed='true'] {
-  border-color: var(--accent);
-}
+.community-gallery-dots button[aria-pressed='true'] { /* Apply the enclosed declarations to elements matching this selector. */
+  border-color: var(--accent); /* Change border color without changing its thickness. */
+} /* End this style rule or conditional block. */
 
 /* Position the large post gallery and its carousel controls. */
 
-.community-gallery-dots img {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-}
+.community-gallery-dots img { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 40px; /* Set the width; percentages follow the containing block. */
+  height: 40px; /* Set the height; shared variables keep image and text covers equal. */
+  object-fit: cover; /* Contain shows the full photo; cover fills the box and may crop edges. */
+  border-radius: 4px; /* Round the corners; 50% makes a square element circular. */
+} /* End this style rule or conditional block. */
 
 /* Arrange the post gallery and discussion, including text-only posts. */
 
-.community-detail-discussion {
-  padding: clamp(1rem, 3vw, 2rem);
-  min-width: 0;
-}
+.community-detail-discussion { /* Apply the enclosed declarations to elements matching this selector. */
+  padding: clamp(1rem, 3vw, 2rem); /* Set spacing between content and its border. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+} /* End this style rule or conditional block. */
 
 /* Arrange the post gallery and discussion, including text-only posts. */
 
-.community-detail-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
+.community-detail-title { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1.25rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 600; /* Set how bold the text appears. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review-thread {
-  border-top: 1px solid var(--color-border);
-  padding-top: 1.25rem;
-  margin-top: 1.25rem;
-}
+.community-review-thread { /* Apply the enclosed declarations to elements matching this selector. */
+  border-top: 1px solid var(--color-border); /* Draw a divider along the top edge. */
+  padding-top: 1.25rem; /* Set top inner spacing. */
+  margin-top: 1.25rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review-thread h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-}
+.community-review-thread h2 { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 1rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 600; /* Set how bold the text appears. */
+  margin-bottom: 1.5rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review {
-  display: flex;
-  gap: 0.6rem;
-  margin-bottom: 1.5rem;
-  font-size: 0.85rem;
-}
+.community-review { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  gap: 0.6rem; /* Set spacing between flex or grid children. */
+  margin-bottom: 1.5rem; /* Set bottom outside spacing. */
+  font-size: 0.85rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review > div {
-  min-width: 0;
-  flex: 1;
-}
+.community-review > div { /* Apply the enclosed declarations to elements matching this selector. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+  flex: 1; /* Set growth, shrinkage and initial size for this flex item. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review p {
-  margin: 0.35rem 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
+.community-review p { /* Apply the enclosed declarations to elements matching this selector. */
+  margin: 0.35rem 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  white-space: pre-wrap; /* Choose whether text wraps and explicit line breaks are preserved. */
+  overflow-wrap: anywhere; /* Allow long words or URLs to wrap instead of widening the card. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review time {
-  font-size: 0.7rem;
-}
+.community-review time { /* Apply the enclosed declarations to elements matching this selector. */
+  font-size: 0.7rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-reply {
-  margin: 1rem 0 0;
-}
+.community-reply { /* Apply the enclosed declarations to elements matching this selector. */
+  margin: 1rem 0 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review-form {
-  border-top: 1px solid var(--color-border);
-  padding-top: 1rem;
-  display: grid;
-  gap: 0.6rem;
-}
+.community-review-form { /* Apply the enclosed declarations to elements matching this selector. */
+  border-top: 1px solid var(--color-border); /* Draw a divider along the top edge. */
+  padding-top: 1rem; /* Set top inner spacing. */
+  display: grid; /* Choose the layout mode for this element and its children. */
+  gap: 0.6rem; /* Set spacing between flex or grid children. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review-form textarea {
-  border: 1px solid var(--color-border-hover);
-  border-radius: 10px;
-  padding: 0.8rem;
-  font: inherit;
-  width: 100%;
-  resize: vertical;
-}
+.community-review-form textarea { /* Apply the enclosed declarations to elements matching this selector. */
+  border: 1px solid var(--color-border-hover); /* Set border thickness, style and color; zero removes it. */
+  border-radius: 10px; /* Round the corners; 50% makes a square element circular. */
+  padding: 0.8rem; /* Set spacing between content and its border. */
+  font: inherit; /* Set or inherit font properties together. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  resize: vertical; /* Choose which textarea dimensions the user can resize. */
+} /* End this style rule or conditional block. */
 
 /* Space the review discussion and form within post details. */
 
-.community-review-form button {
-  justify-self: end;
-}
+.community-review-form button { /* Apply the enclosed declarations to elements matching this selector. */
+  justify-self: end; /* Align this individual item within its grid cell. */
+} /* End this style rule or conditional block. */
 
 /* Make create, back and sign-in navigation easy to discover. */
 
-.community-signin {
-  margin-top: 1rem;
-}
+.community-signin { /* Apply the enclosed declarations to elements matching this selector. */
+  margin-top: 1rem; /* Set top outside spacing. */
+} /* End this style rule or conditional block. */
 
 /* Arrange the post gallery and discussion, including text-only posts. */
 
-.community-no-images {
-  grid-template-columns: 1fr;
-  max-width: 720px;
-  margin: auto;
-}
+.community-no-images { /* Apply the enclosed declarations to elements matching this selector. */
+  grid-template-columns: 1fr; /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  max-width: 720px; /* Limit the width so content stays within the intended layout. */
+  margin: auto; /* Set outside spacing; auto horizontal margins center a constrained element. */
+} /* End this style rule or conditional block. */
 
 /* Adjust layout and spacing for this viewport size. */
 
-@media (max-width: 900px) {
+@media (max-width: 900px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
   /* Arrange equal-sized community cards in reading order across rows. */
-  .community-posts {
-    columns: 2;
-  }
+  .community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+    columns: 2; /* Configure columns; later grid rules override the earlier feed layout. */
+  } /* End this style rule or conditional block. */
 
   /* Arrange the post gallery and discussion, including text-only posts. */
 
-  .community-detail-layout {
-    grid-template-columns: 1fr;
-  }
+  .community-detail-layout { /* Apply the enclosed declarations to elements matching this selector. */
+    grid-template-columns: 1fr; /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  } /* End this style rule or conditional block. */
 
   /* Position the large post gallery and its carousel controls. */
 
-  .community-gallery {
-    position: static;
-  }
+  .community-gallery { /* Apply the enclosed declarations to elements matching this selector. */
+    position: static; /* Choose how this element is positioned relative to its container. */
+  } /* End this style rule or conditional block. */
 
   /* Position the large post gallery and its carousel controls. */
 
-  .community-gallery-stage {
-    height: 65vh;
-    min-height: 280px;
-  }
-}
+  .community-gallery-stage { /* Apply the enclosed declarations to elements matching this selector. */
+    height: 65vh; /* Set the height; shared variables keep image and text covers equal. */
+    min-height: 280px; /* Prevent the element from becoming shorter than this value. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 
 /* Adjust layout and spacing for this viewport size. */
 
-@media (max-width: 500px) {
+@media (max-width: 500px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
   /* Arrange equal-sized community cards in reading order across rows. */
-  .community-posts {
-    columns: 1;
-  }
-} /* Equal-sized cards flow across each row before starting the next row. */
+  .community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+    columns: 1; /* Configure columns; later grid rules override the earlier feed layout. */
+  } /* End this style rule or conditional block. */
+} /* Equal-sized cards flow across each row before starting the next row. */ /* End this style rule or conditional block. */
 /* Arrange equal-sized community cards in reading order across rows. */
-.community-posts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.4rem;
-  columns: auto;
-}
+.community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+  display: grid; /* Choose the layout mode for this element and its children. */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  gap: 1.4rem; /* Set spacing between flex or grid children. */
+  columns: auto; /* Configure columns; later grid rules override the earlier feed layout. */
+} /* End this style rule or conditional block. */
 /* Keep keyboard focus visible for accessible navigation. */
-.community-detail a,
-.community-detail a:hover,
-.community-detail a:focus {
-  text-decoration: none;
-}
+.community-detail a, /* Include this selector in the shared rule continued below. */
+.community-detail a:hover, /* Include this selector in the shared rule continued below. */
+.community-detail a:focus { /* Apply the enclosed declarations to elements matching this selector. */
+  text-decoration: none; /* Control link decoration; none removes underlines. */
+} /* End this style rule or conditional block. */
 /* Adjust layout and spacing for this viewport size. */
-@media (max-width: 900px) {
-  .community-posts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
+@media (max-width: 900px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
+  .community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 /* Adjust layout and spacing for this viewport size. */
-@media (max-width: 500px) {
-  .community-posts {
-    grid-template-columns: 1fr;
-  }
-}
+@media (max-width: 500px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
+  .community-posts { /* Apply the enclosed declarations to elements matching this selector. */
+    grid-template-columns: 1fr; /* Define columns; minmax(0, 1fr) creates equal columns that can shrink. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 /* Keep keyboard focus visible for accessible navigation. */
-.community-page a,
-.community-page a:hover,
-.community-page a:focus {
-  text-decoration: none;
-}
+.community-page a, /* Include this selector in the shared rule continued below. */
+.community-page a:hover, /* Include this selector in the shared rule continued below. */
+.community-page a:focus { /* Apply the enclosed declarations to elements matching this selector. */
+  text-decoration: none; /* Control link decoration; none removes underlines. */
+} /* End this style rule or conditional block. */
 
 /* Back navigation uses a button because it follows history rather than a fixed URL. */
-.community-back-button {
-  border: 0;
-  background: transparent;
-  padding: 3px;
-  font: inherit;
-  cursor: pointer;
-}
+.community-back-button { /* Apply the enclosed declarations to elements matching this selector. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  background: transparent; /* Set the surface behind this element. */
+  padding: 3px; /* Set spacing between content and its border. */
+  font: inherit; /* Set or inherit font properties together. */
+  cursor: pointer; /* Choose the pointer shape to communicate the available interaction. */
+} /* End this style rule or conditional block. */
 /* Keep the history action discoverable by pointer and keyboard. */
-.community-back-button:hover {
-  color: var(--accent);
-}
-.community-back-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
+.community-back-button:hover { /* Apply the enclosed declarations to elements matching this selector. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+} /* End this style rule or conditional block. */
+.community-back-button:focus-visible { /* Apply the enclosed declarations to elements matching this selector. */
+  outline: 2px solid var(--accent); /* Draw a focus ring without affecting layout. */
+  outline-offset: 3px; /* Separate the focus ring from the border. */
+} /* End this style rule or conditional block. */
 
 /* Horizontal swipes change photos while vertical gestures still scroll the page. */
-.community-gallery-stage {
-  touch-action: pan-y;
-  cursor: grab;
-  user-select: none;
-  overflow: hidden;
-}
-.community-gallery-stage.photo-dragging {
-  cursor: grabbing;
-}
+.community-gallery-stage { /* Apply the enclosed declarations to elements matching this selector. */
+  touch-action: pan-y; /* Allow native vertical scrolling while code handles horizontal swipes. */
+  cursor: grab; /* Choose the pointer shape to communicate the available interaction. */
+  user-select: none; /* Control whether dragging over the element selects text. */
+  overflow: hidden; /* Control content beyond the element bounds, including clipping or scrolling. */
+} /* End this style rule or conditional block. */
+.community-gallery-stage.photo-dragging { /* Apply the enclosed declarations to elements matching this selector. */
+  cursor: grabbing; /* Choose the pointer shape to communicate the available interaction. */
+} /* End this style rule or conditional block. */
 /* All photos live side-by-side so the neighbouring slide appears during the drag. */
-.post-gallery-track {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  width: 100%;
-  height: 100%;
-  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: transform;
-}
+.post-gallery-track { /* Apply the enclosed declarations to elements matching this selector. */
+  position: absolute; /* Choose how this element is positioned relative to its container. */
+  inset: 0; /* Set offsets from all four edges of a positioned element. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  height: 100%; /* Set the height; shared variables keep image and text covers equal. */
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1); /* Animate the listed property changes with the supplied duration and easing. */
+  will-change: transform; /* Tell the browser which property will animate so rendering can be prepared. */
+} /* End this style rule or conditional block. */
 /* Each slide occupies exactly one viewport; full photos remain uncropped. */
-.post-gallery-slide {
-  flex: 0 0 100%;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.post-gallery-slide .post-gallery-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-}
+.post-gallery-slide { /* Apply the enclosed declarations to elements matching this selector. */
+  flex: 0 0 100%; /* Set growth, shrinkage and initial size for this flex item. */
+  min-width: 0; /* Set the minimum width; zero lets flex and grid children shrink. */
+  height: 100%; /* Set the height; shared variables keep image and text covers equal. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: center; /* Align children on the cross axis of flex or grid. */
+  justify-content: center; /* Align or distribute children along the layout main axis. */
+} /* End this style rule or conditional block. */
+.post-gallery-slide .post-gallery-photo { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  height: 100%; /* Set the height; shared variables keep image and text covers equal. */
+  object-fit: contain; /* Contain shows the full photo; cover fills the box and may crop edges. */
+  pointer-events: none; /* Control whether this element receives pointer events. */
+} /* End this style rule or conditional block. */
 /* Follow the pointer directly, then animate to the nearest complete slide on release. */
-.photo-dragging .post-gallery-track,
-.post-gallery-track.track-reset {
-  transition: none;
-}
+.photo-dragging .post-gallery-track, /* Include this selector in the shared rule continued below. */
+.post-gallery-track.track-reset { /* Apply the enclosed declarations to elements matching this selector. */
+  transition: none; /* Animate the listed property changes with the supplied duration and easing. */
+} /* End this style rule or conditional block. */
 /* Keep navigation immediate for users who prefer reduced motion. */
-@media (prefers-reduced-motion: reduce) {
-  .post-gallery-track {
-    transition: none;
-  }
-}
+@media (prefers-reduced-motion: reduce) { /* Apply these overrides when reduced motion is requested. */
+  .post-gallery-track { /* Apply the enclosed declarations to elements matching this selector. */
+    transition: none; /* Animate the listed property changes with the supplied duration and easing. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 
 /* Search and filters share one responsive toolbar, with visible keyboard focus. */
-.community-tools {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.community-search {
-  flex: 1 1 260px;
-}
-.community-search label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
-}
-.community-search input {
-  width: 100%;
-  min-height: 44px;
-  padding: 0.65rem 0.9rem;
-  border: 1px solid var(--color-border-hover);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--color-text);
-  font: inherit;
-}
-.community-filters {
-  display: flex;
-  gap: 0.35rem;
-  padding: 0.3rem;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.community-filters button {
-  min-height: 38px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0.5rem 0.8rem;
-  color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease;
-}
-.community-filters button[aria-pressed='true'] {
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 600;
-}
-.community-filters button:hover:not(:disabled) {
-  background: var(--accent-soft);
-}
-.community-filters button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.community-search input:focus-visible,
-.community-filters button:focus-visible,
-.community-clear:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
+.community-tools { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: flex-end; /* Align children on the cross axis of flex or grid. */
+  justify-content: space-between; /* Align or distribute children along the layout main axis. */
+  gap: 1rem; /* Set spacing between flex or grid children. */
+  flex-wrap: wrap; /* Allow flex children to wrap onto another row. */
+  margin-bottom: 1rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
+.community-search { /* Apply the enclosed declarations to elements matching this selector. */
+  flex: 1 1 260px; /* Set growth, shrinkage and initial size for this flex item. */
+} /* End this style rule or conditional block. */
+.community-search label { /* Apply the enclosed declarations to elements matching this selector. */
+  display: block; /* Choose the layout mode for this element and its children. */
+  font-size: 0.8rem; /* Set text size; rem units follow the root font size. */
+  font-weight: 600; /* Set how bold the text appears. */
+  margin-bottom: 0.4rem; /* Set bottom outside spacing. */
+} /* End this style rule or conditional block. */
+.community-search input { /* Apply the enclosed declarations to elements matching this selector. */
+  width: 100%; /* Set the width; percentages follow the containing block. */
+  min-height: 44px; /* Prevent the element from becoming shorter than this value. */
+  padding: 0.65rem 0.9rem; /* Set spacing between content and its border. */
+  border: 1px solid var(--color-border-hover); /* Set border thickness, style and color; zero removes it. */
+  border-radius: 12px; /* Round the corners; 50% makes a square element circular. */
+  background: var(--surface); /* Set the surface behind this element. */
+  color: var(--color-text); /* Set text color and the currentColor used by icons. */
+  font: inherit; /* Set or inherit font properties together. */
+} /* End this style rule or conditional block. */
+.community-filters { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  gap: 0.35rem; /* Set spacing between flex or grid children. */
+  padding: 0.3rem; /* Set spacing between content and its border. */
+  border: 1px solid var(--color-border); /* Set border thickness, style and color; zero removes it. */
+  border-radius: 12px; /* Round the corners; 50% makes a square element circular. */
+  background: var(--surface); /* Set the surface behind this element. */
+} /* End this style rule or conditional block. */
+.community-filters button { /* Apply the enclosed declarations to elements matching this selector. */
+  min-height: 38px; /* Prevent the element from becoming shorter than this value. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  border-radius: 8px; /* Round the corners; 50% makes a square element circular. */
+  padding: 0.5rem 0.8rem; /* Set spacing between content and its border. */
+  color: var(--muted); /* Set text color and the currentColor used by icons. */
+  background: transparent; /* Set the surface behind this element. */
+  cursor: pointer; /* Choose the pointer shape to communicate the available interaction. */
+  transition: /* Animate the listed property changes with the supplied duration and easing. */
+    background-color 180ms ease, /* Continue the property, duration and easing list above. */
+    color 180ms ease; /* Continue the property, duration and easing list above. */
+} /* End this style rule or conditional block. */
+.community-filters button[aria-pressed='true'] { /* Apply the enclosed declarations to elements matching this selector. */
+  background: var(--accent-soft); /* Set the surface behind this element. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+  font-weight: 600; /* Set how bold the text appears. */
+} /* End this style rule or conditional block. */
+.community-filters button:hover:not(:disabled) { /* Apply the enclosed declarations to elements matching this selector. */
+  background: var(--accent-soft); /* Set the surface behind this element. */
+} /* End this style rule or conditional block. */
+.community-filters button:disabled { /* Apply the enclosed declarations to elements matching this selector. */
+  opacity: 0.5; /* Set transparency: zero is invisible and one is fully visible. */
+  cursor: not-allowed; /* Choose the pointer shape to communicate the available interaction. */
+} /* End this style rule or conditional block. */
+.community-search input:focus-visible, /* Include this selector in the shared rule continued below. */
+.community-filters button:focus-visible, /* Include this selector in the shared rule continued below. */
+.community-clear:focus-visible { /* Apply the enclosed declarations to elements matching this selector. */
+  outline: 2px solid var(--accent); /* Draw a focus ring without affecting layout. */
+  outline-offset: 3px; /* Separate the focus ring from the border. */
+} /* End this style rule or conditional block. */
 /* Keep the result count and reset action aligned without affecting the card grid. */
-.community-results {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0.5rem 0 1rem;
-  gap: 1rem;
-}
-.community-results p {
-  margin: 0;
-  font-size: 0.85rem;
-}
-.community-clear {
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-  font-weight: 600;
-}
+.community-results { /* Apply the enclosed declarations to elements matching this selector. */
+  display: flex; /* Choose the layout mode for this element and its children. */
+  align-items: baseline; /* Align children on the cross axis of flex or grid. */
+  justify-content: space-between; /* Align or distribute children along the layout main axis. */
+  margin: 0.5rem 0 1rem; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  gap: 1rem; /* Set spacing between flex or grid children. */
+} /* End this style rule or conditional block. */
+.community-results p { /* Apply the enclosed declarations to elements matching this selector. */
+  margin: 0; /* Set outside spacing; auto horizontal margins center a constrained element. */
+  font-size: 0.85rem; /* Set text size; rem units follow the root font size. */
+} /* End this style rule or conditional block. */
+.community-clear { /* Apply the enclosed declarations to elements matching this selector. */
+  border: 0; /* Set border thickness, style and color; zero removes it. */
+  background: transparent; /* Set the surface behind this element. */
+  color: var(--accent); /* Set text color and the currentColor used by icons. */
+  cursor: pointer; /* Choose the pointer shape to communicate the available interaction. */
+  font-weight: 600; /* Set how bold the text appears. */
+} /* End this style rule or conditional block. */
 /* Vue measures keyed card positions and applies FLIP transforms through the move class. */
-.community-filter-move {
-  transition: transform 260ms ease;
-}
-.community-filter-enter-active,
-.community-filter-leave-active {
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-.community-filter-enter-from,
-.community-filter-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
+.community-filter-move { /* Apply the enclosed declarations to elements matching this selector. */
+  transition: transform 260ms ease; /* Animate the listed property changes with the supplied duration and easing. */
+} /* End this style rule or conditional block. */
+.community-filter-enter-active, /* Include this selector in the shared rule continued below. */
+.community-filter-leave-active { /* Apply the enclosed declarations to elements matching this selector. */
+  transition: /* Animate the listed property changes with the supplied duration and easing. */
+    opacity 180ms ease, /* Continue the property, duration and easing list above. */
+    transform 180ms ease; /* Continue the property, duration and easing list above. */
+} /* End this style rule or conditional block. */
+.community-filter-enter-from, /* Include this selector in the shared rule continued below. */
+.community-filter-leave-to { /* Apply the enclosed declarations to elements matching this selector. */
+  opacity: 0; /* Set transparency: zero is invisible and one is fully visible. */
+  transform: translateY(10px); /* Move or scale the rendered element without reflowing nearby content. */
+} /* End this style rule or conditional block. */
 /* Mobile filters remain reachable without horizontal page overflow. */
-@media (max-width: 575px) {
-  .community-filters {
-    width: 100%;
-  }
-  .community-filters button {
-    flex: 1;
-  }
-}
+@media (max-width: 575px) { /* Apply the enclosed responsive overrides only when this viewport condition matches. */
+  .community-filters { /* Apply the enclosed declarations to elements matching this selector. */
+    width: 100%; /* Set the width; percentages follow the containing block. */
+  } /* End this style rule or conditional block. */
+  .community-filters button { /* Apply the enclosed declarations to elements matching this selector. */
+    flex: 1; /* Set growth, shrinkage and initial size for this flex item. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
 /* Filtering remains immediate when motion is reduced. */
-@media (prefers-reduced-motion: reduce) {
-  .community-filter-move,
-  .community-filter-enter-active,
-  .community-filter-leave-active,
-  .community-filters button {
-    transition: none;
-  }
-  .community-filter-enter-from,
-  .community-filter-leave-to {
-    transform: none;
-  }
-}
+@media (prefers-reduced-motion: reduce) { /* Apply these overrides when reduced motion is requested. */
+  .community-filter-move, /* Include this selector in the shared rule continued below. */
+  .community-filter-enter-active, /* Include this selector in the shared rule continued below. */
+  .community-filter-leave-active, /* Include this selector in the shared rule continued below. */
+  .community-filters button { /* Apply the enclosed declarations to elements matching this selector. */
+    transition: none; /* Animate the listed property changes with the supplied duration and easing. */
+  } /* End this style rule or conditional block. */
+  .community-filter-enter-from, /* Include this selector in the shared rule continued below. */
+  .community-filter-leave-to { /* Apply the enclosed declarations to elements matching this selector. */
+    transform: none; /* Move or scale the rendered element without reflowing nearby content. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
+
+/* Stagger the first six positions; capping the delay avoids long waits in a large feed. */
+.community-posts > .community-card-arrive { /* Apply the enclosed declarations to elements matching this selector. */
+  transition: /* Animate the listed property changes with the supplied duration and easing. */
+    opacity 320ms ease, /* Continue the property, duration and easing list above. */
+    transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1); /* Continue the property, duration and easing list above. */
+  transition-delay: var(--card-entrance-delay, 0ms); /* Wait before starting a transition; a variable supplies each entrance delay. */
+} /* End this style rule or conditional block. */
+.community-posts > .community-card-arrive-from { /* Apply the enclosed declarations to elements matching this selector. */
+  opacity: 0; /* Set transparency: zero is invisible and one is fully visible. */
+  transform: translateY(16px); /* Move or scale the rendered element without reflowing nearby content. */
+} /* End this style rule or conditional block. */
+.community-posts > .community-card-arrive-to { /* Apply the enclosed declarations to elements matching this selector. */
+  opacity: 1; /* Set transparency: zero is invisible and one is fully visible. */
+  transform: translateY(0); /* Move or scale the rendered element without reflowing nearby content. */
+} /* End this style rule or conditional block. */
+/* Cards remain fully visible with no entrance delay when reduced motion is enabled. */
+@media (prefers-reduced-motion: reduce) { /* Apply these overrides when reduced motion is requested. */
+  .community-posts > .community-card-arrive { /* Apply the enclosed declarations to elements matching this selector. */
+    transition: none; /* Animate the listed property changes with the supplied duration and easing. */
+    transition-delay: 0ms; /* Wait before starting a transition; a variable supplies each entrance delay. */
+  } /* End this style rule or conditional block. */
+  .community-posts > .community-card-arrive-from { /* Apply the enclosed declarations to elements matching this selector. */
+    opacity: 1; /* Set transparency: zero is invisible and one is fully visible. */
+    transform: none; /* Move or scale the rendered element without reflowing nearby content. */
+  } /* End this style rule or conditional block. */
+} /* End this style rule or conditional block. */
+
+/* Keep the create action beside the feed heading above search, wrapping on small screens. */
+.community-feed-heading { /* Override only the feed heading arrangement. */
+  align-items: center; /* Align the heading vertically with the create button. */
+  flex-wrap: wrap; /* Let controls move to another row when horizontal space is limited. */
+} /* End the heading adjustment. */
+.community-feed-actions { /* Group the post creation action beside the feed heading. */
+  display: flex; /* Place the controls in a horizontal row. */
+  align-items: center; /* Vertically center the label beside the button. */
+  flex-wrap: wrap; /* Avoid horizontal overflow on narrow screens. */
+  gap: .75rem; /* Separate actions if more controls are added later. */
+} /* End the action group. */
+.community-feed-sort { /* Position the sorting hint below the search toolbar. */
+  display: flex; /* Use a row to align the sorting hint. */
+  justify-content: flex-end; /* Align sorting information with the right edge of the feed. */
+  margin-bottom: .75rem; /* Separate sorting information from the results and cards. */
+  font-size: .8rem; /* Match the existing small feed-label text. */
+} /* End the sorting-label rule. */
+
+
+/* Equal icon-side columns keep the label centered in the entire button. */
+.community-feed-actions .community-create-button { /* Scope feedback to the community create action. */
+  display: grid; /* Place the icon, label and balancing spacer in separate columns. */
+  grid-template-columns: 1.25rem 1fr 1.25rem; /* Reserve equal space on both sides of the centered label. */
+  align-items: center; /* Vertically center the icon and label. */
+  gap: .5rem; /* Keep the label clear of the icon. */
+  min-width: 170px; /* Give the label enough room on all supported screens. */
+  min-height: 46px; /* Provide a comfortable mouse and touch target. */
+  text-align: center; /* Center text inside its grid column. */
+  border-radius: 12px; /* Match the rounded search and filter controls. */
+  color: var(--on-accent); /* Preserve readable label contrast on the green surface. */
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease; /* Smooth the button's interaction feedback. */
+} /* End the create-button layout. */
+.community-create-button::after { /* Balance the plus icon without adding visible content. */
+  content: ''; /* Generate the empty final grid item that centers the label. */
+} /* End the balancing spacer. */
+.community-create-icon { /* Animate the decorative plus independently of the text. */
+  display: inline-block; /* Allow the icon to rotate around its own box. */
+  font-size: 1.3rem; /* Keep the plus prominent beside the label. */
+  line-height: 1; /* Prevent extra vertical space around the plus. */
+  transition: transform 220ms ease; /* Rotate smoothly when interaction begins or ends. */
+} /* End the icon styling. */
+.community-create-label { /* Keep the label legible and stable while the icon moves. */
+  white-space: nowrap; /* Prevent the two-word action from breaking onto multiple lines. */
+  font-weight: 600; /* Emphasize the primary feed action. */
+} /* End the label styling. */
+@media (hover: hover) and (pointer: fine) { /* Limit lift feedback to devices with a precise hover pointer. */
+  .community-feed-actions .community-create-button:hover { /* Highlight the create action under the cursor. */
+    transform: translateY(-2px); /* Lift slightly without changing the surrounding layout. */
+    box-shadow: 0 5px 14px #163f2b33; /* Reinforce the raised appearance. */
+  } /* End the hover feedback. */
+  .community-create-button:hover .community-create-icon { /* Add feedback without shifting the centered label. */
+    transform: rotate(90deg); /* Rotate the plus a quarter turn. */
+  } /* End the hover icon animation. */
+} /* End the fine-pointer overrides. */
+.community-feed-actions .community-create-button:focus-visible { /* Give keyboard users an equally clear focus indication. */
+  outline: 3px solid var(--accent); /* Draw an accessible focus ring. */
+  outline-offset: 4px; /* Separate the ring from the button edge. */
+} /* End the focus styling. */
+.community-create-button:focus-visible .community-create-icon { /* Mirror icon feedback for keyboard navigation. */
+  transform: rotate(90deg); /* Rotate the icon while the button has keyboard focus. */
+} /* End the focused icon styling. */
+.community-feed-actions .community-create-button:active { /* Indicate the moment a click or tap is pressed. */
+  transform: scale(.97); /* Compress the button slightly to acknowledge activation. */
+  box-shadow: none; /* Remove the raised shadow during the press. */
+} /* End the press feedback. */
+@media (prefers-reduced-motion: reduce) { /* Honor the user's preference for less animation. */
+  .community-feed-actions .community-create-button, /* Include all button interaction states below. */
+  .community-feed-actions .community-create-button:hover, /* Remove the hover movement. */
+  .community-feed-actions .community-create-button:active, /* Remove the pressed movement. */
+  .community-feed-actions .community-create-button .community-create-icon { /* Override icon rotation even when hovered or focused. */
+    transition: none; /* Apply visual state changes immediately. */
+    transform: none; /* Disable button movement and icon rotation. */
+  } /* End the reduced-motion rules. */
+} /* End the motion-preference condition. */
+
+/* The native select keeps sorting accessible with mouse, touch and keyboard. */
+.community-feed-sort { /* Align the label and selector below the search toolbar. */
+  align-items: center; /* Center the label vertically alongside the select. */
+  gap: .6rem; /* Separate the label from the sorting control. */
+  flex-wrap: wrap; /* Allow controls to wrap instead of overflowing on narrow screens. */
+} /* End the sorting-row adjustments. */
+.community-feed-sort label { /* Emphasize the selector's purpose. */
+  font-weight: 600; /* Make the label distinguishable from the selected option. */
+} /* End the sorting label. */
+.community-feed-sort select { /* Match the search and filter control styling. */
+  min-height: 44px; /* Provide a comfortable touch target. */
+  max-width: 100%; /* Keep the selector inside its container on phones. */
+  padding: .55rem .8rem; /* Leave space around the selected option. */
+  border: 1px solid var(--color-border-hover); /* Define the control boundary using the shared palette. */
+  border-radius: 10px; /* Match the rounded toolbar controls. */
+  background: var(--surface); /* Keep the selected option readable against the page background. */
+  color: var(--color-text); /* Inherit the app's standard text contrast. */
+  font: inherit; /* Match surrounding type size and family. */
+  cursor: pointer; /* Indicate that the options can be opened. */
+} /* End the sorting selector. */
+.community-feed-sort select:focus-visible { /* Make keyboard focus visible. */
+  outline: 2px solid var(--accent); /* Draw a contrasting green focus ring. */
+  outline-offset: 3px; /* Separate the ring from the control border. */
+} /* End the sorting focus state. */
+
+/* Keep the sort icon aligned with its label and visually connected to the selected value. */
+.community-feed-sort .community-sort-label { /* Override the label layout only in this sorting control. */
+  display: inline-flex; /* Place the icon and label on one line. */
+  align-items: center; /* Center the icon vertically with the text. */
+  gap: .4rem; /* Separate the icon from the label. */
+  color: var(--accent); /* Match the selected sorting control's green palette. */
+} /* End the icon-label layout. */
+.community-sort-label svg { /* Draw a compact descending-lines sorting symbol. */
+  width: 20px; /* Keep the icon proportional to the label. */
+  height: 20px; /* Maintain a square icon viewport. */
+  fill: none; /* Draw strokes rather than a filled shape. */
+  stroke: currentColor; /* Inherit the label's accent color. */
+  stroke-width: 2; /* Keep the lines legible at this size. */
+  stroke-linecap: round; /* Round the ends for a softer appearance. */
+} /* End the sorting icon. */
+.community-feed-sort select { /* Highlight the currently selected sorting value. */
+  background: var(--accent-soft); /* Use pale green to distinguish the active sort. */
+  color: var(--accent); /* Make the selected text consistent with the app palette. */
+  border-color: #bfd8c5; /* Add a complementary green border. */
+  font-weight: 600; /* Emphasize the current selection. */
+} /* End the selected-value styling. */
+.community-feed-sort option { /* Keep unselected options visually neutral where native styling permits. */
+  background: var(--surface); /* Use a white option-menu background. */
+  color: var(--color-text); /* Preserve standard menu-text contrast. */
+} /* End the default option styling. */
+.community-feed-sort option:checked { /* Reinforce the text checkmark where the browser permits option styling. */
+  background: var(--accent-soft); /* Highlight the selected menu item with pale green. */
+  color: var(--accent); /* Use green for the chosen option. */
+} /* End the selected menu-option styling. */
+/* TransitionGroup applies a temporary transform from each old card position to its new one. */
+.community-posts > .post-card.community-filter-move { /* Take precedence over the shared card hover transition. */
+  transition: transform 380ms cubic-bezier(.22, .61, .36, 1); /* Ease reordered cards smoothly into their new grid positions. */
+} /* End the card-reordering animation. */
+@media (prefers-reduced-motion: reduce) { /* Respect visitors who prefer immediate layout updates. */
+  .community-posts > .post-card.community-filter-move { /* Match the reordering rule's specificity. */
+    transition: none; /* Disable movement animation while preserving the new sort order. */
+  } /* End the reordering override. */
+} /* End the accessibility condition. */
