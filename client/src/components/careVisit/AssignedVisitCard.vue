@@ -65,6 +65,8 @@ function date(value) {
 
 <template>
   <article class="visit-card">
+    <!-- Keep the detail page accessible alongside the existing care actions. -->
+    <RouterLink :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }">View visit details</RouterLink>
     <div class="visit-heading">
       <div>
         <h3>{{ plants.length }} plant{{ plants.length === 1 ? '' : 's' }} to care for</h3>

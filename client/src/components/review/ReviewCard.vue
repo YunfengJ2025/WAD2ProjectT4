@@ -7,7 +7,7 @@ import StarRating from './StarRating.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import '@/assets/reviews.css'
 // source controls the layout and available actions:
-// profile/reviews show matching summaries that link to the associated post;
+// profile/reviews show matching summaries that link to the associated visit or post;
 // post shows the discussion layout, with replies available when canReply is true.
 const props = defineProps({
   review: { type: Object, required: true },
@@ -22,20 +22,40 @@ const props = defineProps({
 })
 const emit = defineEmits(['reply'])
 const router = useRouter()
-const postLink = computed(() =>
-  props.source !== 'post' && props.review.postId ? '/community/' + props.review.postId : null,
-)
+// Both the reviews page and profile use this card, so resolve their destination here.
+const targetLink = computed(() => {
+  if (props.source === 'post') {
+    return null
+  }
+  if (props.review.type === 'VISIT' && props.review.visitId) {
+    return '/care-visits/' + props.review.visitId
+  }
+  if (props.review.postId) {
+    return '/community/' + props.review.postId
+  }
+  return null
+})
+const targetLabel = computed(() => {
+  if (!targetLink.value) {
+    return undefined
+  }
+  return props.review.type === 'VISIT' ? 'View visit for this review' : 'View post for this review'
+})
 // Navigate only from the card surface; nested links and form controls keep their own actions.
-function openPost(event) {
-  if (!postLink.value || event.target.closest('a, button, textarea, input')) return
-  router.push(postLink.value)
+function openTarget(event) {
+  if (!targetLink.value || event.target.closest('a, button, textarea, input')) {
+    return
+  }
+  router.push(targetLink.value)
 }
 // Allow Enter and Space to activate a linked review without intercepting nested controls.
 function keyOpen(event) {
-  if (event.target !== event.currentTarget) return
+  if (event.target !== event.currentTarget) {
+    return
+  }
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
-    openPost(event)
+    openTarget(event)
   }
 }
 const replying = ref(false)
@@ -76,11 +96,11 @@ function dateLabel(value) {
 <template>
   <article
     class="review-card"
-    :class="{ 'review-card-post': source === 'post', 'review-card-linked': postLink }"
-    :role="postLink ? 'link' : undefined"
-    :tabindex="postLink ? 0 : undefined"
-    :aria-label="postLink ? 'View post for this review' : undefined"
-    @click="openPost"
+    :class="{ 'review-card-post': source === 'post', 'review-card-linked': targetLink }"
+    :role="targetLink ? 'link' : undefined"
+    :tabindex="targetLink ? 0 : undefined"
+    :aria-label="targetLabel"
+    @click="openTarget"
     @keydown="keyOpen"
   >
     <header>

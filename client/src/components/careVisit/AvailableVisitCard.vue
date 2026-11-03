@@ -20,6 +20,8 @@ function date(value) {
 
 <template>
   <article class="available-card">
+    <!-- Open the status-aware detail page without accepting the visit. -->
+    <RouterLink :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }">View visit details</RouterLink>
     <div class="card-heading">
       <div>
         <p class="eyebrow">{{ date(visit.visitDate) }} · {{ visit.owner?.userName || 'Neighbour' }}</p>

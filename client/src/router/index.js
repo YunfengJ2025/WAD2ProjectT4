@@ -91,6 +91,13 @@ const routes = [
   // Old addresses, kept so existing links still work
   { path: '/care-requests', redirect: { path: '/requests' } },
   { path: '/care-visits', redirect: { path: '/requests', query: { tab: 'sits' } } },
+  // A single page adapts its sections to the visit's stored status.
+  {
+    path: '/care-visits/:visitId',
+    name: 'visit-detail',
+    meta: { requiresAuth: true },
+    component: () => import('../views/careVisit/VisitDetailView.vue'),
+  },
   { path: '/reviews', name: 'reviews', meta: { requiresAuth: true }, component: () => import('../views/review/ReviewsView.vue') },
 
   // Dashboard route — registered as part of Step 2.1
