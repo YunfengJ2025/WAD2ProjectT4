@@ -54,12 +54,6 @@ watch(() => route.fullPath, () => {
             <li v-for="item in accountItems" :key="item.to">
               <RouterLink class="dropdown-item" active-class="active" :to="item.to">{{ item.label }}</RouterLink>
             </li>
-            <!-- Shop isn't built yet, so it can't be clicked -->
-            <li>
-              <span class="dropdown-item disabled" aria-disabled="true">
-                Shop <small class="coming-soon">Coming soon</small>
-              </span>
-            </li>
             <li><hr class="dropdown-divider" /></li>
             <li>
               <button type="button" class="dropdown-item" @click="$emit('logout')">Log out</button>
@@ -89,8 +83,4 @@ watch(() => route.fullPath, () => {
 </template>
 
 <style scoped>
-.coming-soon {
-  margin-left: 0.35rem;
-  font-size: 0.75rem;
-}
 </style>

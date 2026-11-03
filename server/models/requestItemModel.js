@@ -8,6 +8,9 @@ const requestItemSchema = new mongoose.Schema({
   action: { type: String, required: true, trim: true, maxlength: 100 },
   amountToWater: { type: Number, min: 0, default: 0 },
   careInstructions: { type: String, trim: true, maxlength: 500, default: "" },
+  // Care checklist (Carolyn): the plant's care steps the sitter ticked during this visit,
+  // e.g. ["Water the soil", "Wipe the leaves"]. Steps come from the plant's care notes.
+  completedSteps: { type: [{ type: String, trim: true, maxlength: 500 }], default: [] },
   status: {
     type: String,
     enum: ["pending", "accepted", "completed", "cancelled"],

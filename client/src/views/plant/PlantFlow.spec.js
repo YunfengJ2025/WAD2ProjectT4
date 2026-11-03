@@ -51,6 +51,7 @@ it('signs in through the form, creates and edits a shared plant, and redirects o
   await wrapper.get('#plantLocation').setValue('By the door')
   await wrapper.get('#frequencyDays').setValue('2')
   await wrapper.get('#amountMl').setValue('200')
+  await wrapper.get('input[name="isOutdoor"][value="true"]').setValue(true)
   await wrapper.get('input[name="rainExposed"][value="false"]').setValue(true)
   await wrapper.get('form').trigger('submit')
   await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/plants'))

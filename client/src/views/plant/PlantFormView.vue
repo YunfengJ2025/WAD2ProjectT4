@@ -1,4 +1,9 @@
 <script setup>
+// PlantFormView: the page around the plant form, used by TWO routes:
+//   /plants/new           -> add a plant (no plantId)
+//   /plants/:plantId/edit -> edit a plant (plantId from the URL)
+// The form itself is the PlantForm component; this page loads the plant
+// (when editing) and decides where to go after saving.
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import PlantForm from '@/components/plant/PlantForm.vue'
@@ -9,12 +14,14 @@ const route = useRoute()
 const router = useRouter()
 const { show: toast } = useToast()
 
+// route.params.plantId comes from ":plantId" in the route (undefined on /plants/new)
 const plantId = computed(() => route.params.plantId)
-const isEdit = computed(() => !!plantId.value)
+const isEdit = computed(() => !!plantId.value) // !! turns it into true/false
 // Editing returns to the plant's own page; adding returns to the list.
 const backTo = computed(() => (isEdit.value ? `/plants/${plantId.value}` : '/plants'))
 
 const plantsStore = usePlantsStore()
+// The plant being edited, taken from the store (null when adding a new one)
 const plant = computed(() => isEdit.value ? plantsStore.findPlant(plantId.value) ?? null : null)
 // Start in "loading" when editing so the empty form never flashes up first
 const loading = ref(isEdit.value)
@@ -34,6 +41,8 @@ async function load() {
 // changes (e.g. edit -> add), so loading once on mount is enough.
 onMounted(load)
 
+// PlantForm emits 'saved' after the server accepts the plant:
+// show a toast, then router.push() to go back (programmatic navigation)
 function onSaved(saved) {
   toast(isEdit.value ? 'Changes saved' : `${saved.plantName} added`)
   router.push(backTo.value)

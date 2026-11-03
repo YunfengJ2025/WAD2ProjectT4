@@ -1,11 +1,16 @@
 <script setup>
+// ToastHost: shows the small pop-up messages ("Plant added", errors...).
+// It is placed once in App.vue. Any page calls useToast().show('message'),
+// and because the list is shared (see composables/useToast.js), it appears here.
 import { useToast } from '@/composables/useToast'
 
 const { toasts, dismiss } = useToast()
 </script>
 
 <template>
+  <!-- aria-live: screen readers read new messages out loud -->
   <div class="toasts" role="status" aria-live="polite">
+    <!-- TransitionGroup animates each toast sliding in and out -->
     <TransitionGroup name="toast">
       <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">
         <span>{{ t.message }}</span>

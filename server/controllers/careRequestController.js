@@ -35,7 +35,9 @@ async function enrichVisits(visits) {
   const ownerIds = [...new Set(requests.map((request) => request.ownerId))];
   const [plants, owners] = await Promise.all([
     Plant.find({ plantId: { $in: plantIds } })
-      .select("plantId plantName photoUrl plantLocation")
+      // Care checklist (Carolyn): also send the care notes, so the sitter's page
+      // can turn them into checklist steps (one step per line)
+      .select("plantId plantName photoUrl plantLocation wateringInfo.notes")
       .lean(),
     User.find({ userId: { $in: ownerIds } })
       .select("userId userName block postalCode")
@@ -352,6 +354,7 @@ exports.addVisitProof = async (req, res) => {
       action: item.action,
       status: item.status,
       dueAt: item.dueAt,
+      completedSteps: item.completedSteps, // Care checklist (Carolyn): restored if saving fails
     }));
     const filesByPlant = new Map((req.files || []).map((file) => [
       /^photo_\d+$/.test(file.fieldname) ? Number(file.fieldname.slice(6)) : NaN, file,
@@ -371,6 +374,15 @@ exports.addVisitProof = async (req, res) => {
     }
     if (filesByPlant.size !== itemDocs.length)
       throw fail(400, "Upload exactly one proof photo for each plant in this visit");
+
+    // Care checklist (Carolyn): optional ticked steps per plant, sent as JSON text,
+    // e.g. {"5": ["Water the soil", "Wipe the leaves"]}. Ticking steps is not required.
+    let completedSteps = {};
+    try {
+      completedSteps = JSON.parse(req.body.completedSteps || "{}");
+    } catch {
+      throw fail(400, "Care checklist was not submitted correctly");
+    }
     const visitDate = new Date();
     const { uploadImage, FOLDERS } = require("../config/cloudinary");
     for (const item of itemDocs) {
@@ -385,6 +397,11 @@ exports.addVisitProof = async (req, res) => {
       });
       proofDocs.push(proof);
       item.action = String(actions[item.plantId]).trim();
+      // Care checklist (Carolyn): keep only real text steps for this plant
+      const ticked = completedSteps[item.plantId];
+      item.completedSteps = Array.isArray(ticked)
+        ? ticked.map((step) => String(step).trim()).filter((step) => step !== "")
+        : [];
       item.status = "completed";
       item.dueAt = visitDate;
       await item.save();
@@ -445,6 +462,7 @@ exports.addVisitProof = async (req, res) => {
       item.action = original.action;
       item.status = original.status;
       item.dueAt = original.dueAt;
+      item.completedSteps = original.completedSteps; // Care checklist (Carolyn)
       await item.save();
     }));
     if (visitDoc?.status === "completed") {

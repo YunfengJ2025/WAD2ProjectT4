@@ -1,27 +1,47 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusPill from '@/components/plant/StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { usePlantsStore } from '@/stores/plants'
-import { getWateringStatus, startOfDay } from '@/utils/wateringStatus'
+import {
+  getWateringStatus,
+  startOfDay,
+  isWateredToday,
+  formatShortDate,
+} from '@/utils/wateringStatus'
+import { getCareSteps, getDoneSteps, saveDoneSteps } from '@/utils/careSteps'
 import { useToast } from '@/composables/useToast'
 
-const route = useRoute()
-const router = useRouter()
+// PlantDetailView: one plant's page (/plants/:plantId).
+// Shows the photo, facts, care checklist and next waterings,
+// with Mark watered / Edit / Delete buttons.
+
+const route = useRoute() // the current URL, e.g. route.params.plantId = "5"
+const router = useRouter() // used to change page in code (router.push)
 const { show: toast } = useToast()
 
-
+// The plant comes from the Pinia store, so this page, the cards and the edit form
+// all show the same data. computed: updates when the store's plant changes.
 const plantsStore = usePlantsStore()
 const plant = computed(() => plantsStore.findPlant(route.params.plantId))
 const loading = ref(true)
 const loadError = ref('')
-const confirmingDelete = ref(false)
+const confirmingDelete = ref(false) // "Delete plant?" pop-up open?
 const deleting = ref(false)
-const watering = ref(false)
+const watering = ref(false) // true while Mark watered is saving
+// Already watered today: the button is disabled so it can't be pressed twice
+const wateredToday = computed(() => plant.value && isWateredToday(plant.value))
+const waterLabel = computed(() => {
+  if (watering.value) return 'Saving…'
+  if (wateredToday.value) return 'Watered today ✓'
+  return 'Mark watered'
+})
 
+// Store action -> PATCH /plants/:id/water on the server -> lastWateredAt = now.
+// The store then updates the plant, so the status pill and schedule refresh by themselves.
 async function markWatered() {
-  if (watering.value) return
+  if (watering.value) return // ignore double clicks
   watering.value = true
   try {
     await plantsStore.markWatered(route.params.plantId)
@@ -30,11 +50,24 @@ async function markWatered() {
     toast(err.message, 'error')
   } finally {
     watering.value = false
+    confirmingEarly.value = false
+  }
+}
+
+// Not due yet: ask first, in case the button was pressed by mistake
+const confirmingEarly = ref(false)
+function onWaterClick() {
+  if (status.value.key === 'upcoming') {
+    confirmingEarly.value = true
+  } else {
+    markWatered()
   }
 }
 // true if the photo link is broken, so we show the leaf placeholder instead
 const photoFailed = ref(false)
 
+// Get the latest copy of this plant from the server (it may not be in the store yet,
+// e.g. when the page is opened directly or refreshed)
 async function load() {
   loading.value = true
   loadError.value = ''
@@ -46,13 +79,38 @@ async function load() {
   } finally {
     loading.value = false
   }
+  loadDoneSteps()
 }
+
+// Care checklist: each line of the care notes is one step (see utils/careSteps.js)
+const careSteps = computed(() => (plant.value ? getCareSteps(plant.value.wateringInfo.notes) : []))
+const doneSteps = ref([]) // the steps ticked today
+// Only count ticks for steps that are still in the notes
+const doneCount = computed(() => careSteps.value.filter((step) => doneSteps.value.includes(step)).length)
+// e.g. 4 of 7 done -> 57
+const donePercent = computed(() => {
+  if (careSteps.value.length === 0) return 0
+  return Math.round((doneCount.value / careSteps.value.length) * 100)
+})
+
+// Ticks are kept until the plant is watered again (see utils/careSteps.js)
+function loadDoneSteps() {
+  doneSteps.value = plant.value ? getDoneSteps(plant.value) : []
+}
+function onStepChange() {
+  saveDoneSteps(plant.value, doneSteps.value)
+}
+// Mark watered changes lastWateredAt, so the checklist starts fresh
+watch(() => plant.value?.lastWateredAt, loadDoneSteps)
+
 // App.vue's <RouterView :key="route.path"> rebuilds this page for each plant,
 // so loading once on mount is enough.
 onMounted(load)
 
+// Overdue / due / upcoming + label + next date (see utils/wateringStatus.js)
 const status = computed(() => plant.value && getWateringStatus(plant.value))
 
+// "Mon, 2 Nov 2026" (toLocaleDateString formats a date for Singapore)
 const fullDate = (date) =>
   new Date(date).toLocaleDateString('en-SG', {
     weekday: 'short',
@@ -69,7 +127,16 @@ const frequency = computed(() => {
   return `${amountMl} ml, ${often}`
 })
 
+// "Indoor", "Outdoor · Exposed to rain" or "Outdoor · Sheltered"
+// (older plants have no isOutdoor saved, so they count as outdoor)
+const placement = computed(() => {
+  if (plant.value.isOutdoor === false) return 'Indoor'
+  if (plant.value.rainExposed) return 'Outdoor · Exposed to rain'
+  return 'Outdoor · Sheltered'
+})
+
 // The next four waterings. Anything already due or overdue counts as today.
+// e.g. next = Wed, every 3 days -> Wed, Sat, Tue, Fri
 const schedule = computed(() => {
   const today = startOfDay(new Date())
   const next = status.value.nextDate
@@ -84,6 +151,7 @@ const schedule = computed(() => {
   return dates
 })
 
+// "Delete" in the confirm pop-up: delete on the server, then go back to My Plants
 async function onDelete() {
   deleting.value = true
   try {
@@ -148,8 +216,8 @@ async function onDelete() {
             <p class="value">{{ plant.plantLocation }}</p>
           </div>
           <div>
-            <p class="label">Rain</p>
-            <p class="value">{{ plant.rainExposed ? 'Exposed to rain' : 'Sheltered' }}</p>
+            <p class="label">Placement</p>
+            <p class="value">{{ placement }}</p>
           </div>
           <div>
             <p class="label">Watering</p>
@@ -162,8 +230,32 @@ async function onDelete() {
         </div>
 
         <section class="block">
-          <h2>Care notes</h2>
-          <p v-if="plant.wateringInfo.notes" class="notes">{{ plant.wateringInfo.notes }}</p>
+          <h2>Care checklist</h2>
+          <template v-if="careSteps.length">
+            <ul class="checklist">
+              <li v-for="step in careSteps" :key="step">
+                <label>
+                  <input v-model="doneSteps" type="checkbox" :value="step" @change="onStepChange" />
+                  <span :class="{ done: doneSteps.includes(step) }">{{ step }}</span>
+                </label>
+              </li>
+            </ul>
+            <!-- Bootstrap progress bar: the width follows the percentage done -->
+            <div
+              class="progress care-progress"
+              role="progressbar"
+              aria-label="Care checklist progress"
+              :aria-valuenow="donePercent"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div class="progress-bar bg-success" :style="{ width: donePercent + '%' }"></div>
+            </div>
+            <p class="muted small">
+              Done {{ doneCount }} of {{ careSteps.length }} since last watering ·
+              <strong>{{ donePercent }}%</strong>
+            </p>
+          </template>
           <p v-else class="muted">
             No notes yet.
             <RouterLink :to="`/plants/${plant.plantId}/edit`">Add some</RouterLink>
@@ -184,8 +276,13 @@ async function onDelete() {
         </section>
 
         <div class="actions">
-          <button type="button" class="btn btn-primary" :disabled="watering" @click="markWatered">
-            {{ watering ? 'Saving…' : 'Mark watered' }}
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="watering || wateredToday"
+            @click="onWaterClick"
+          >
+            {{ waterLabel }}
           </button>
           <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn">Edit</RouterLink>
           <button type="button" class="btn delete" @click="confirmingDelete = true">Delete</button>
@@ -204,6 +301,20 @@ async function onDelete() {
       :busy="deleting"
       @confirm="onDelete"
       @cancel="confirmingDelete = false"
+    />
+
+    <!-- Asks before watering a plant that isn't due yet -->
+    <ConfirmDialog
+      v-if="plant"
+      :open="confirmingEarly"
+      :title="`Water ${plant.plantName} early?`"
+      :message="status.nextDate ? `It's not due until ${formatShortDate(status.nextDate)}. Water anyway?` : ''"
+      confirm-label="Water anyway"
+      confirm-class="btn-primary"
+      busy-label="Saving…"
+      :busy="watering"
+      @confirm="markWatered"
+      @cancel="confirmingEarly = false"
     />
   </main>
 </template>
@@ -256,7 +367,9 @@ async function onDelete() {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain = show the whole photo inside the same 4:3 frame (no cropping);
+     any spare space shows the frame's soft green background */
+  object-fit: contain;
 }
 
 .placeholder {
@@ -328,13 +441,51 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
-.notes {
-  white-space: pre-line;
-  line-height: 1.65;
-  color: var(--color-text);
+.muted {
+  color: var(--muted);
 }
 
-.muted {
+.muted.small {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+}
+
+/* Care checklist: one row per step */
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.checklist input {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.care-progress {
+  height: 8px;
+  margin-top: 0.6rem;
+}
+
+/* Ticked steps are crossed out */
+.checklist .done {
+  text-decoration: line-through;
   color: var(--muted);
 }
 

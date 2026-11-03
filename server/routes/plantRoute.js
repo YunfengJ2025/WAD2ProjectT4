@@ -10,9 +10,12 @@ const {
   deletePlant,
 } = require("../controllers/plantController");
 
+// All plant routes are mounted at /plants in server.js
 const router = express.Router();
+// Every route below needs a logged-in user (sets req.userId)
 router.use(requireUser);
 
+// uploadPhoto (multer) runs first on create/update to read the form + optional photo
 router.get("/", getMyPlants);
 router.post("/", uploadPhoto, createPlant);
 router.get("/:plantId", getPlant);

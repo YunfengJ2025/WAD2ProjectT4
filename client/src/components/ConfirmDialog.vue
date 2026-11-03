@@ -1,18 +1,28 @@
 <script setup>
+// ConfirmDialog: a reusable "Are you sure?" pop-up (delete plant, log out, water early...).
+// The parent decides when it is open and what happens on confirm:
+//   <ConfirmDialog :open="..." title="..." @confirm="doIt" @cancel="close" />
+// It uses the browser's built-in <dialog> element, which already gives us the dark
+// backdrop, keeps keyboard focus inside the pop-up, and closes on the Esc key.
 import { ref, watch, onMounted } from 'vue'
 
 const props = defineProps({
-  open: { type: Boolean, default: false },
+  open: { type: Boolean, default: false }, // parent sets true to show the pop-up
   title: { type: String, required: true },
   message: { type: String, default: '' },
   confirmLabel: { type: String, default: 'Confirm' },
-  busy: { type: Boolean, default: false },
+  busy: { type: Boolean, default: false }, // true while the action runs: buttons disabled
   busyLabel: { type: String, default: 'Working…' },
+  // Colour of the confirm button: red for deleting, e.g. 'btn-primary' for safe actions
+  confirmClass: { type: String, default: 'btn-danger' },
 })
 const emit = defineEmits(['confirm', 'cancel'])
 
+// ref="dialog" in the template: gives us the real <dialog> element
 const dialog = ref(null)
 
+// Show or hide the <dialog> to match the `open` prop.
+// showModal() and close() are the browser's own methods for <dialog>.
 function sync(open) {
   const el = dialog.value
   if (!el) return
@@ -20,14 +30,19 @@ function sync(open) {
   else if (!open && el.open) el.close()
 }
 
+// Whenever the parent changes `open`, show/hide the dialog (watch),
+// and also once at the start in case it begins open (onMounted)
 watch(() => props.open, sync)
 onMounted(() => sync(props.open))
 
-// Esc key or clicking the backdrop
+// Esc key or clicking the backdrop: tell the parent "cancel".
+// preventDefault stops the browser closing it by itself, so the parent stays in control.
+// While busy (e.g. deleting), cancelling is ignored.
 function onCancel(event) {
   event.preventDefault()
   if (!props.busy) emit('cancel')
 }
+// A click on the dark area outside the box has the <dialog> itself as its target
 function onBackdropClick(event) {
   if (event.target === dialog.value) onCancel(event)
 }
@@ -47,7 +62,7 @@ function onBackdropClick(event) {
       <button type="button" class="btn" :disabled="busy" autofocus @click="emit('cancel')">
         Cancel
       </button>
-      <button type="button" class="btn btn-danger" :disabled="busy" @click="emit('confirm')">
+      <button type="button" class="btn" :class="confirmClass" :disabled="busy" @click="emit('confirm')">
         {{ busy ? busyLabel : confirmLabel }}
       </button>
     </div>
