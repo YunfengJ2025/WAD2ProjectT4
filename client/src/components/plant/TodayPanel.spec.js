@@ -86,20 +86,20 @@ describe('TodayPanel', () => {
     expect(wrapper.find('button').text()).toBe('Mark 2 as watered')
   })
 
-  // Verify that a due plant with unticked care steps shows under "Care to-do".
+  // Verify that a due plant's row shows how many care steps are left.
   it('shows care steps left for plants that need water', () => {
     localStorage.clear()
     const fern = makePlant(2, 'Fern', 2) // due today
     fern.wateringInfo.notes = 'Water the soil\nWipe the leaves'
-    const aloe = makePlant(3, 'Aloe', 0) // not due, so not in Care to-do
+    const aloe = makePlant(3, 'Aloe', 0) // watered today, so not in Needs water
     aloe.wateringInfo.notes = 'Keep dry'
 
     const wrapper = mountPanel([fern, aloe])
 
-    expect(wrapper.text()).toContain('Care to-do (1)')
-    expect(wrapper.find('.todo-list').text()).toContain('Fern')
-    expect(wrapper.find('.todo-list').text()).toContain('2 steps left')
-    expect(wrapper.find('.todo-list').text()).not.toContain('Aloe')
+    expect(wrapper.findAll('.care-link')).toHaveLength(1)
+    expect(wrapper.find('.care-link').text()).toContain('2 care steps left')
+    expect(wrapper.find('.check-list').text()).toContain('Fern')
+    expect(wrapper.find('.check-list').text()).not.toContain('Aloe')
   })
 
   // Verify the empty state when nothing needs water.
