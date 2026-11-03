@@ -6,6 +6,11 @@ import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
 
+// Let the parent tabs show request creation and the owner's request list separately.
+const props = defineProps({
+  section: { type: String, default: 'all' },
+})
+
 const auth = useAuthStore()
 const plantsStore = usePlantsStore()
 const plants = computed(() => plantsStore.plants)
@@ -112,29 +117,32 @@ async function requestMakeup({ request, visit }) {
 <template>
   <main class="care-page">
     <header class="page-heading">
-      <h1>Care requests</h1>
-      <p>Choose one or more of your plants and create a care request for them.</p>
+      <h1>{{ props.section === 'mine' ? 'My requests' : 'Care requests' }}</h1>
+      <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
+      <p v-else>View and manage the care requests you have posted.</p>
     </header>
 
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="notice" class="alert alert-success" role="status">{{ notice }}</p>
 
-    <section class="panel">
+    <section v-if="props.section !== 'mine'" class="panel">
       <h2>Your tokens</h2>
       <TokenBalance />
     </section>
 
-    <p v-if="loading" role="status">Loading your plants…</p>
-    <CareRequestForm
-      v-else
-      :key="formVersion"
-      :plants="plants"
-      :available-balance="auth.user?.availableTokenBalance ?? auth.user?.tokenBalance ?? 0"
-      :saving="saving"
-      @create-request="createRequest"
-    />
+    <template v-if="props.section !== 'mine'">
+      <p v-if="loading" role="status">Loading your plants…</p>
+      <CareRequestForm
+        v-else
+        :key="formVersion"
+        :plants="plants"
+        :available-balance="auth.user?.availableTokenBalance ?? auth.user?.tokenBalance ?? 0"
+        :saving="saving"
+        @create-request="createRequest"
+      />
+    </template>
 
-    <section class="panel requests-list">
+    <section v-if="props.section !== 'create'" class="panel requests-list">
       <h2>My requests</h2>
       <p v-if="loading" role="status">Loading requests…</p>
       <p v-else-if="!owned.length">You haven’t posted a request yet.</p>
