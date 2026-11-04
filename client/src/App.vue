@@ -17,7 +17,7 @@ const { show: toast } = useToast()
 const loggingOut = ref(false)
 const showLogoutConfirm = ref(false)
 
-// Main links. The logo goes to the schedule (/), and Profile, Dashboard,
+// Main links. The logo goes to the schedule (/schedule), and Profile, Dashboard,
 // Leaderboard etc. are in the avatar dropdown (NavBar.vue).
 const navigationitems = [
   { label: 'My Plants', to: '/plants' },
@@ -57,7 +57,7 @@ watch(() => auth.accessToken, (token) => {
 
   <NavBar
     class="mb-4 full-width"
-    v-if="!['sign-in', 'register'].includes(route.name)"
+    v-if="!['home', 'sign-in', 'register'].includes(route.name)"
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
