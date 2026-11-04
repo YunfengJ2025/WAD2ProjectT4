@@ -90,8 +90,11 @@ function date(value) {
             <span>{{ item.plant?.plantName || 'Plant' }}</span>
           </div>
           <p>Water {{ item.amountToWater ?? 0 }} ml each visit</p>
-          <p v-if="item.careInstructions">{{ item.careInstructions }}</p>
-          <!-- Care checklist (Carolyn): the owner's care notes as tick boxes (optional) -->
+          <!-- Care checklist (Carolyn): plain text only when there is no checklist (avoids showing the steps twice) -->
+          <p v-if="item.careInstructions && !careSteps[item.plantId].length">
+            {{ item.careInstructions }}
+          </p>
+          <!-- Care checklist (Carolyn): the owner's instructions as tick boxes (optional) -->
           <fieldset v-if="careSteps[item.plantId].length" class="care-checklist">
             <legend>
               Care checklist
@@ -105,13 +108,13 @@ function date(value) {
               <span>{{ step }}</span>
             </label>
           </fieldset>
+          <!-- Care checklist (Carolyn): optional note for the owner (max 100 characters) -->
           <label>
-            Action completed for this plant
+            <span>Note for the owner <small class="optional">(optional)</small></span>
             <input
               v-model="actions[item.plantId]"
               maxlength="100"
-              required
-              placeholder="e.g. Watered and checked the soil"
+              placeholder="e.g. Soil was very dry, leaves look healthy"
             />
           </label>
           <label>
@@ -266,6 +269,11 @@ p {
 }
 .care-checklist legend small {
   margin-left: 0.35rem;
+  font-weight: 400;
+  color: #68766b;
+}
+/* Care checklist (Carolyn): grey "(optional)" next to the note label */
+.optional {
   font-weight: 400;
   color: #68766b;
 }
