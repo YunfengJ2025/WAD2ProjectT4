@@ -1,19 +1,13 @@
 <script setup>
 import Loading from '@/components/Loading.vue'
 import { onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/post/PostCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import '@/assets/community.css'
 const store = usePostsStore()
-const router = useRouter()
-// Use app navigation history; direct visits fall back to the relevant listing.
-function goBack() {
-  if (router.options.history.state.back) router.back()
-  else router.replace('/profile#profile-posts')
-}
 const auth = useAuthStore()
 const selected = ref(null)
 const deleting = ref(false)
@@ -36,7 +30,8 @@ async function remove() {
 </script>
 <template>
   <main class="community-page my-posts-page">
-    <button type="button" class="community-back community-back-button" @click="goBack">← Back</button>
+    <!-- Always return to the community feed, regardless of navigation history. -->
+    <RouterLink to="/community" class="community-back">← Back to community</RouterLink>
     <header class="community-heading">
       <div>
         <p class="community-eyebrow">YOUR COMMUNITY UPDATES</p>

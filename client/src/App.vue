@@ -1,17 +1,22 @@
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import NavBar from './components/nav/NavBar.vue'
 import ToastHost from './components/ToastHost.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+import Loading from './components/Loading.vue'
 import { useToast } from './composables/useToast'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+// On refresh there is no matched route until guards and lazy imports finish.
+// Keep the loader visible during session restoration too, preventing a guest
+// navbar or an empty page from flashing before the actual destination is ready.
+const pageLoading = computed(() => !route.matched.length || auth.isRestoring)
 const { show: toast } = useToast()
 
 const loggingOut = ref(false)
@@ -57,12 +62,15 @@ watch(() => auth.accessToken, (token) => {
 
   <NavBar
     class="mb-4 full-width"
-    v-if="!['home', 'sign-in', 'register'].includes(route.name)"
+    v-if="!pageLoading && !['home', 'sign-in', 'register'].includes(route.name)"
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
 
-  <RouterView :key="route.path" />
+  <main v-if="pageLoading" class="app-loading" aria-busy="true">
+    <Loading label="Getting your garden ready…" />
+  </main>
+  <RouterView v-else :key="route.path" />
 
   <ToastHost />
 
@@ -86,5 +94,11 @@ watch(() => auth.accessToken, (token) => {
 .full-width {
   width: 100vw;
   margin-left: calc(50% - 50vw);
+}
+/* Center the shared tree animation while the initial route/session is resolving. */
+.app-loading {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
 }
 </style>

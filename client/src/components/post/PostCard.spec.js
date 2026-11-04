@@ -1,3 +1,6 @@
+// Lecture approach: arrange props/dependencies, act through the rendered controls,
+// then assert observable output. Await trigger/setValue for Vue updates and
+// flushPromises for async requests. Cleanup prevents state leaking between tests.
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { afterEach, expect, it } from 'vitest'
@@ -25,6 +28,7 @@ async function open(postImages = photos) {
   return router
 }
 afterEach(() => wrapper?.unmount())
+// Each case exercises one user-visible behaviour; child styling is not asserted.
 it('previews next and previous photos with wraparound without opening the post', async () => {
   const router = await open()
   await wrapper.get('[aria-label="Next photo for Garden"]').trigger('click')
@@ -39,6 +43,7 @@ it('previews next and previous photos with wraparound without opening the post',
   await flushPromises()
   expect(router.currentRoute.value.path).toBe('/community/5')
 })
+// Each case exercises one user-visible behaviour; child styling is not asserted.
 it('supports dot selection and keyboard arrows with an announced selected state', async () => {
   await open()
   const second = wrapper.get('[aria-label="Preview photo 2 for Garden"]')
@@ -48,6 +53,7 @@ it('supports dot selection and keyboard arrows with an announced selected state'
   expect(wrapper.get('img').attributes('src')).toBe(photos[0])
   expect(second.attributes('aria-pressed')).toBe('false')
 })
+// Each case exercises one user-visible behaviour; child styling is not asserted.
 it('keeps the title fallback navigable and can leave a broken photo preview', async () => {
   await open()
   await wrapper.get('img').trigger('error')
@@ -55,6 +61,7 @@ it('keeps the title fallback navigable and can leave a broken photo preview', as
   await wrapper.get('[aria-label="Next photo for Garden"]').trigger('click')
   expect(wrapper.get('img').attributes('src')).toBe(photos[1])
 })
+// Each case exercises one user-visible behaviour; child styling is not asserted.
 it('does not show preview controls on single-photo or text-only posts', async () => {
   await open([photos[0]])
   expect(wrapper.find('.post-preview-dots').exists()).toBe(false)
