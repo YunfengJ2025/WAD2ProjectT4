@@ -121,7 +121,7 @@ const router = createRouter({
 })
 
 for (const route of router.getRoutes()) {
-  if (route.path.startsWith('/plants')) route.meta.requiresAuth = true
+  if (!['sign-in', 'register'].includes(route.name)) route.meta.requiresAuth = true
 }
 
 router.beforeEach(async (to) => {
@@ -134,7 +134,7 @@ router.beforeEach(async (to) => {
     }
   }
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'sign-in', query: { redirect: to.fullPath } }
+    return { name: to.path === '/find-nearby' ? 'sign-in' : 'register', query: { redirect: to.fullPath } }
   }
   if (['sign-in', 'register'].includes(to.name) && auth.isAuthenticated) {
     return { name: 'my-plants' }
