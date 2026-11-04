@@ -58,8 +58,10 @@ async function connectDB() {
 }
 
 function startServer() {
-  const hostname = "localhost"; // Define server hostname
-  const port = 8000; // Define port number
+  // Hosting platforms supply PORT and need the server reachable outside localhost.
+  // Local development continues to use port 8000 when no override is supplied.
+  const hostname = process.env.HOST || "0.0.0.0";
+  const port = Number(process.env.PORT || 8000);
 
   // Start the server and listen on the specified hostname and port
   server.listen(port, hostname, () => {

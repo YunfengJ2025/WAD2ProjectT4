@@ -4,7 +4,7 @@ import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import axios from 'axios'
-import { request } from '@/api/http'
+import { apiUrl, request } from '@/api/http'
 import { useLikesStore } from '@/stores/likes'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/post/PostCard.vue'
@@ -127,9 +127,12 @@ function author(post) {
 // Fetch top leaders for the community podium
 async function loadLeaders() {
   try {
-    const res = await axios.get('http://localhost:8000/api/leaderboard')
-    if (res.data && res.data.leaderboard) {
-      leaders.value = res.data.leaderboard.slice(0, 3)
+    // Board routes retain their /api prefix on the backend, unlike /post and /user.
+    // Keep Axios while resolving the URL for either local or deployed hosting.
+    const response = await axios.get(apiUrl('/api/leaderboard'))
+    const data = response.data
+    if (data && data.leaderboard) {
+      leaders.value = data.leaderboard.slice(0, 3)
     }
   } catch (err) {
     console.error('Failed to load leaderboard for community podium:', err)
