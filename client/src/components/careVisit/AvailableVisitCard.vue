@@ -2,22 +2,14 @@
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): this request's instructions (or the plant's notes) as steps
 import { getRequestSteps } from '@/utils/careSteps'
-
-const waterSourceLabels = {
-  left_out: 'Water left outside',
-  tap_available: 'Tap available',
-  sitter_brings: 'Sitter brings water',
-}
+// (Carolyn) Fix 5: shared date / token / water wording for all visit cards
+import { formatDate as date, tokenText, waterSourceLabel } from '@/utils/visitFormat'
 
 defineProps({
   visit: { type: Object, required: true },
   busy: { type: Boolean, default: false },
 })
 const emit = defineEmits(['accept-visit'])
-
-function date(value) {
-  return new Date(value).toLocaleDateString('en-GB')
-}
 </script>
 
 <template>
@@ -29,9 +21,9 @@ function date(value) {
         <p class="eyebrow">{{ date(visit.visitDate) }} · {{ visit.owner?.userName || 'Neighbour' }}</p>
         <strong>{{ visit.plants?.length || 1 }} plant{{ (visit.plants?.length || 1) === 1 ? '' : 's' }} to care for</strong>
       </div>
-      <span class="reward">{{ visit.request?.tokenReward }} tokens</span>
+      <span v-if="visit.request?.tokenReward" class="reward">{{ tokenText(visit.request.tokenReward) }}</span>
     </div>
-    <p class="water-source">Water: {{ waterSourceLabels[visit.request?.waterSource] || 'Tap available' }}</p>
+    <p class="water-source">Water: {{ waterSourceLabel(visit.request?.waterSource) }}</p>
     <p v-if="visit.request?.note" class="note">{{ visit.request.note }}</p>
     <div class="plant-grid">
       <div v-for="item in visit.items || []" :key="item.plantId" class="plant-tile">
