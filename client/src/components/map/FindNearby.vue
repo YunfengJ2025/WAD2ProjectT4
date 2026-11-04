@@ -25,8 +25,8 @@ const todayYmd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singap
 const selectedDate = ref(todayYmd)
 
 // "See all requests" mode: requests grouped by owner for their whole request period
-// it is simply "no date picked", so clearing the date input also switches to this view
-const showAll = computed(() => !selectedDate.value)
+// Keep the view independent of the optional date filter.
+const showAll = ref(false)
 const activeGroupKey = ref('') // the grouped request opened from the list ('' = show the list)
 
 
@@ -72,6 +72,8 @@ onMounted(load)
 // Distances are measured from the dropped pin when one is present.
 const filteredRequests = computed(() => {
   const source = showAll.value || searchCenter.value ? nationwideVisits.value : allVisits.value
+  const matchingGroups = showAll.value && selectedDate.value
+    ? new Set(source.filter((v) => v.date === selectedDate.value).map(groupKey)) : null
   return source.map((visit) => {
     if (!searchCenter.value) return visit
     const rad = (n) => n * Math.PI / 180
@@ -79,13 +81,16 @@ const filteredRequests = computed(() => {
     const a = Math.sin(rad(visit.lat - lat) / 2) ** 2
       + Math.cos(rad(lat)) * Math.cos(rad(visit.lat)) * Math.sin(rad(visit.lng - lng) / 2) ** 2
     return { ...visit, distanceKm: 6371 * 2 * Math.asin(Math.sqrt(Math.min(1, a))) }
-  }).filter((v) => (!selectedDate.value || v.date === selectedDate.value)
+  }).filter((v) => (showAll.value
+    ? !matchingGroups || matchingGroups.has(groupKey(v))
+    : !selectedDate.value || v.date === selectedDate.value)
     && ((showAll.value && !searchCenter.value) || v.distanceKm <= radiusKm.value))
     .sort((a, b) => a.distanceKm - b.distanceKm)
 })
 
 function toggleView() {
   const returningToDate = showAll.value
+  showAll.value = !showAll.value
   pinSelected.value = null
   activeGroupKey.value = ''
   acceptedNote.value = ''
@@ -102,6 +107,11 @@ function resetOverview() {
   searchCenter.value = null
   radiusKm.value = 1
   selectedDate.value = ''
+  if (!showAll.value) {
+    showAll.value = true
+  } else {
+    loadAll()
+  }
 }
 
 async function onDropPin(point) {
@@ -174,15 +184,13 @@ async function loadAll() {
   }
 }
 
-// every time the page switches between date view and "See all", start that view fresh
-// (this is what makes "Back to date view" reset the panel, even if a visit was open)
+// Changing filters clears details without changing the current view or search pin.
 watch(selectedDate, () => {
   pinSelected.value = null
   activeGroupKey.value = ''
-  if (showAll.value) {
-    searchCenter.value = null
-    loadAll()
-  }
+})
+watch(showAll, (on) => {
+  if (on) loadAll()
 })
 
 // up to 3 plant photos for the strip at the top of a grouped request
@@ -313,7 +321,7 @@ async function acceptVisit(visit) {
       :aria-pressed="showAll"
       @click="toggleView"
     >
-      {{ showAll ? 'Back to date view' : 'See all requests' }}
+      {{ showAll ? 'Back to Find nearby' : 'See all requests' }}
     </button>
   </div>
 
