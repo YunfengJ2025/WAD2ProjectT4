@@ -85,12 +85,27 @@ const routes = [
     component: () => import('../views/user/PublicProfileView.vue'),
   },
 
+  // My Sits is the main sitter page; Find Nearby is opened from its "Available sits" button.
+  {
+    path: '/my-sits',
+    name: 'my-sits',
+    meta: { requiresAuth: true },
+    component: () => import('../views/careVisit/CareVisitsView.vue'),
+    props: { section: 'mine' },
+  },
   { path: '/find-nearby', name: 'Find Nearby', component: FindNearby },
   // Requests workspace uses query tabs for request and sitter workflows.
-  { path: '/requests', name: 'requests', meta: { requiresAuth: true }, component: () => import('../views/careRequest/RequestsView.vue') },
+  // The old "My sits" tab now lives at /my-sits.
+  {
+    path: '/requests',
+    name: 'requests',
+    meta: { requiresAuth: true },
+    component: () => import('../views/careRequest/RequestsView.vue'),
+    beforeEnter: (to) => (to.query.tab === 'sits' ? { name: 'my-sits' } : undefined),
+  },
   // Old addresses, kept so existing links still work
   { path: '/care-requests', redirect: { path: '/requests' } },
-  { path: '/care-visits', redirect: { path: '/requests', query: { tab: 'sits' } } },
+  { path: '/care-visits', redirect: { name: 'my-sits' } },
   // A single page adapts its sections to the visit's stored status.
   {
     path: '/care-visits/:visitId',
