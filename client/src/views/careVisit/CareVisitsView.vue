@@ -230,9 +230,10 @@ async function submitVisitProof(details) {
 
 <style scoped>
 .visits-page {
-  max-width: 900px;
+  /* (Carolyn) width matches the Community page (was max-width 900px, padding 0 1rem) */
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 0 1rem 3rem;
+  padding: 0 0 3rem;
 }
 /* Same layout as My Plants: title on the left, action button top right. */
 .page-heading {
@@ -249,8 +250,11 @@ async function submitVisitProof(details) {
 .page-heading .btn:active {
   transform: scale(0.96);
 }
+/* (Carolyn) same title size as the Community page */
 h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
+  letter-spacing: -0.04em;
 }
 .panel {
   padding: 1.25rem;

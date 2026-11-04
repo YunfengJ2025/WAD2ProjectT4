@@ -7,6 +7,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import NavBar from './components/nav/NavBar.vue'
 import ToastHost from './components/ToastHost.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+import Loading from './components/Loading.vue'
 import { useToast } from './composables/useToast'
 
 const auth = useAuthStore()
@@ -55,9 +56,13 @@ watch(() => auth.accessToken, (token) => {
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
+  <!-- (Carolyn) route.name is empty until the first page is ready (the router is still
+       checking the login), so show the loading tree and no navbar until then -->
+  <Loading v-if="!route.name" class="app-loading" label="Loading…" />
+
   <NavBar
     class="mb-4 full-width"
-    v-if="!['home', 'sign-in', 'register'].includes(route.name)"
+    v-if="route.name && !['home', 'sign-in', 'register'].includes(route.name)"
     :navigationitems="navigationitems"
     @logout="showLogoutConfirm = true"
   />
@@ -86,5 +91,10 @@ watch(() => auth.accessToken, (token) => {
 .full-width {
   width: 100vw;
   margin-left: calc(50% - 50vw);
+}
+/* (Carolyn) first-load tree in the middle of the screen */
+.app-loading {
+  min-height: 80vh;
+  align-content: center;
 }
 </style>

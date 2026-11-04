@@ -228,9 +228,10 @@ async function markHealthSeen(check) {
 </template>
 
 <style scoped>
-.care-page { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+/* (Carolyn) width and title match the Community page (was max-width 1100px, padding 0 1rem) */
+.care-page { max-width: 1160px; margin: 0 auto; padding: 0 0 3rem; }
 .page-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.75rem 1rem; margin-bottom: 1.25rem; }
-h1 { font-weight: 700; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.04em; }
 .panel { padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--color-border, #dce5dc); border-radius: 12px; background: var(--surface, #fff); }
 .panel h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .requests-list h2 { margin-bottom: 1rem; font-size: 1.2rem; }

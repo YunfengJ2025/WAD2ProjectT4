@@ -126,6 +126,13 @@ const routes = [
     meta: { requiresAuth: true },
     component: () => import('../views/WateringSchedView.vue'),
   },
+
+  // (Carolyn) any unknown URL; never shown, the guard below sends it to /schedule or /
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('../views/landingpage.vue'),
+  },
 ]
 
 const router = createRouter({
@@ -140,6 +147,11 @@ for (const route of router.getRoutes()) {
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+  // (Carolyn) unknown URL: has a login token -> schedule, no token -> landing page.
+  // Checked before restoreSession so it doesn't wait for /user/me; /schedule still checks the token itself.
+  if (to.name === 'not-found') {
+    return { name: auth.accessToken ? 'schedule' : 'home' }
+  }
   if (auth.accessToken && !auth.user) {
     try {
       await auth.restoreSession()
