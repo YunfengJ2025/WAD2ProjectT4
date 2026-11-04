@@ -18,6 +18,8 @@ const props = defineProps({
   request: { type: Object, required: true },
   busy: { type: Boolean, default: false },
   makeupBusyVisitId: { type: Number, default: 0 },
+  // true when a notification linked to this request (?requestId=…), so the card gets a green ring
+  highlighted: { type: Boolean, default: false },
   highlighted: { type: Boolean, default: false },
 })
 // Emit make-up actions to the view so request creation stays in the parent.
@@ -113,7 +115,12 @@ function healthLine(item) {
 </script>
 
 <template>
-  <article class="request-card" :class="`is-${request.status}`">
+  <!-- the id lets My Requests scroll to this card from a notification -->
+  <article
+    :id="`care-request-${request.requestId}`"
+    class="request-card"
+    :class="[`is-${request.status}`, { 'notification-target': highlighted }]"
+  >
     <div class="top">
       <div v-if="plants.length" class="stack" aria-hidden="true">
         <img
@@ -298,6 +305,7 @@ function healthLine(item) {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .request-card:hover { transform: translateY(-2px); box-shadow: 0 7px 18px #183c2417; }
+.request-card.notification-target { border-color: var(--primary, #14804a); box-shadow: 0 0 0 3px #14804a40, 0 7px 18px #183c2417; }
 .is-funding { --tone: #6c757d; }
 .is-open { --tone: #0aa2c0; }
 .is-in_progress { --tone: #d19a00; }
@@ -309,8 +317,9 @@ function healthLine(item) {
 .stack img, .stack .more { width: 44px; height: 44px; margin-left: -12px; border: 3px solid #fff; border-radius: 50%; object-fit: cover; background: #e8f3e9; }
 .stack img:first-child { margin-left: 0; }
 .stack .more { display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; color: #245b34; }
-.heading { flex: 1; min-width: 0; }
-.heading h3 { margin: 0; font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+/* min-width: the status badge wraps to the next line before the name gets squeezed letter by letter */
+.heading { flex: 1; min-width: 7.5rem; }
+.heading h3 { margin: 0; font-size: 1.05rem; font-weight: 700; overflow-wrap: break-word; }
 /* (Carolyn) request number, fact chips, progress, quiet cancel */
 .request-no { color: #68766b; font-size: 0.8rem; }
 /* (Carolyn) parts keep their size; extra height goes above the buttons (.foot margin-top: auto) */

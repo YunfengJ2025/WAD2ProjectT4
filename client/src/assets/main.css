@@ -312,8 +312,41 @@ img {
   border-bottom: 1px solid var(--line);
 }
 
-.navbar .nav-link.active {
+/* (Carolyn) nav links as soft pills: faint green on hover, light green for the current page.
+   Also replaces the Vue starter's square mint a:hover box inside the navbar. */
+.navbar-nav {
+  gap: 0.25rem;
+}
+.navbar .nav-link {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  transition: background-color 0.15s, color 0.15s;
+}
+.navbar .nav-link:hover,
+.navbar .navbar-brand:hover {
+  background-color: transparent;
+}
+.navbar .navbar-nav .nav-link:hover {
+  background-color: var(--bg);
+}
+.navbar .navbar-nav .nav-link.active {
+  background-color: var(--tint);
+  color: var(--primary-deep);
   font-weight: 600;
+}
+
+/* (Carolyn) navbar content lines up with the pages (1160px wide, same side gaps as #app) */
+.navbar > .container-fluid {
+  max-width: calc(1160px + 4rem);
+  padding: 0 2rem;
+}
+.navbar .navbar-brand {
+  padding-left: 0; /* the starter's a { padding: 3px } pushed the logo 3px in */
+}
+@media (max-width: 1023px) {
+  .navbar > .container-fluid {
+    padding: 0 1.5rem;
+  }
 }
 
 @keyframes bgShift {

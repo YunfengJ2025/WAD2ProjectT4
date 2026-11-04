@@ -7,6 +7,7 @@ import StarRating from '@/components/review/StarRating.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import plantPlaceholder from '@/assets/plant.png'
+import { getRequestSteps } from '@/utils/careSteps'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +26,63 @@ const plantItems = computed(() => visit.value?.items || [])
 // Photo and care details share one selection, so they always describe the same plant.
 const activePlant = computed(() => plantItems.value[activePlantIndex.value])
 let swipeStart = null
+
+// Care checklist for the plant on screen: the request's instructions, else the plant's own care notes
+// (same steps the sitter ticks). After the visit, show which steps the sitter ticked.
+const activeSteps = computed(() => (activePlant.value ? getRequestSteps(activePlant.value) : []))
+// Only when ticks were saved (visits finished before the checklist existed have none)
+const showTicks = computed(
+  () => visit.value?.status === 'completed' && (activePlant.value?.completedSteps || []).length > 0,
+)
+function stepDone(step) {
+  return (activePlant.value?.completedSteps || []).includes(step)
+}
+const doneStepCount = computed(() => activeSteps.value.filter(stepDone).length)
+
+// ---------- make-up visit (owner, missed visit) ----------
+const isOwner = computed(() => visit.value?.request?.ownerId === auth.user?.userId)
+const canRequestMakeup = computed(
+  () =>
+    isOwner.value &&
+    visit.value?.status === 'missed' &&
+    !visit.value?.makeupRequestId &&
+    visit.value?.request?.status !== 'cancelled',
+)
+const makeupBusy = ref(false)
+const makeupError = ref('')
+
+// "YYYY-MM-DD" in Singapore time, and that date plus some days
+function sgDate(value) {
+  return new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })
+}
+function addDays(day, days) {
+  const [year, month, date] = day.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10)
+}
+// Same date rule as My Requests: tomorrow, or the day after the original request ends if that is later
+const makeupDate = computed(() => {
+  const tomorrow = addDays(sgDate(new Date()), 1)
+  const afterRequest = visit.value?.request?.endDate ? addDays(sgDate(visit.value.request.endDate), 1) : tomorrow
+  return afterRequest > tomorrow ? afterRequest : tomorrow
+})
+
+async function requestMakeup() {
+  if (makeupBusy.value || !canRequestMakeup.value) return
+  makeupBusy.value = true
+  makeupError.value = ''
+  try {
+    const result = await auth.authorizedRequest(`/care-visits/make-up/${visit.value.visitId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate: makeupDate.value }),
+    })
+    visit.value.makeupRequestId = result.request.requestId
+  } catch (err) {
+    makeupError.value = err.message
+  } finally {
+    makeupBusy.value = false
+  }
+}
 
 // Preserve the previous page and its query tab. Direct links have no app history.
 function goBack() {
@@ -213,6 +271,23 @@ async function submitReview() {
             >
             <span class="visit-reward">{{ visit.request?.tokenReward }} tokens</span>
           </div>
+          <!-- Missed visit: the owner can post a one-day make-up request (once per missed visit) -->
+          <div v-if="visit.status === 'missed' && isOwner" class="makeup-box" role="status">
+            <template v-if="visit.makeupRequestId">
+              <span>🔁 A make-up visit has been requested for this missed visit.</span>
+              <RouterLink :to="{ path: '/requests', query: { tab: 'requests', requestId: visit.makeupRequestId } }">
+                View request #{{ visit.makeupRequestId }} →
+              </RouterLink>
+            </template>
+            <template v-else-if="canRequestMakeup">
+              <span>⚠ The sitter missed this visit. Post a make-up visit for <strong>{{ formatDate(makeupDate) }}</strong> with the same plants and care details.</span>
+              <button type="button" class="makeup-button" :disabled="makeupBusy" @click="requestMakeup">
+                {{ makeupBusy ? 'Posting…' : 'Request make-up visit' }}
+              </button>
+            </template>
+            <span v-else>This request was cancelled, so a make-up visit can’t be requested.</span>
+            <p v-if="makeupError" class="makeup-error" role="alert">{{ makeupError }}</p>
+          </div>
           <div class="visit-description">
             <h2>Description</h2>
             <p class="preserve-lines">{{ visit.request?.note || 'No description provided.' }}</p>
@@ -370,10 +445,19 @@ async function submitReview() {
                 <dd>{{ activePlant.amountToWater ?? 0 }} ml</dd>
               </div>
             </dl>
-            <h4>Care instructions</h4>
-            <p class="preserve-lines">
-              {{ activePlant.careInstructions || 'No additional instructions.' }}
-            </p>
+            <!-- Every care step as a checklist; after the visit, ✓ = ticked by the sitter, ○ = not ticked -->
+            <h4>
+              Care checklist
+              <small v-if="showTicks && activeSteps.length">({{ doneStepCount }} of {{ activeSteps.length }} done)</small>
+            </h4>
+            <ul v-if="activeSteps.length" class="care-steps">
+              <li v-for="step in activeSteps" :key="step" :class="{ done: showTicks && stepDone(step), missed: showTicks && !stepDone(step) }">
+                <span class="tick" aria-hidden="true">{{ showTicks && !stepDone(step) ? '○' : '✓' }}</span>
+                <span>{{ step }}</span>
+                <span v-if="showTicks" class="visually-hidden">{{ stepDone(step) ? '(done)' : '(not done)' }}</span>
+              </li>
+            </ul>
+            <p v-else class="no-steps">No care steps for this plant, just water it.</p>
           </article>
         </div>
       </section>
@@ -614,10 +698,12 @@ h3 {
   gap: 1rem;
 }
 /* A full photo and its facts share a row on desktop and stack on phones. */
+/* Photo column stays a sensible size; details and checklist take the rest */
 .plant-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.75rem;
 }
 /* Carousel columns: allow gallery and detail content to shrink inside the grid. */
 .plant-gallery,
@@ -627,17 +713,18 @@ h3 {
 /* Photo frame: preserve a 4:3 area and allow vertical scrolling during touch gestures. */
 .plant-photo {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5; /* portrait frame: most plant photos are tall, so less empty space */
   border-radius: 12px;
   overflow: hidden;
   background: #f0f6f1;
   touch-action: pan-y;
 }
 /* Plant image: show the entire photo inside the frame without cropping. */
+/* Plant image: fill the frame (no grey bars at the sides) */
 .plant-photo > img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 /* Carousel arrows: center circular controls vertically over the photo edges. */
 .gallery-arrow {
@@ -717,6 +804,90 @@ h3 {
   margin: 0;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+/* Care checklist: one row per step in a soft box */
+.plant-info h4 small {
+  color: #607166;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+.care-steps {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.care-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #f4f8f5;
+  color: #1f2d24;
+  overflow-wrap: anywhere;
+}
+.tick {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin-top: 0.1rem;
+  border-radius: 6px;
+  background: #daf2e3;
+  color: #0e6138;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.care-steps li.missed {
+  background: #fbf6ea;
+  color: #5e5440;
+}
+.care-steps li.missed .tick {
+  background: #fff3d1;
+  color: #795900;
+}
+.no-steps {
+  color: #607166;
+  font-style: italic;
+}
+/* Missed visit: make-up box under the date */
+.makeup-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #f3d9a4;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #5e4a14;
+}
+.makeup-box a {
+  color: #0e6138;
+  font-weight: 600;
+}
+.makeup-button {
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #14804a;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.makeup-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.makeup-error {
+  width: 100%;
+  margin: 0;
+  color: #a22f17;
 }
 /* Back navigation: style the history button as a lightweight text action. */
 .back-button {
