@@ -51,9 +51,6 @@ function onSaved(saved) {
 
 <template>
   <main class="form-page">
-    <RouterLink :to="backTo" class="back">
-      <span class="arrow">←</span> {{ isEdit ? 'Back to plant' : 'My Plants' }}
-    </RouterLink>
     <!-- The form shows its own title (with Save beside it); this one is for loading/errors -->
     <h1 v-if="loading || loadError">{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
 
@@ -75,32 +72,6 @@ function onSaved(saved) {
 </template>
 
 <style scoped>
-
-/* Same back link as the plant page: no underline, arrow nudges on hover */
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  color: #4d5b52;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.back:hover {
-  background: transparent;
-  color: var(--accent);
-}
-
-.back .arrow {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-
-.back:hover .arrow {
-  transform: translateX(-3px);
-}
 
 h1 {
   margin-bottom: 24px;
