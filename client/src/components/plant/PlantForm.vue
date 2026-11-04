@@ -437,7 +437,7 @@ async function onSubmit() {
                   min="1"
                   max="30"
                   step="1"
-                  placeholder="7"
+                  placeholder="e.g. 7"
                   required
                   :aria-invalid="!!errors.frequencyDays"
                   :aria-describedby="errors.frequencyDays ? 'frequencyDays-error' : undefined"
@@ -461,7 +461,7 @@ async function onSubmit() {
                   min="10"
                   max="5000"
                   step="10"
-                  placeholder="250"
+                  placeholder="e.g. 250"
                   required
                   :aria-invalid="!!errors.amountMl"
                   :aria-describedby="errors.amountMl ? 'amountMl-error' : undefined"
@@ -695,6 +695,13 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  /* Keep both boxes on the same line, even when only one has an error under it */
+  align-items: start;
+}
+
+/* Lighter example text, so it doesn't look like a typed value */
+.form-control::placeholder {
+  color: #9aa79e;
 }
 
 /* Number + unit on one line: the input shares the row instead of taking 100% */
