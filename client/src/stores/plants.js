@@ -27,10 +27,11 @@ export const usePlantsStore = defineStore('plants', () => {
     plants.value = data.plants
     return plants.value
   }
+  // Also returns inActiveRequest: true if the plant is in a request still going
   async function fetchPlant(id) {
-    const { plant } = await load(`/plants/${id}`)
+    const { plant, inActiveRequest } = await load(`/plants/${id}`)
     upsert(plant)
-    return plant
+    return { plant, inActiveRequest: !!inActiveRequest }
   }
   async function savePlant(formData, id) {
     const { plant } = await load(id == null ? '/plants' : `/plants/${id}`, {

@@ -5,6 +5,7 @@ const {
   updatePlantForOwner,
   markPlantWatered,
   deletePlantForOwner,
+  isPlantInActiveRequest,
 } = require("../models/plantModel");
 
 // Schema paths -> form field names, so errors show next to the right input.
@@ -61,7 +62,9 @@ exports.getMyPlants = async (req, res) => {
 exports.getPlant = async (req, res) => {
   try {
     const plant = await getPlantByOwner(req.params.plantId, req.userId);
-    res.json({ plant });
+    // Lets the plant page disable Delete while the plant is in an active request
+    const inActiveRequest = await isPlantInActiveRequest(plant.plantId);
+    res.json({ plant, inActiveRequest });
   } catch (err) {
     handleError(err, res);
   }

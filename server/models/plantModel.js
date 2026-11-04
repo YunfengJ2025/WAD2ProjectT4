@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 const { getNextSequence } = require("./counterModel");
 const { uploadImage, deleteImage } = require("../config/cloudinary");
+// Used to stop deleting a plant that is in an active care request
+const RequestItem = require("./requestItemModel");
+const CareVisit = require("./careVisitModel");
+const CareRequest = require("./careRequestModel");
 
 const wateringInfoSchema = new mongoose.Schema(
     {
@@ -208,10 +212,27 @@ async function markPlantWatered(plantId, ownerId) {
     return plant;
 }
 
+// true if the plant is in a request that is still going (not completed/cancelled).
+// Plant -> RequestItem (plantId) -> CareVisit (visitId) -> CareRequest (requestId)
+async function isPlantInActiveRequest(plantId) {
+    const visitIds = await RequestItem.distinct("visitId", { plantId });
+    if (visitIds.length === 0) return false;
+    const requestIds = await CareVisit.distinct("requestId", { visitId: { $in: visitIds } });
+    const active = await CareRequest.exists({
+        requestId: { $in: requestIds },
+        status: { $in: ["funding", "open", "in_progress"] },
+    });
+    return !!active;
+}
+
 // Deletes a plant (must be yours), then removes its photo from Cloudinary.
 // deleteImage does nothing if the plant had no photo.
 async function deletePlantForOwner(plantId, ownerId) {
     const plant = await getPlantByOwner(plantId, ownerId);
+    // Can't delete a plant a sitter may still come to care for
+    if (await isPlantInActiveRequest(plant.plantId)) {
+        throw httpError(409, "This plant is in an active care request. Cancel or finish the request first.");
+    }
     await plant.deleteOne();
     await deleteImage(plant.photoPublicId);
 }
@@ -225,4 +246,5 @@ module.exports = {
     updatePlantForOwner,
     markPlantWatered,
     deletePlantForOwner,
+    isPlantInActiveRequest,
 };

@@ -66,10 +66,32 @@ describe('AssignedVisitCard care checklist', () => {
     const fileInput = wrapper.find('input[type="file"]')
     Object.defineProperty(fileInput.element, 'files', { value: [photo] })
     await fileInput.trigger('change')
+    await wrapper.find('.care-checklist input').setValue(true) // tick the only step
 
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit-proof')[0][0].actions).toEqual({ 5: 'Care done' })
+  })
+
+  // Verify that the visit can't be submitted until every care step is ticked.
+  it('blocks submitting until every care step is ticked', async () => {
+    const wrapper = mount(AssignedVisitCard, {
+      props: { visit: makeVisit('Water the soil\nWipe the leaves') },
+    })
+    const photo = new File(['x'], 'proof.jpg', { type: 'image/jpeg' })
+    const fileInput = wrapper.find('input[type="file"]')
+    Object.defineProperty(fileInput.element, 'files', { value: [photo] })
+    await fileInput.trigger('change')
+    const steps = wrapper.findAll('.care-checklist input')
+
+    await steps[0].setValue(true) // only 1 of 2 ticked
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit-proof')).toBeUndefined()
+    expect(wrapper.find('.error').text()).toContain('Tick every care step')
+
+    await steps[1].setValue(true) // now 2 of 2
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit-proof')).toHaveLength(1)
   })
 
   // Verify that no checklist shows when the plant has no care notes.
