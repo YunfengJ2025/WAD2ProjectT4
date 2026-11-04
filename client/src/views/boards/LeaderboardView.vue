@@ -1,22 +1,14 @@
 <template>
-  <!-- anim-fade-in = CSS animation class from main.css [NOT IN WAD2 CONTENT] -->
   <div class="leaderboard-page anim-fade-in">
     <main class="content">
       <!-- HEADER -->
       <header class="page-header anim-slide-up">
         <div>
-          <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
           <p class="greeting">Singapore Rankings</p>
           <h1>🏆 Community Leaderboard</h1>
           <p class="subtitle">Top plant caregivers and helpful neighbours ranked by community tokens</p>
         </div>
 
-        <!--
-          glass-card = glassmorphism CSS class [NOT IN WAD2 CONTENT]
-          @change event binding — covered in WAD2 wk5 (Vue Events)
-          :checked prop binding — covered in WAD2 wk4 (v-bind)
-          <router-link> — covered in WAD2 wk6 (Vue Router)
-        -->
         <div class="header-actions">
           <router-link to="/dashboard" class="btn btn-primary btn-sm btn-nav-action">
             <span class="btn-icon">🌱</span>
@@ -31,11 +23,7 @@
         </div>
       </header>
 
-      <!--
-        TOP 3 PODIUM
-        v-if — covered in WAD2 wk4 (Vue Basics I)
-        UserAvatar component renders user photo or clean initials fallback
-      -->
+      <!-- TOP 3 PODIUM -->
       <div v-if="filteredLeaderboard.length >= 3" class="podium-section anim-slide-up anim-delay-1">
         <!-- 2nd Place -->
         <div class="podium-card glass-card silver">
@@ -85,15 +73,10 @@
       <div class="leaderboard-card glass-card anim-slide-up anim-delay-2">
         <div class="lb-header-row">
           <h3 class="chart-title">Top Token Holders in Singapore</h3>
-          <!-- .length computed on array — basic JS -->
           <span class="badge badge-done">{{ filteredLeaderboard.length }} Neighbours Active</span>
         </div>
 
         <div class="lb-list">
-          <!--
-            v-for with :key — covered in WAD2 wk4
-            :class object binding — covered in WAD2 wk4
-          -->
           <div
             v-for="u in filteredLeaderboard"
             :key="u.id"
@@ -101,10 +84,6 @@
             :class="{ 'lb-me': isCurrentUser(u) }"
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
-            <!--
-              User Avatar with UserAvatar component:
-              Uses real photo if available, or clean fallback initials circle.
-            -->
             <div class="lb-avatar-wrap">
               <UserAvatar
                 :user="{ photoUrl: u.photoUrl, userName: u.name }"
@@ -114,14 +93,12 @@
             </div>
             <div class="lb-name">
               {{ u.name }}
-              <!-- v-if — covered in WAD2 wk4 -->
               <span v-if="isCurrentUser(u)" class="you-tag">You</span>
             </div>
             <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}</div>
             <div class="lb-tokens">🪙 {{ u.availableTokens }}</div>
           </div>
 
-          <!-- v-if empty state — covered in WAD2 wk4 -->
           <div v-if="filteredLeaderboard.length === 0" class="empty-state">
             <p>No neighbours on the leaderboard yet!</p>
           </div>
@@ -132,32 +109,17 @@
 </template>
 
 <script setup>
-// ref, computed, onMounted — covered in WAD2 wk4/wk5
 import { ref, computed, onMounted } from 'vue'
-
-// axios — covered in WAD2 wk5 (server/client communication)
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 
-// useAuthStore() is a Pinia store — global reactive state for auth [NOT IN WAD2 CONTENT]
-// Holds the logged-in user's data so all components share the same auth state.
 const auth = useAuthStore()
-
-// isOptedOut tracks whether the current user has chosen to hide their profile.
-// Starts as false; updated by fetchOptOutStatus() on mount.
 const isOptedOut = ref(false)
+const leaderboard = ref([])
 
-// computed() — covered in WAD2 wk4/wk5
-// Optional chaining (?.) safely reads nested properties without crashing if auth.user is null.
-// This is modern JS — not WAD2-specific. It's equivalent to:
-//   auth.user !== null && auth.user !== undefined ? auth.user.userId : null
 const CURRENT_USER_ID = computed(() => auth.user?.userId || auth.user?.id || null)
 
-// isCurrentUser() — defensive dual-match logic:
-// First tries to match by numeric userId (from DB), then falls back to matching by
-// userName string (case-insensitive). This guards against the auth store returning
-// slightly different user object shapes depending on how/when the user logged in.
 function isCurrentUser(u) {
   if (!auth.user) return false
   if (CURRENT_USER_ID.value && String(u.id) === String(CURRENT_USER_ID.value)) return true
@@ -165,19 +127,7 @@ function isCurrentUser(u) {
   return false
 }
 
-// Initial empty leaderboard array — starts as [] so v-for renders nothing.
-// Populated reactively once fetchLeaderboard() resolves.
-const leaderboard = ref([])
-
-// computed() with .filter() and .map() — covered in WAD2 wk4/wk5 (Vue + JS arrays)
-// filteredLeaderboard is derived state — it recalculates automatically whenever
-// leaderboard or isOptedOut changes (Vue tracks these dependencies).
-// Steps:
-//   1. .filter() removes the current user from the list if they've opted out.
-//   2. .map() with spread (...u) creates a new object for each user with rank attached.
-//      Spread operator — modern JS, not explicitly in WAD2.
-//      rank is recalculated from the current array index so if #1 opts out,
-//      everyone below automatically moves up without any server call.
+// Filter out current user if opted out and recalculate ranks
 const filteredLeaderboard = computed(() => {
   let list = leaderboard.value
   if (isOptedOut.value) {
@@ -186,10 +136,6 @@ const filteredLeaderboard = computed(() => {
   return list.map((u, i) => ({ ...u, rank: i + 1 }))
 })
 
-// async/await + axios.get() — covered in WAD2 wk5
-// Calls GET /api/leaderboard which returns users sorted by availableTokens descending.
-// The backend already excludes opted-out users at the DB level (hideFromLeaderboard: {$ne: true})
-// so we never even receive their data — a second line of privacy protection.
 async function fetchLeaderboard() {
   try {
     const res = await axios.get('http://localhost:8000/api/leaderboard')
@@ -201,10 +147,6 @@ async function fetchLeaderboard() {
   }
 }
 
-// Calls GET /api/leaderboard/status/:userId to retrieve the user's saved opt-out preference.
-// This is needed because if the user opted out in a previous session, the checkbox
-// must already appear ticked when they open the page — we cannot rely on in-memory state.
-// Falls back to auth.user.hideFromLeaderboard if the API call fails (e.g. no connection).
 async function fetchOptOutStatus() {
   const targetId = CURRENT_USER_ID.value
   if (!targetId) {
@@ -228,41 +170,29 @@ async function fetchOptOutStatus() {
   }
 }
 
-// axios.patch() — covered in WAD2 wk5 (HTTP methods)
-// PATCH = partial update. We're only changing one field (hideFromLeaderboard) on the user,
-// not replacing the entire user document. Using the correct HTTP verb is REST best practice.
-// Pattern: Optimistic UI — we flip isOptedOut.value immediately (instant feedback),
-// then confirm with the server. If the server fails, we flip it back (the catch block).
 async function toggleOptOut() {
   const targetId = CURRENT_USER_ID.value
-  isOptedOut.value = !isOptedOut.value // immediate UI update (optimistic)
+  isOptedOut.value = !isOptedOut.value
 
   if (targetId) {
     try {
       const res = await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
       if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
-        isOptedOut.value = res.data.hideFromLeaderboard // confirm with server's actual value
+        isOptedOut.value = res.data.hideFromLeaderboard
         if (auth.user) {
           auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
         }
       }
-      await fetchLeaderboard() // re-fetch so the list reflects the change immediately
+      await fetchLeaderboard()
     } catch (err) {
       console.error('Error toggling opt-out:', err)
-      isOptedOut.value = !isOptedOut.value // revert on failure
+      isOptedOut.value = !isOptedOut.value
     }
   }
 }
 
-// Object lookup with fallback — concise alternative to a switch/if-else chain.
-// { 1: '🥇', 2: '🥈', 3: '🥉' }[rank] looks up the rank as a key.
-// If rank > 3, the lookup returns undefined, so || `#${rank}` gives '#4', '#5', etc.
 const rankMedal = (rank) => ({ 1: '🥇', 2: '🥈', 3: '🥉' }[rank] || `#${rank}`)
 
-// onMounted() lifecycle hook — covered in WAD2 wk5
-// We await fetchOptOutStatus() FIRST so the checkbox is in the correct state
-// before the leaderboard list renders — otherwise the user might see a flicker
-// where they briefly appear on the list even though they've opted out.
 onMounted(async () => {
   await fetchOptOutStatus()
   await fetchLeaderboard()
@@ -270,13 +200,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* scoped styles — Vue SFC structure shown in WAD2 wk6 */
-
 .leaderboard-page {
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
-  padding-bottom: var(--space-2xl); /* CSS custom property [NOT IN WAD2 CONTENT] */
+  padding-bottom: var(--space-2xl);
   box-sizing: border-box;
 }
 
@@ -390,7 +318,6 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* accent-color — modern CSS property, [NOT IN WAD2 CONTENT] */
 .styled-checkbox {
   accent-color: var(--color-primary-500);
   width: 16px;
@@ -398,7 +325,6 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-/* Tab strip — custom pill-style tabs [NOT IN WAD2 CONTENT] (WAD2 wk3 teaches Bootstrap .nav-tabs) */
 .tabs {
   display: flex;
   gap: var(--space-xs);
@@ -421,7 +347,7 @@ onMounted(async () => {
   font-size: 0.85rem;
   color: var(--color-neutral-500);
   cursor: pointer;
-  transition: all var(--transition-base); /* [NOT IN WAD2 CONTENT] — CSS transition */
+  transition: all var(--transition-base);
 }
 
 .tab-btn.active {
@@ -434,7 +360,7 @@ onMounted(async () => {
   color: var(--color-neutral-800);
 }
 
-/* PODIUM layout — [NOT IN WAD2 CONTENT] */
+/* PODIUM */
 .podium-section {
   display: flex;
   justify-content: center;
@@ -448,7 +374,7 @@ onMounted(async () => {
   width: 190px;
   padding: var(--space-lg) var(--space-md);
   position: relative;
-  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base);
   overflow: hidden;
 }
 
@@ -473,7 +399,6 @@ onMounted(async () => {
   box-shadow: 0 18px 36px rgba(180, 83, 9, 0.2);
 }
 
-/* [NOT IN WAD2 CONTENT] — linear-gradient background + translateY offset for gold podium + glowing halo */
 .podium-card.gold {
   transform: translateY(-16px);
   border-color: rgba(251, 191, 36, 0.85);
@@ -486,7 +411,6 @@ onMounted(async () => {
   box-shadow: 0 24px 44px rgba(245, 158, 11, 0.38), 0 0 32px rgba(251, 191, 36, 0.32);
 }
 
-/* Metallic foil light sweep across gold champion card — [NOT IN WAD2 CONTENT] */
 .podium-card.gold::after {
   content: '';
   position: absolute;
@@ -498,7 +422,6 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-/* position: absolute floating crown overlay with bobbing animation — [NOT IN WAD2 CONTENT] */
 .crown {
   position: absolute;
   top: -18px;
@@ -584,8 +507,8 @@ onMounted(async () => {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);
   border: 1px solid transparent;
-  transition: all var(--transition-fast); /* [NOT IN WAD2 CONTENT] */
-  animation: slideIn 0.4s ease both; /* [NOT IN WAD2 CONTENT] — CSS animation */
+  transition: all var(--transition-fast);
+  animation: slideIn 0.4s ease both;
 }
 
 .lb-row:hover {
@@ -595,7 +518,6 @@ onMounted(async () => {
   border-color: rgba(74, 222, 128, 0.35);
 }
 
-/* Current user row highlight with pulsing beacon effect — [NOT IN WAD2 CONTENT] */
 .lb-me {
   background: rgba(34, 197, 94, 0.1) !important;
   border: 1px solid rgba(34, 197, 94, 0.35) !important;
@@ -672,7 +594,6 @@ onMounted(async () => {
   min-width: 60px;
 }
 
-/* Proportional token bar — [NOT IN WAD2 CONTENT] custom liquid glass indicator */
 .lb-bar-wrap {
   flex: 1;
   background: rgba(231, 229, 228, 0.7);
@@ -682,7 +603,6 @@ onMounted(async () => {
   position: relative;
 }
 
-/* [NOT IN WAD2 CONTENT] — animated width with liquid glow and leading bead */
 .lb-bar {
   height: 100%;
   border-radius: var(--radius-full);
@@ -705,7 +625,7 @@ onMounted(async () => {
   opacity: 0.85;
 }
 
-@keyframes barWide { /* [NOT IN WAD2 CONTENT] */
+@keyframes barWide {
   from { width: 0 !important; }
 }
 
@@ -723,18 +643,7 @@ onMounted(async () => {
   transform: scale(1.08);
 }
 
-/* ============================================================
-   RESPONSIVE DESIGN — BOOTSTRAP 5 BREAKPOINTS
-   WAD2 Week 3 Bootstrap Grid System:
-   - xxl: ≥1400px (desktop wide)
-   - xl:  ≥1200px (standard desktop)
-   - lg:  ≥992px  (laptops/desktops)
-   - md:  ≥768px  (tablets)
-   - sm:  ≥576px  (landscape phones)
-   - xs:  <576px  (portrait mobile phones)
-   ============================================================ */
-
-/* Bootstrap XL -> LG (<1200px) */
+/* Responsive Breakpoints */
 @media (max-width: 1199.98px) {
   .podium-section {
     gap: var(--space-md);
@@ -744,7 +653,6 @@ onMounted(async () => {
   }
 }
 
-/* Bootstrap LG -> MD (<992px) */
 @media (max-width: 991.98px) {
   .podium-section {
     gap: var(--space-md);
@@ -762,7 +670,6 @@ onMounted(async () => {
   }
 }
 
-/* Bootstrap MD -> SM (<768px - tablets and mobile) */
 @media (max-width: 767.98px) {
   .page-header {
     flex-direction: column;
@@ -810,7 +717,6 @@ onMounted(async () => {
   }
 }
 
-/* Bootstrap SM -> XS (<576px - phones) */
 @media (max-width: 575.98px) {
   .page-header h1 {
     font-size: 1.65rem;
@@ -885,7 +791,6 @@ onMounted(async () => {
   }
 }
 
-/* Extra small mobile (<380px) */
 @media (max-width: 379.98px) {
   .podium-section {
     gap: 4px;

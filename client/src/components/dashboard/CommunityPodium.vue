@@ -1,29 +1,15 @@
 <template>
-  <!--
-    CommunityPodium Component:
-    Renders top 3 caregivers directly on the Community view.
-    v-if — covered in WAD2 wk4 (Vue Basics I)
-    v-bind (:src, :alt) — covered in WAD2 wk4
-    <RouterLink> — covered in WAD2 wk6 (Vue Router)
-    anim-slide-up — custom CSS keyframe animation from main.css [NOT IN WAD2 CONTENT]
-  -->
   <section v-if="leaders && leaders.length >= 3" class="community-podium-wrap anim-slide-up">
     <div class="podium-header">
       <div>
         <span class="podium-eyebrow">TOP CAREGIVERS</span>
         <h3 class="podium-title">Community Champions 🏆</h3>
       </div>
-      <!-- router-link gives quick navigation to the complete LeaderboardView -->
       <RouterLink to="/leaderboard" class="view-all-link">
         View Full Leaderboard ↗
       </RouterLink>
     </div>
 
-    <!--
-      Podium Layout:
-      Arranged visually as [2nd Silver, 1st Gold (center & elevated), 3rd Bronze].
-      Gold card is elevated using translateY(-12px) in CSS [NOT IN WAD2 CONTENT].
-    -->
     <div class="podium-section">
       <!-- 2nd Place -->
       <div class="podium-card silver">
@@ -39,7 +25,7 @@
         <div class="token-pill">🪙 {{ leaders[1].availableTokens }}</div>
       </div>
 
-      <!-- 1st Place (Champion) -->
+      <!-- 1st Place -->
       <div class="podium-card gold">
         <span class="crown">👑</span>
         <span class="medal">🥇</span>
@@ -72,12 +58,9 @@
 </template>
 
 <script setup>
-// RouterLink component from Vue Router — covered in WAD2 wk6
 import { RouterLink } from 'vue-router'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 
-// defineProps is a Vue 3 Composition API macro — covered in WAD2 wk5
-// Receives the array of top 3 users from CommunityView
 defineProps({
   leaders: {
     type: Array,
@@ -262,7 +245,6 @@ defineProps({
   color: #b45309;
 }
 
-/* Bootstrap responsive podium breakpoints */
 @media (max-width: 767.98px) {
   .podium-section {
     gap: 0.8rem;
@@ -291,4 +273,3 @@ defineProps({
   }
 }
 </style>
-

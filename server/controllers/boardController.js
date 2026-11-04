@@ -1,20 +1,14 @@
 const { User, tokenSummary } = require("../models/userModel");
 const mongoose = require("mongoose");
 
-// Helper to query MongoDB collections directly, accounting for collection name casing
 const getCollection = (collectionName) => {
   return mongoose.connection.db.collection(collectionName);
 };
 
-/**
- * GET /api/leaderboard
- * Query params: ?area=Bishan or ?neighbourhood=Bishan
- * Returns ranked public users sorted by availableTokens descending
- */
+// GET /api/leaderboard
 exports.getLeaderboard = async (req, res) => {
   try {
     const area = req.query.area || req.query.neighbourhood;
-    // Exclude users who opted out of the leaderboard
     const filter = {
       hideFromLeaderboard: { $ne: true },
     };
@@ -33,7 +27,7 @@ exports.getLeaderboard = async (req, res) => {
       .sort({ tokenBalance: -1 })
       .lean();
 
-    // Query real average ratings and review counts from reviews collection
+    // Aggregate average ratings and counts from reviews
     const ratingMap = {};
     try {
       const reviewCol = getCollection("reviews");
@@ -99,10 +93,7 @@ exports.getLeaderboard = async (req, res) => {
   }
 };
 
-/**
- * GET /api/leaderboard/status/:userId
- * Returns current opt-out status for a specific user
- */
+// GET /api/leaderboard/status/:userId
 exports.getOptOutStatus = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -132,10 +123,7 @@ exports.getOptOutStatus = async (req, res) => {
   }
 };
 
-/**
- * PATCH /api/leaderboard/opt-out/:userId
- * Toggles a user's hideFromLeaderboard visibility
- */
+// PATCH /api/leaderboard/opt-out/:userId
 exports.toggleOptOut = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -171,11 +159,7 @@ exports.toggleOptOut = async (req, res) => {
   }
 };
 
-/**
- * Calculate user badges and persist them to the database.
- * Can be called independently from getUserStats or getMe to ensure
- * profile/auth endpoints reflect newly unlocked badges immediately.
- */
+// Calculate user badges and persist unlocked ones to DB
 async function syncUserBadges(userId) {
   try {
     const numUserId = Number(userId);
@@ -308,7 +292,7 @@ async function syncUserBadges(userId) {
       if (earned.length > 0) tokensEarnedTotal = earned[0].total;
     } catch (e) {}
 
-    // 5. Rainy Day Hero
+    // 5. Rainy Day visits
     let rainyVisitsCount = 0;
     try {
       for (const colName of ["carevisits", "CareVisit"]) {
@@ -440,10 +424,7 @@ async function syncUserBadges(userId) {
 
 exports.syncUserBadges = syncUserBadges;
 
-/**
- * GET /api/dashboard/stats/:userId
- * Returns personal dashboard statistics for the specified user
- */
+// GET /api/dashboard/stats/:userId
 exports.getUserStats = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -457,7 +438,7 @@ exports.getUserStats = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // 1. Plants count from 'Plant' or 'plants' collection
+    // 1. Plants count
     let totalPlantsOwned = 0;
     let distinctPlantTypes = 0;
     try {
@@ -508,7 +489,6 @@ exports.getUserStats = async (req, res) => {
     } catch (e) {}
 
     try {
-      // Query both 'carevisits' and 'CareVisit' to account for seed data and live app records
       const visitCollections = ["carevisits", "CareVisit"];
       const seenVisitIds = new Set();
       userVisits = [];
@@ -540,7 +520,6 @@ exports.getUserStats = async (req, res) => {
         photoProofCount = await photoCol.countDocuments({
           visitId: { $in: visitIds },
         });
-        // Also check lowercase 'photoproofs' collection
         try {
           const photoColLower = getCollection("photoproofs");
           const lowerCount = await photoColLower.countDocuments({
@@ -554,7 +533,7 @@ exports.getUserStats = async (req, res) => {
       }
     } catch (e) {}
 
-    // 3. Reviews metrics (real average rating, count, and 5-star count)
+    // 3. Reviews metrics
     let fiveStarReviewsCount = 0;
     let ratingAverage = 5.0;
     let ratingCount = 0;
@@ -582,7 +561,7 @@ exports.getUserStats = async (req, res) => {
       }
     } catch (e) {}
 
-    // 4. Tokens Earned / Spent totals from 'tokentransactions' collection
+    // 4. Tokens Earned / Spent totals
     let tokensEarnedTotal = user.tokenBalance || 0;
     let tokensSpentTotal = 0;
 
@@ -605,7 +584,7 @@ exports.getUserStats = async (req, res) => {
       if (spent.length > 0) tokensSpentTotal = spent[0].total;
     } catch (e) {}
 
-    // 5. Rainy Day Hero check (strictly during active rain alert from weather API)
+    // 5. Rainy Day visits
     let rainyVisitsCount = 0;
     try {
       for (const colName of ["carevisits", "CareVisit"]) {
@@ -657,27 +636,9 @@ exports.getUserStats = async (req, res) => {
       plantsCaredFor: plantsCaredFor || totalPlantsOwned,
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // MILESTONE BADGES ARRAY
-    // Each badge object has the same shape:
-    //   id          — unique string key used as :key in v-for on the frontend
-    //   name        — display title shown on the BadgeCard
-    //   description — short explanation of what the badge rewards
-    //   unlocked    — boolean: true if the user has met the threshold
-    //   progress    — number 0–100, used by BadgeCard's :style progress bar
-    //                 Math.min(100, ...) ensures it never exceeds 100%
-    //                 Math.round(...) removes decimal noise (e.g. 33.33 → 33)
-    //   icon        — emoji rendered inside the badge circle on BadgeCard
-    //
-    // All badge values are derived from variables computed above (lines 191–317)
-    // from live MongoDB queries — no hardcoded mock numbers.
-    // ─────────────────────────────────────────────────────────────────────────
+    // Milestone badges
     const badges = [
       {
-        // 1. FIRST SIT
-        // Unlocks after the user completes their very first care visit as a helper.
-        // visitsCompleted = total documents in 'carevisits' where sitterId/helperId === userId
-        // Binary badge (0% or 100%) — there is no partial progress: you either have done a visit or you haven't.
         id: "first_sit",
         name: "First Sit",
         description: "Completed your first plant sitting visit!",
@@ -686,11 +647,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🌱",
       },
       {
-        // 2. TEN PLANTS SAVED
-        // Rewards cumulative plant care impact.
-        // plantsCaredFor is an estimate: visitsCompleted * 3
-        // (each visit is assumed to cover ~3 plants on average).
-        // Progress bar: e.g. 6 visits = 18 plants cared for → Math.min(100, 180) = 100% (unlocked)
         id: "ten_plants_saved",
         name: "10 Plants Saved",
         description: "Successfully watered and cared for 10 plants.",
@@ -699,13 +655,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🌿",
       },
       {
-        // 3. RAINY DAY HERO
-        // The only badge backed by a real-time external API call.
-        // rainyVisitsCount is set above (lines 297–317) by:
-        //   - Counting 'carevisits' documents where weatherAlert is 'rain'/'thunder'/'shower'
-        //     (stamped by careRequestController.js addVisitProof via NEA 2-hour forecast API)
-        //   - Fallback: counting RequestItem records with adjustmentType:'skipped-rain'
-        // Binary badge — any single rainy visit qualifies (>= 1).
         id: "rainy_day_hero",
         name: "Rainy Day Hero",
         description: "Cared for corridor plants during an active weather alert.",
@@ -714,12 +663,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🌧️",
       },
       {
-        // 4. PAPARAZZI PLANTER
-        // Rewards uploading photo evidence of completed visits.
-        // photoProofCount = documents in 'PhotoProof' collection whose visitId
-        //   is in the user's visitIds array (joined via $in query above, line 237–239).
-        // Fallback (line 241–243): if no PhotoProof records exist, estimates min(visitsCompleted, 3).
-        // Progress bar: e.g. 3 proofs → 3/5 = 60%.
         id: "paparazzi_planter",
         name: "Paparazzi Planter",
         description: "Uploaded clear photo proof for 5 completed care visits.",
@@ -728,12 +671,6 @@ exports.getUserStats = async (req, res) => {
         icon: "📸",
       },
       {
-        // 5. FIVE-STAR SITTER
-        // Rewards consistent quality — 5 reviews with a rating of exactly 5.
-        // fiveStarReviewsCount = reviews in 'reviews' collection where:
-        //   receiverId === userId AND type === 'VISIT' AND rating === 5
-        // Computed via .filter(r => r.rating === 5).length above (line 268).
-        // Fallback (line 269–271): if no reviews exist yet, estimates min(visitsCompleted, 4).
         id: "five_star_sitter",
         name: "5-Star Sitter",
         description: "Earned 5 perfect 5-star reviews from happy plant parents.",
@@ -742,11 +679,6 @@ exports.getUserStats = async (req, res) => {
         icon: "⭐",
       },
       {
-        // 6. GREEN THUMB MASTER
-        // Rewards plant ownership — encourages users to register more plants in My Plants.
-        // totalPlantsOwned = countDocuments in 'Plant' collection where ownerId === userId
-        // (queried above, line 196–198).
-        // Progress bar: e.g. 3 plants → 3/5 = 60%.
         id: "green_thumb_master",
         name: "Green Thumb Master",
         description: "Registered and nurtured 5 or more plants in your corridor garden.",
@@ -755,11 +687,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🪴",
       },
       {
-        // 7. TOKEN TYCOON
-        // Rewards earning tokens through helping — lifetime total, not current balance.
-        // tokensEarnedTotal = $aggregate SUM of tokentransactions where receiverId === userId
-        // (lines 280–285). Using lifetime total (not current balance) means spending tokens
-        // doesn't push you backwards on this badge.
         id: "token_tycoon",
         name: "Token Tycoon",
         description: "Accumulated a lifetime total of 150 community tokens through helpful deeds.",
@@ -768,11 +695,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🪙",
       },
       {
-        // 8. BOTANIST IN TRAINING
-        // Rewards variety — caring for or registering different plant species.
-        // distinctPlantTypes = distinct() on plantName field in 'Plant' collection
-        // for this user (line 199–202). Uses MongoDB .distinct() which returns a unique array.
-        // e.g. ['Monstera', 'Cactus', 'Sunflower'] → length 3 → unlocked.
         id: "botanist_in_training",
         name: "Botanist in Training",
         description: "Cared for or registered 3 distinctly different plant types.",
@@ -781,11 +703,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🌺",
       },
       {
-        // 9. GENEROUS SPROUT
-        // Rewards posting care requests (plant owner role) — acknowledges owners
-        // who actively seek help from the community and reward helpers with tokens.
-        // careRequestsPosted = countDocuments in 'carerequests' where requesterId/ownerId/userId === userId
-        // Uses $or to handle different field names across seed data and live records.
         id: "generous_sprout",
         name: "Generous Sprout",
         description: "Posted 5 care requests and rewarded helper neighbours.",
@@ -794,11 +711,6 @@ exports.getUserStats = async (req, res) => {
         icon: "🤝",
       },
       {
-        // 10. KAMPUNG LEGEND
-        // The prestige endgame badge — 25 completed visits is a high bar.
-        // 'Kampung' is a Malay word for village/community — fitting for an HDB context.
-        // Uses the same visitsCompleted variable as First Sit but with a much higher threshold.
-        // Progress bar makes long-term progress visible: e.g. 17/25 = 68%.
         id: "kampung_legend",
         name: "Kampung Legend",
         description: "Completed 25 total care visits across Singapore.",
@@ -808,10 +720,6 @@ exports.getUserStats = async (req, res) => {
       },
     ];
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PERSIST UNLOCKED BADGES TO DATABASE
-    // Ensure badges array in the user document contains all currently unlocked badges.
-    // ─────────────────────────────────────────────────────────────────────────
     const unlockedBadges = badges
       .filter((b) => b.unlocked)
       .map((b) => ({
@@ -847,29 +755,15 @@ exports.getUserStats = async (req, res) => {
   }
 };
 
-/**
- * GET /api/dashboard/charts/:userId
- * Returns monthly Activity and Token Flow charts data for Chart.js
- */
+// GET /api/dashboard/charts/:userId
 exports.getUserCharts = async (req, res) => {
   try {
     const { userId } = req.params;
     const numUserId = Number(userId);
 
-    // Labels for the last 6 months
     const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
     const labels = [];
     const now = new Date();
@@ -908,7 +802,6 @@ exports.getUserCharts = async (req, res) => {
       });
     } catch (e) {}
 
-    // Check carevisits & CareVisit for monthly activity
     try {
       const seenChartVisitIds = new Set();
       for (const colName of ["carevisits", "CareVisit"]) {
@@ -935,7 +828,6 @@ exports.getUserCharts = async (req, res) => {
       }
     } catch (e) {}
 
-    // Check carerequests & CareRequest for monthly requests posted
     try {
       const seenChartReqIds = new Set();
       for (const reqColName of ["carerequests", "CareRequest"]) {

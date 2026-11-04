@@ -1,16 +1,11 @@
-// Vue Router setup — covered in WAD2 wk6 (Vue Router)
-// createRouter and createWebHistory are the standard way to set up
-// client-side routing in a Vue 3 app.
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-// Static imports — covered in WAD2 wk6 (<script setup> component imports)
 import DashboardView from '../views/boards/DashboardView.vue'
 import LeaderboardView from '../views/boards/LeaderboardView.vue'
 
 import FindNearby from '@/components/map/FindNearby.vue'
 
-// One list with every page. (createRouter only takes one `routes` list.)
 const routes = [
   { path: '/recently-liked', name: 'recently-liked', meta: { requiresAuth: true }, component: () => import('../views/post/RecentlyLikedView.vue') },
   { path: '/my-posts', name: 'my-posts', meta: { requiresAuth: true }, component: () => import('../views/post/MyPostsView.vue') },
@@ -39,9 +34,6 @@ const routes = [
   },
 
   // Sign in / create account
-  // Lazy-loaded route — [NOT IN WAD2 CONTENT]
-  // () => import(...) loads the component only when the route is visited,
-  // which improves initial page load performance (code splitting).
   { path: '/signin', name: 'sign-in', component: () => import('../views/AuthView.vue') },
   {
     path: '/register',
@@ -114,9 +106,8 @@ const routes = [
   },
   { path: '/reviews', name: 'reviews', meta: { requiresAuth: true }, component: () => import('../views/review/ReviewsView.vue') },
 
-  // Dashboard route — registered as part of Step 2.1
+  // Dashboard & Leaderboard routes
   { path: '/dashboard', name: 'dashboard', component: DashboardView },
-  // Leaderboard route — registered as part of Step 2.1
   { path: '/leaderboard', name: 'leaderboard', component: LeaderboardView },
 
   // Schedule route

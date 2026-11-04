@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaf It To Us — Professor Defense & Project Cheat Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #14804a;
+      --primary-deep: #0e6138;
+      --tint: #daf2e3;
+      --bg: #eff8f2;
+      --line: #cde8d7;
+      --control-border: #4a8c66;
+      --ink: #0d3320;
+      --accent: var(--primary);
+      --accent-soft: #e3f1e6;
+      --glass-bg: rgba(255, 255, 255, 0.82);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-code: 'Fira Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      color: #292524;
+      line-height: 1.5;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Floating Exam Banner at very top */
+    .exam-banner {
+      background: #111827;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1050;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .exam-banner h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #4ade80;
+    }
+    .exam-banner .hint {
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+    .exam-banner .hint strong { color: #facc15; }
+
+    /* Page Navigation Tabs */
+    .view-switcher-bar {
+      background: #ffffff;
+      border-bottom: 2px solid var(--line);
+      padding: 0.6rem 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      overflow-x: auto;
+      position: sticky;
+      top: 50px;
+      z-index: 1040;
+    }
+    .tab-pill {
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #4b5563;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-pill:hover { background: #f3f4f6; color: #111; }
+    .tab-pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(20, 128, 74, 0.35);
+    }
+
+    /* Cheat Sheet Clickable Interactive Halo Overlay */
+    .clickable-target {
+      position: relative;
+      cursor: pointer !important;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      outline: 2px dashed rgba(20, 128, 74, 0.4);
+      outline-offset: 3px;
+      border-radius: 12px;
+    }
+    .clickable-target:hover {
+      outline: 2.5px solid #16a34a !important;
+      outline-offset: 4px;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -4px rgba(22, 163, 74, 0.25) !important;
+    }
+    .clickable-target::after {
+      content: "🔍 Click to Explain";
+      position: absolute;
+      top: -11px;
+      right: 8px;
+      background: #15803d;
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: scale(0.85);
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+    .clickable-target:hover::after {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Common Card Styles */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+
+    /* View Containers */
+    .view-content {
+      display: none;
+      padding: 2rem 1rem 5rem;
+      max-width: 1280px;
+      margin: 0 auto;
+      animation: fadeIn 0.3s ease;
+    }
+    .view-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* App Top Navbar Replica */
+    .app-navbar-replica {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-radius: 12px;
+    }
+    .app-navbar-replica .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+    .app-navbar-replica .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .app-navbar-replica .nav-links a {
+      text-decoration: none;
+      color: #4b5563;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .app-navbar-replica .nav-links a.active {
+      color: var(--primary);
+    }
+    .app-navbar-replica .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+    }
+    .user-avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1.5px solid rgba(47, 125, 74, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    /* Dashboard Styles */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .greeting { font-size: 0.9rem; color: #6b7280; margin-bottom: 4px; }
+    .page-header h1 { font-size: 2.25rem; font-weight: 800; color: var(--ink); margin: 0; }
+    .subtitle { font-size: 0.9rem; color: #6b7280; }
+    .header-ctas { display: flex; align-items: center; gap: 0.8rem; }
+    .token-pill {
+      background: rgba(251, 191, 36, 0.18);
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      color: #92400e;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .token-breakdown {
+      font-size: 0.75rem;
+      background: rgba(245, 158, 11, 0.2);
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .stat-icon { font-size: 2rem; }
+    .stat-val { font-size: 1.75rem; font-weight: 800; color: var(--ink); line-height: 1; }
+    .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; margin-top: 4px; }
+
+    /* Charts Row */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .chart-box {
+      padding: 1.5rem;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .chart-header h3 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+    .chart-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .chart-badge.blue { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+    .chart-badge.green { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .bar-chart-visual {
+      height: 220px;
+      display: flex;
+      align-items: flex-end;
+      gap: 1.2rem;
+      padding: 1rem 0 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+    .bars-container { display: flex; align-items: flex-end; gap: 4px; height: 85%; width: 100%; justify-content: center; }
+    .bar-col {
+      width: 16px;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s ease;
+    }
+    .bar-label { font-size: 0.75rem; color: #6b7280; margin-top: 6px; }
+
+    /* Badges Grid */
+    .badges-section {
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .badges-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .badge-card {
+      padding: 1.25rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      border: 1px solid #e5e7eb;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .badge-card.unlocked {
+      background: linear-gradient(135deg, rgba(240, 253, 244, 0.85) 0%, rgba(220, 252, 231, 0.6) 100%);
+      border-color: rgba(74, 222, 128, 0.6);
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.12);
+    }
+    .badge-icon-wrap {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .check-mark {
+      position: absolute;
+      bottom: -3px;
+      right: -3px;
+      background: #15803d;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+    }
+    .badge-info h4 { font-size: 1rem; font-weight: 700; margin: 0 0 4px; color: var(--ink); }
+    .badge-info p { font-size: 0.82rem; color: #4b5563; margin-bottom: 8px; line-height: 1.35; }
+    .progress-bar-container {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .progress-fill { height: 100%; background: #16a34a; border-radius: 999px; }
+    .status-text { font-size: 0.74rem; font-weight: 700; color: #166534; }
+
+    /* Leaderboard Styles */
+    .podium-section {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 1.5rem;
+      margin: 2rem 0 3rem;
+    }
+    .podium-card {
+      text-align: center;
+      width: 200px;
+      padding: 1.5rem 1rem;
+      position: relative;
+    }
+    .podium-card.gold {
+      transform: translateY(-20px);
+      border-color: rgba(251, 191, 36, 0.9);
+      background: linear-gradient(180deg, #fef3c7 0%, #ffffff 100%);
+      box-shadow: 0 16px 36px rgba(245, 158, 11, 0.25);
+    }
+    .podium-card.silver { border-color: rgba(203, 213, 225, 0.85); }
+    .podium-card.bronze { border-color: rgba(252, 211, 77, 0.4); }
+    .crown {
+      position: absolute;
+      top: -20px;
+      left: calc(50% - 14px);
+      font-size: 1.7rem;
+    }
+    .medal { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+    .podium-avatar {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      border: 3px solid #eab308;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .podium-avatar.silver-border { border-color: #94a3b8; }
+    .podium-avatar.bronze-border { border-color: #d97706; }
+    .podium-card h4 { font-size: 1rem; font-weight: 700; margin: 0 0 6px; }
+
+    /* Leaderboard List */
+    .lb-card {
+      padding: 1.5rem;
+    }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.8rem 1.25rem;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #f3f4f6;
+      margin-bottom: 0.6rem;
+    }
+    .lb-rank { font-weight: 800; font-size: 1.1rem; width: 32px; color: #6b7280; text-align: center; }
+    .lb-rank.top1 { color: #d97706; }
+    .lb-name { font-weight: 700; min-width: 140px; color: #111827; }
+    .lb-area { font-size: 0.85rem; color: #6b7280; min-width: 140px; }
+    .lb-rating { font-size: 0.85rem; color: #4b5563; min-width: 70px; }
+    .lb-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .lb-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #22c55e, #15803d); }
+    .lb-tokens { font-weight: 800; color: #92400e; min-width: 85px; text-align: right; }
+
+    /* Opt-out toggle box */
+    .opt-out-box {
+      background: rgba(255, 255, 255, 0.7);
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.06);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* Community Page Replica */
+    .comm-podium {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    .comm-podium-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .post-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    .post-author { font-weight: 700; color: #111; }
+    .post-meta { font-size: 0.8rem; color: #6b7280; }
+    .post-tag {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .post-img-placeholder {
+      width: 100%;
+      height: 240px;
+      border-radius: 10px;
+      background: #dcfce7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .post-footer {
+      display: flex;
+      gap: 1.5rem;
+      color: #4b5563;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    /* Landing Page Replica */
+    .landing-hero {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .landing-hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 0.75rem;
+    }
+    .orbit-container {
+      position: relative;
+      width: 480px;
+      height: 380px;
+      margin: 2rem auto;
+      border: 2px dashed rgba(20, 128, 74, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tree-center {
+      font-size: 5rem;
+      animation: floatTree 4s ease-in-out infinite;
+    }
+    @keyframes floatTree { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .orbit-node {
+      position: absolute;
+      background: #ffffff;
+      border: 2px solid var(--primary);
+      padding: 0.6rem 1rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--primary);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    .node-1 { top: 15px; left: 15px; }
+    .node-2 { top: 15px; right: 15px; }
+    .node-3 { bottom: 20px; }
+
+    /* ============================================================
+       INSPECTION DRAWER / PROFESSOR ANSWER MODAL
+       ============================================================ */
+    .inspector-drawer {
+      position: fixed;
+      top: 0;
+      right: -620px;
+      width: 600px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
+      z-index: 2000;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      border-left: 2px solid var(--primary);
+    }
+    .inspector-drawer.open {
+      right: 0;
+    }
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(2px);
+      z-index: 1999;
+      display: none;
+    }
+    .drawer-overlay.open { display: block; }
+
+    .drawer-header {
+      background: #111827;
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .drawer-header h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #4ade80;
+      margin: 0 0 4px;
+    }
+    .drawer-header .file-path {
+      font-family: var(--font-code);
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .drawer-close:hover { color: #fff; }
+
+    .drawer-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Q&A Section styling */
+    .qa-card {
+      background: #f8fafc;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .qa-card.prof {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+    .qa-card.prof .qa-q { color: #92400e; }
+    .qa-card.code {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+    .qa-card.code .qa-q { color: #065f46; }
+
+    .qa-q {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .qa-a {
+      font-size: 0.88rem;
+      color: #334155;
+      line-height: 1.6;
+    }
+    .qa-a strong { color: #0f172a; }
+
+    /* Code Block & Line Explanation */
+    .code-container {
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      color: #94a3b8;
+      font-family: var(--font-code);
+      font-size: 0.74rem;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+    }
+    pre code {
+      font-family: var(--font-code);
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+    .line-annotation-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1.5rem;
+    }
+    .line-annotation-item {
+      padding: 0.6rem 0.8rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .line-num {
+      display: inline-block;
+      font-family: var(--font-code);
+      background: #e2e8f0;
+      color: #1e293b;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Bar -->
+  <div class="exam-banner">
+    <h1>
+      <span>🎓</span>
+      <span>Leaf It To Us — Professor Exam Cheatsheet</span>
+    </h1>
+    <div class="hint">
+      💡 <strong>Click ANY element</strong> (badges, podium, charts, stats, profile sync) to open line-by-line code explanation!
+    </div>
+  </div>
+
+  <!-- View Switcher -->
+  <div class="view-switcher-bar">
+    <button class="tab-pill active" onclick="switchView('dashboard')">📊 Dashboard & Badges</button>
+    <button class="tab-pill" onclick="switchView('leaderboard')">🏆 Leaderboard & Podium</button>
+    <button class="tab-pill" onclick="switchView('profile')">👤 Profile & Badge Sync</button>
+    <button class="tab-pill" onclick="switchView('community')">👥 Community & Feed</button>
+    <button class="tab-pill" onclick="switchView('landing')">🌿 Landing Page & Orbit</button>
+    <button class="tab-pill" onclick="switchView('architecture')" style="border-color: #16a34a; color: #15803d; background: #f0fdf4;">🧠 Full Code Notes & Tests (Moved from Repo)</button>
+  </div>
+
+  <!-- Shared Drawer Overlay -->
+  <div id="drawerOverlay" class="drawer-overlay" onclick="closeInspector()"></div>
+
+  <!-- Side-over Drawer for Explanations -->
+  <aside id="inspectorDrawer" class="inspector-drawer">
+    <div class="drawer-header">
+      <div>
+        <h2 id="inspectTitle">Feature Name</h2>
+        <div id="inspectFile" class="file-path">client/src/...</div>
+      </div>
+      <button class="drawer-close" onclick="closeInspector()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <!-- 1. The Feature Question -->
+      <div class="qa-card prof">
+        <div class="qa-q">❓ Professor Question: "Tell me about this feature"</div>
+        <div id="inspectFeature" class="qa-a">Feature explanation goes here...</div>
+      </div>
+
+      <!-- 2. What Did You Use -->
+      <div class="qa-card code">
+        <div class="qa-q">🛠️ Professor Question: "What did you use to make this?"</div>
+        <div id="inspectTech" class="qa-a">Libraries, CSS properties, Vue primitives...</div>
+      </div>
+
+      <!-- 3. Exact Code Extract -->
+      <div class="code-container">
+        <div class="code-header">
+          <span id="inspectCodeLang">Vue Template / JavaScript</span>
+          <span>Verbatim Code From Repo</span>
+        </div>
+        <pre><code id="inspectCodeSnippet">// Code snippet</code></pre>
+      </div>
+
+      <!-- 4. Line-by-Line Breakdown -->
+      <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; color: #1e293b;">
+        🔍 Line-by-Line Code Explanation
+      </h4>
+      <div id="inspectLineByLine" class="line-annotation-list">
+        <!-- Lines injected here -->
+      </div>
+
+      <!-- 5. Rapid-Fire Exam Defense -->
+      <div class="qa-card" style="border-left-color: #8b5cf6; background: #f5f3ff;">
+        <div class="qa-q" style="color: #6d28d9;">⚡ Rapid Defense: Tricky Professor Follow-ups</div>
+        <div id="inspectRapidQ" class="qa-a">Common defense answers...</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       1. DASHBOARD VIEW
+       ============================================================ -->
+  <section id="view-dashboard" class="view-content active">
+    <!-- Navbar Replica -->
+    <header class="app-navbar-replica clickable-target" onclick="inspect('navbar')">
+      <div class="nav-brand">
+        <span style="font-size: 1.5rem;">🌿</span>
+        <span>Leaf It To Us</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="active">My Plants</a></li>
+        <li><a href="#">Find Nearby</a></li>
+        <li><a href="#">Requests</a></li>
+        <li><a href="#">Community</a></li>
+      </ul>
+      <div class="nav-user">
+        <div class="user-avatar-circle">C</div>
+        <span>caro</span>
+      </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <p class="greeting">Good afternoon, <strong>caro</strong> 👋</p>
+        <h1>My Green Space</h1>
+        <p class="subtitle">📍 Blk 448B | Active Community Caregiver</p>
+      </div>
+      <div class="header-ctas">
+        <div class="token-pill clickable-target" onclick="inspect('token_pill')">
+          <span>🪙</span>
+          <span>37 Tokens</span>
+          <span class="token-breakdown">(30 Avail · 7 Frozen)</span>
+        </div>
+        <button class="btn btn-primary btn-sm clickable-target" style="background: var(--primary); border-radius: 8px; font-weight: 700;" onclick="inspect('view_leaderboard_btn')">
+          🏆 View Leaderboard
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card glass-card clickable-target" onclick="inspect('stat_plants')">
+        <span class="stat-icon">🌱</span>
+        <div>
+          <div class="stat-val">6</div>
+          <div class="stat-label">Total Plants Owned</div>
+        </div>
+      </div>
+      <div class="stat-card glass-card clickable-target" onclick="inspect('stat_requests')">
+        <span class="stat-icon">📋</span>
+        <div>
+          <div class="stat-val">21</div>
+          <div class="stat-label">Total Requests Posted</div>
+        </div>
+      </div>
+      <div class="stat-card glass-card clickable-target" onclick="inspect('stat_visits')">
+        <span class="stat-icon">🤝</span>
+        <div>
+          <div class="stat-val">27</div>
+          <div class="stat-label">Total Visits as Helper</div>
+        </div>
+      </div>
+      <div class="stat-card glass-card clickable-target" onclick="inspect('stat_rating')">
+        <span class="stat-icon">⭐</span>
+        <div>
+          <div class="stat-val">4.5</div>
+          <div class="stat-label">Helper Rating</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dual Charts Row -->
+    <div class="charts-grid">
+      <div class="chart-box glass-card clickable-target" onclick="inspect('chart_activity')">
+        <div class="chart-header">
+          <h3>📋 Activity Over Time</h3>
+          <span class="chart-badge blue">Live Visits</span>
+        </div>
+        <div class="bar-chart-visual">
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 30%; background: #38bdf8;"></div><div class="bar-col" style="height: 30%; background: #a855f7;"></div></div><span class="bar-label">Jun</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 50%; background: #38bdf8;"></div><div class="bar-col" style="height: 25%; background: #a855f7;"></div></div><span class="bar-label">Jul</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 65%; background: #38bdf8;"></div><div class="bar-col" style="height: 40%; background: #a855f7;"></div></div><span class="bar-label">Aug</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 40%; background: #38bdf8;"></div><div class="bar-col" style="height: 15%; background: #a855f7;"></div></div><span class="bar-label">Sep</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 50%; background: #38bdf8;"></div><div class="bar-col" style="height: 40%; background: #a855f7;"></div></div><span class="bar-label">Oct</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 90%; background: #38bdf8;"></div><div class="bar-col" style="height: 95%; background: #a855f7;"></div></div><span class="bar-label">Nov</span></div>
+        </div>
+      </div>
+
+      <div class="chart-box glass-card clickable-target" onclick="inspect('chart_tokens')">
+        <div class="chart-header">
+          <h3>🪙 Token Flow (Earned vs Spent)</h3>
+          <span class="chart-badge green">Balance Logs</span>
+        </div>
+        <div class="bar-chart-visual">
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 20%; background: #22c55e;"></div><div class="bar-col" style="height: 10%; background: #f59e0b;"></div></div><span class="bar-label">Jun</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 35%; background: #22c55e;"></div><div class="bar-col" style="height: 20%; background: #f59e0b;"></div></div><span class="bar-label">Jul</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 60%; background: #22c55e;"></div><div class="bar-col" style="height: 45%; background: #f59e0b;"></div></div><span class="bar-label">Aug</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 30%; background: #22c55e;"></div><div class="bar-col" style="height: 15%; background: #f59e0b;"></div></div><span class="bar-label">Sep</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 55%; background: #22c55e;"></div><div class="bar-col" style="height: 35%; background: #f59e0b;"></div></div><span class="bar-label">Oct</span></div>
+          <div class="bar-group"><div class="bars-container"><div class="bar-col" style="height: 85%; background: #22c55e;"></div><div class="bar-col" style="height: 70%; background: #f59e0b;"></div></div><span class="bar-label">Nov</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milestone Badges Grid -->
+    <div class="badges-section glass-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--ink); margin: 0;">🏅 Milestone Badges</h2>
+          <p style="font-size: 0.85rem; color: #6b7280; margin: 4px 0 0;">Unlock milestone badges by completing plant care visits</p>
+        </div>
+        <span class="badge" style="background: #e3f1e6; color: #15803d; border: 1px solid #86efac; font-weight: 700;">Community Achievements</span>
+      </div>
+
+      <div class="badges-grid-layout">
+        <!-- 1. First Sit -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_first_sit')">
+          <div class="badge-icon-wrap">🌱<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>First Sit</h4>
+            <p>Completed your first plant sitting visit!</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 2. 10 Plants Saved -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_ten_plants')">
+          <div class="badge-icon-wrap">🌿<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>10 Plants Saved</h4>
+            <p>Successfully watered and cared for 10 plants.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 3. Rainy Day Hero -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_rainy_day')">
+          <div class="badge-icon-wrap">🌧️<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Rainy Day Hero</h4>
+            <p>Cared for corridor plants during an active weather alert.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 4. Paparazzi Planter -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_paparazzi')">
+          <div class="badge-icon-wrap">📸<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Paparazzi Planter</h4>
+            <p>Uploaded clear photo proof for 5 completed care visits.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 5. 5-Star Sitter -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_five_star')">
+          <div class="badge-icon-wrap">⭐<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>5-Star Sitter</h4>
+            <p>Earned 5 perfect 5-star reviews from happy plant parents.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 6. Green Thumb Master -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_green_thumb')">
+          <div class="badge-icon-wrap">🪴<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Green Thumb Master</h4>
+            <p>Registered and nurtured 5 or more plants in your garden.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 7. Token Tycoon -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_token_tycoon')">
+          <div class="badge-icon-wrap">🪙<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Token Tycoon</h4>
+            <p>Accumulated a lifetime total of 150 community tokens.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 8. Botanist in Training -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_botanist')">
+          <div class="badge-icon-wrap">🌺<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Botanist in Training</h4>
+            <p>Cared for or registered 3 distinctly different plant types.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 9. Generous Sprout -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_generous_sprout')">
+          <div class="badge-icon-wrap">🤝<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Generous Sprout</h4>
+            <p>Posted 5 care requests and rewarded helper neighbours.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+
+        <!-- 10. Kampung Legend -->
+        <div class="badge-card glass-card unlocked clickable-target" onclick="inspect('badge_kampung_legend')">
+          <div class="badge-icon-wrap">👑<span class="check-mark">✓</span></div>
+          <div class="badge-info">
+            <h4>Kampung Legend</h4>
+            <p>Completed 25 total care visits across Singapore.</p>
+            <div class="progress-bar-container"><div class="progress-fill" style="width: 100%;"></div></div>
+            <span class="status-text">Unlocked 🎉</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       2. LEADERBOARD VIEW
+       ============================================================ -->
+  <section id="view-leaderboard" class="view-content">
+    <div class="page-header">
+      <div>
+        <p class="greeting">Singapore Rankings</p>
+        <h1>🏆 Community Leaderboard</h1>
+        <p class="subtitle">Top plant caregivers and helpful neighbours ranked by community tokens</p>
+      </div>
+      <div class="header-ctas">
+        <button class="btn btn-primary btn-sm clickable-target" style="background: var(--primary); border-radius: 8px; font-weight: 700;" onclick="inspect('view_dashboard_btn')">
+          🌱 View Dashboard
+        </button>
+        <div class="opt-out-box glass-card clickable-target" onclick="inspect('opt_out')">
+          <input type="checkbox" id="chkOpt" style="accent-color: var(--primary);">
+          <label for="chkOpt" style="cursor: pointer;">Hide my profile from Leaderboard</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 3 Podium -->
+    <div class="podium-section">
+      <!-- 2nd Place -->
+      <div class="podium-card glass-card silver clickable-target" onclick="inspect('podium_silver')">
+        <span class="medal">🥈</span>
+        <div class="podium-avatar silver-border">M</div>
+        <h4>Marcus Tan</h4>
+        <div class="token-pill">🪙 180</div>
+      </div>
+
+      <!-- 1st Place -->
+      <div class="podium-card glass-card gold clickable-target" onclick="inspect('podium_gold')">
+        <span class="crown">👑</span>
+        <span class="medal">🥇</span>
+        <div class="podium-avatar">A</div>
+        <h4>ari</h4>
+        <div class="token-pill" style="background: #fef3c7; color: #92400e;">🪙 248</div>
+      </div>
+
+      <!-- 3rd Place -->
+      <div class="podium-card glass-card bronze clickable-target" onclick="inspect('podium_bronze')">
+        <span class="medal">🥉</span>
+        <div class="podium-avatar bronze-border">S</div>
+        <h4>Siti R.</h4>
+        <div class="token-pill">🪙 142</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="lb-card glass-card clickable-target" onclick="inspect('leaderboard_list')">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Top Token Holders in Singapore</h3>
+        <span class="badge" style="background: #dcfce7; color: #15803d;">8 Neighbours Active</span>
+      </div>
+
+      <div class="lb-row clickable-target" onclick="event.stopPropagation(); inspect('leaderboard_row')">
+        <span class="lb-rank top1">1</span>
+        <div class="user-avatar-circle" style="width: 32px; height: 32px; font-size: 0.85rem;">A</div>
+        <span class="lb-name">ari</span>
+        <span class="lb-area">📍 Tampines North</span>
+        <span class="lb-rating">⭐ 4.9</span>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width: 100%;"></div></div>
+        <span class="lb-tokens">🪙 248</span>
+      </div>
+
+      <div class="lb-row">
+        <span class="lb-rank">2</span>
+        <div class="user-avatar-circle" style="width: 32px; height: 32px; font-size: 0.85rem;">M</div>
+        <span class="lb-name">Marcus Tan</span>
+        <span class="lb-area">📍 Bishan East</span>
+        <span class="lb-rating">⭐ 4.8</span>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width: 72%;"></div></div>
+        <span class="lb-tokens">🪙 180</span>
+      </div>
+
+      <div class="lb-row">
+        <span class="lb-rank">3</span>
+        <div class="user-avatar-circle" style="width: 32px; height: 32px; font-size: 0.85rem;">S</div>
+        <span class="lb-name">Siti R.</span>
+        <span class="lb-area">📍 Jurong West</span>
+        <span class="lb-rating">⭐ 4.9</span>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width: 57%;"></div></div>
+        <span class="lb-tokens">🪙 142</span>
+      </div>
+
+      <div class="lb-row">
+        <span class="lb-rank">4</span>
+        <div class="user-avatar-circle" style="width: 32px; height: 32px; font-size: 0.85rem;">B</div>
+        <span class="lb-name">bob</span>
+        <span class="lb-area">📍 Toa Payoh Central</span>
+        <span class="lb-rating">⭐ 5.0</span>
+        <div class="lb-bar-wrap"><div class="lb-bar" style="width: 38%;"></div></div>
+        <span class="lb-tokens">🪙 95</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3. PROFILE PAGE VIEW (Pixel-Perfect to Actual Frontend)
+       ============================================================ -->
+  <section id="view-profile" class="view-content">
+    <div class="page-header clickable-target" onclick="inspect('profile_user_card')">
+      <div>
+        <p class="greeting">User Profile</p>
+        <h1>Plant Caregiver Profile</h1>
+        <p class="subtitle">Manage personal garden info, badges, and sitting reputation</p>
+      </div>
+    </div>
+
+    <div class="row g-4 position-relative">
+      <!-- Sidebar -->
+      <div class="col-md-3">
+        <div class="glass-card p-3 mb-3 text-center clickable-target" onclick="inspect('profile_user_card')">
+          <div class="user-avatar-circle mx-auto mb-2" style="width: 72px; height: 72px; font-size: 1.8rem; background: #daf2e3; color: #14804a; border: 2px solid #aee6c6;">C</div>
+          <h4 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--ink);">caro</h4>
+          <p class="text-muted small mb-3">📍 Blk 448B · Tampines</p>
+          <div class="d-flex flex-column gap-1 text-start clickable-target" onclick="event.stopPropagation(); inspect('profile_sidebar_nav')">
+            <button class="btn btn-light btn-sm text-start font-monospace">◉ About me</button>
+            <button class="btn btn-light btn-sm text-start font-monospace">☷ Personal details</button>
+            <button class="btn btn-light btn-sm text-start font-monospace">⌂ My address</button>
+            <button class="btn btn-light btn-sm text-start font-monospace">☆ My reviews</button>
+            <button class="btn btn-light btn-sm text-start font-monospace">▧ My posts</button>
+            <button class="btn btn-success btn-sm text-start font-monospace" style="background: #daf2e3; color: #14804a; border-color: #aee6c6; font-weight: 700;">✦ My badges</button>
+          </div>
+        </div>
+
+        <!-- Achieved Badges Icon Tray -->
+        <div class="glass-card p-3 clickable-target" onclick="inspect('profile_badge_tray')" title="Click to inspect Achieved Badges Tray">
+          <h6 style="font-size: 0.72rem; text-transform: uppercase; color: #4b5563; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 0.75rem;">ACHIEVED BADGES</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_first_sit')" title="First Sit">🌱</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_ten_plants')" title="10 Plants Saved">🌿</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_rainy_day')" title="Rainy Day Hero">🌧️</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_paparazzi')" title="Paparazzi Planter">📸</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_green_thumb')" title="Green Thumb Master">🪴</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_token_tycoon')" title="Token Tycoon">🪙</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_botanist')" title="Botanist in Training">🌺</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_generous_sprout')" title="Generous Sprout">🤝</span>
+            <span class="user-avatar-circle clickable-target" style="width: 38px; height: 38px; font-size: 1.2rem; background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.4);" onclick="event.stopPropagation(); inspect('badge_kampung_legend')" title="Kampung Legend">👑</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Profile Column -->
+      <div class="col-md-9">
+        <!-- Post Preview Card from actual frontend -->
+        <div class="glass-card p-3 mb-4 clickable-target" onclick="inspect('profile_posts')" style="max-width: 320px;">
+          <div style="height: 120px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; overflow: hidden; background-image: linear-gradient(135deg, #a7f3d0, #6ee7b7);">🪴</div>
+          <h5 style="font-size: 1rem; font-weight: 700; margin: 10px 0 6px;">monstera</h5>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <span class="user-avatar-circle" style="width: 24px; height: 24px; font-size: 0.75rem;">c</span>
+              <span class="small text-muted">caro</span>
+            </div>
+            <span class="small" style="color: #64748b;">🤍 2</span>
+          </div>
+          <div class="mt-2 text-start">
+            <span class="small text-success fw-semibold">View all posts ↗</span>
+          </div>
+        </div>
+
+        <!-- Unlocked Milestone Badges Section -->
+        <div class="glass-card p-4 clickable-target" onclick="inspect('profile_badge_sync')">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--ink); margin: 0;">Unlocked Milestone Badges</h3>
+              <p style="font-size: 0.85rem; color: #6b7280; margin: 4px 0 0;">Badges you've earned from your plant care journey.</p>
+            </div>
+            <button class="btn btn-outline-success btn-sm clickable-target" style="border-radius: 8px; font-weight: 600;" onclick="event.stopPropagation(); inspect('profile_dashboard_link')">
+              View all on Dashboard ↗
+            </button>
+          </div>
+
+          <!-- Empty State Check Callout (Clickable) -->
+          <div class="p-3 mb-4 rounded clickable-target" style="background: #f0fdf4; border: 1.5px dashed #86efac;" onclick="event.stopPropagation(); inspect('profile_empty_state')">
+            <div class="d-flex align-items-center gap-2">
+              <span style="font-size: 1.2rem;">🌱</span>
+              <div>
+                <small style="color: #166534; font-weight: 800; text-transform: uppercase; font-size: 0.75rem;">Empty State Behavior (When user has 0 unlocked badges):</small>
+                <p style="margin: 2px 0 0; font-size: 0.88rem; color: #15803d; font-weight: 600;">
+                  <em>"Unlock milestone badges by completing plant care visits"</em>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- All 9 Unlocked Badges in Profile matching the user's real screen -->
+          <div class="row g-3">
+            <!-- 1. First Sit -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_first_sit')">
+                <div class="badge-icon-wrap">🌱<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>First Sit</h4>
+                  <p>Completed your first plant sitting visit!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. 10 Plants Saved -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_ten_plants')">
+                <div class="badge-icon-wrap">🌿<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>10 Plants Saved</h4>
+                  <p>Successfully watered and cared for 10 plants.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Rainy Day Hero -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_rainy_day')">
+                <div class="badge-icon-wrap">🌧️<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Rainy Day Hero</h4>
+                  <p>Cared for corridor plants during an active weather alert.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Paparazzi Planter -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_paparazzi')">
+                <div class="badge-icon-wrap">📸<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Paparazzi Planter</h4>
+                  <p>Uploaded clear photo proof for 5 completed care visits.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Green Thumb Master -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_green_thumb')">
+                <div class="badge-icon-wrap">🪴<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Green Thumb Master</h4>
+                  <p>Registered and nurtured 5 or more plants in your corridor garden.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. Token Tycoon -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_token_tycoon')">
+                <div class="badge-icon-wrap">🪙<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Token Tycoon</h4>
+                  <p>Accumulated a lifetime total of 150 community tokens through helpful deeds.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. Botanist in Training -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_botanist')">
+                <div class="badge-icon-wrap">🌺<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Botanist in Training</h4>
+                  <p>Cared for or registered 3 distinctly different plant types.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 8. Generous Sprout -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_generous_sprout')">
+                <div class="badge-icon-wrap">🤝<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Generous Sprout</h4>
+                  <p>Posted 5 care requests and rewarded helper neighbours.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 9. Kampung Legend -->
+            <div class="col-md-4">
+              <div class="badge-card glass-card unlocked clickable-target" onclick="event.stopPropagation(); inspect('badge_kampung_legend')">
+                <div class="badge-icon-wrap">👑<span class="check-mark">✓</span></div>
+                <div class="badge-info">
+                  <h4>Kampung Legend</h4>
+                  <p>Completed 25 total care visits across Singapore.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Scroll to Top Button -->
+      <button class="clickable-target position-fixed" style="bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: #14804a; color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 100;" onclick="inspect('scroll_to_top')" title="Scroll to Top Component">
+        ↑
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4. COMMUNITY VIEW
+       ============================================================ -->
+  <section id="view-community" class="view-content">
+    <div class="page-header">
+      <div>
+        <p class="greeting">Green Community</p>
+        <h1>🌿 Neighbourhood Community</h1>
+        <p class="subtitle">Connect with plant parents, view progress stories, and learn care tips</p>
+      </div>
+    </div>
+
+    <!-- Community Podium -->
+    <div class="comm-podium clickable-target" onclick="inspect('community_podium')">
+      <div class="comm-podium-card glass-card">
+        <span style="font-size: 1.5rem;">🥇</span>
+        <div class="user-avatar-circle" style="width: 44px; height: 44px;">A</div>
+        <div>
+          <div style="font-weight: 700;">ari</div>
+          <small class="text-muted">Top Helper · 248 Tokens</small>
+        </div>
+      </div>
+      <div class="comm-podium-card glass-card">
+        <span style="font-size: 1.5rem;">🥈</span>
+        <div class="user-avatar-circle" style="width: 44px; height: 44px;">M</div>
+        <div>
+          <div style="font-weight: 700;">Marcus Tan</div>
+          <small class="text-muted">Helper · 180 Tokens</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post Feed -->
+    <div class="post-card glass-card clickable-target" onclick="inspect('community_post')">
+      <div class="post-header">
+        <div class="user-avatar-circle">M</div>
+        <div>
+          <div class="post-author">Marcus Tan</div>
+          <div class="post-meta">2 hours ago · Bishan East</div>
+        </div>
+        <span class="post-tag ms-auto">Care Guide</span>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">My Monstera pushed out 2 new split leaves!</h3>
+      <p style="color: #4b5563; font-size: 0.9rem;">Big thanks to @caro for watering them while I was in Penang last weekend! The extra moisture misting really helped prevent browning edges.</p>
+      <div class="post-img-placeholder">🪴</div>
+      <div class="post-footer">
+        <span>❤️ 14 Likes</span>
+        <span>💬 3 Comments</span>
+        <span>📤 Share</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       5. LANDING PAGE VIEW
+       ============================================================ -->
+  <section id="view-landing" class="view-content">
+    <div class="landing-hero">
+      <div class="clickable-target d-inline-block p-2" onclick="inspect('landing_title')">
+        <h1>Leaf It To Us</h1>
+        <p style="font-size: 1.2rem; color: #4b5563; max-width: 600px; margin: 0 auto;">
+          Plants cared for together. Connect with trusted neighbours to sit your corridor and balcony plants.
+        </p>
+      </div>
+
+      <div class="orbit-container clickable-target" onclick="inspect('landing_orbit')">
+        <div class="tree-center">🌳</div>
+        <div class="orbit-node node-1">🌿 Check Schedule</div>
+        <div class="orbit-node node-2">🤝 Find Helpers</div>
+        <div class="orbit-node node-3">👥 Join Community</div>
+      </div>
+
+      <div class="d-flex justify-content-center gap-3 mt-4">
+        <button class="btn btn-primary px-4 py-2" style="background: var(--primary); font-weight: 700;">Get Started</button>
+        <button class="btn btn-outline-secondary px-4 py-2" style="font-weight: 600;">Explore Requests</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       6. FULL CODE ARCHITECTURE, WAD2 VS BONUS & TESTING REFERENCE
+       ============================================================ -->
+  <section id="view-architecture" class="view-content">
+    <div class="page-header">
+      <div>
+        <p class="greeting">Complete Study & Defense Reference (Moved from Source Code Comments)</p>
+        <h1>🧠 Deep-Dive Architecture, WAD2 Mapping & Automated Testing</h1>
+        <p class="subtitle">Click any card below to inspect the exact code, line-by-line explanations, and Professor Q&A</p>
+      </div>
+    </div>
+
+    <!-- Section A: WAD2 Syllabus vs Beyond Minimum Requirements Table -->
+    <div class="glass-card p-4 mb-4">
+      <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--ink); margin-bottom: 0.75rem;">
+        📚 WAD2 Syllabus Concepts vs. Beyond Minimum Requirements (Bonus Points)
+      </h3>
+      <p style="font-size: 0.88rem; color: #4b5563; margin-bottom: 1rem;">
+        All comments tagging <code>[NOT IN WAD2 CONTENT]</code> and <code>covered in WAD2 wk3–wk10</code> were removed from your actual <code>.vue</code> and <code>.js</code> files so your submitted codebase stays clean. Use this table during Q&A!
+      </p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle" style="font-size: 0.85rem; background: #fff;">
+          <thead style="background: #dcfce7; color: #065f46;">
+            <tr>
+              <th style="width: 22%;">File / Component</th>
+              <th style="width: 38%;">WAD2 Syllabus Concepts Used (Weeks 3–10)</th>
+              <th style="width: 40%;">Beyond Minimum Requirements (Bonus / Self-Taught)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="clickable-target" onclick="inspect('arch_dashboard_lifecycle')">
+              <td><strong>DashboardView.vue</strong><br><small class="text-muted">client/src/views/boards/</small></td>
+              <td>
+                • <code>{{ }}</code> Template Interpolation &amp; JS fallbacks (Wk 4)<br>
+                • <code>v-if</code> &amp; <code>v-for</code> with <code>:key</code> (Wk 4)<br>
+                • <code>ref()</code>, <code>computed()</code>, <code>onMounted()</code> (Wk 4–5)<br>
+                • <code>axios.get()</code> with <code>async/await</code> (Wk 5)<br>
+                • <code>&lt;router-link&gt;</code> &amp; SFC child imports (Wk 6)<br>
+                • Bootstrap 5 6-tier responsive breakpoints (Wk 3)
+              </td>
+              <td>
+                • <strong>Pinia Store</strong> (<code>useAuthStore</code>) global reactive state<br>
+                • <strong>CSS Grid</strong> (<code>repeat(auto-fit, minmax(280px, 1fr))</code>)<br>
+                • <strong>CSS Custom Properties</strong> (<code>var(--space-xl)</code>) &amp; Glassmorphism (<code>backdrop-filter: blur(12px)</code>)<br>
+                • <strong>Keyframe Animations</strong> (<code>anim-fade-in</code>, <code>anim-slide-up</code>, <code>countUp</code>)<br>
+                • <strong>Optional Chaining (<code>?.</code>) &amp; Nullish Coalescing (<code>??</code>)</strong>
+              </td>
+            </tr>
+            <tr class="clickable-target" onclick="inspect('arch_leaderboard_optimistic')">
+              <td><strong>LeaderboardView.vue</strong><br><small class="text-muted">client/src/views/boards/</small></td>
+              <td>
+                • <code>:checked</code> prop binding &amp; <code>@change</code> event (Wk 4–5)<br>
+                • <code>:class="{ 'lb-me': isCurrentUser(u) }"</code> (Wk 4)<br>
+                • <code>computed()</code> array <code>.filter()</code> &amp; <code>.map()</code> (Wk 4–5)<br>
+                • <code>axios.get()</code> &amp; <code>axios.patch()</code> REST verbs (Wk 5)
+              </td>
+              <td>
+                • <strong>Optimistic UI Pattern</strong> (instant toggle + revert in <code>catch</code>)<br>
+                • <strong>3D Elevated Gold Podium</strong> (<code>translateY(-16px)</code>) + Foil Shimmer pseudo-element (<code>::after</code>) + Floating Crown<br>
+                • <strong>Dual-Layer Privacy</strong> (Backend DB exclusion + Frontend reactive filter)
+              </td>
+            </tr>
+            <tr class="clickable-target" onclick="inspect('arch_badge_card')">
+              <td><strong>BadgeCard.vue</strong><br><small class="text-muted">client/src/components/dashboard/</small></td>
+              <td>
+                • <code>:class="['badge-card glass-card', { unlocked: badge.unlocked }]"</code> array + object syntax (Wk 4 Slide 58–59)<br>
+                • <code>:style="{ width: badge.progress + '%' }"</code> inline style binding (Wk 4)<br>
+                • <code>defineProps({ badge: { type: Object, required: true } })</code> (Wk 6)
+              </td>
+              <td>
+                • <strong>CSS Filter Grayscale</strong> (<code>filter: grayscale(0.7)</code> on locked -> <code>filter: none</code> on unlocked)<br>
+                • <strong>Absolute Checkmark Badge Overlay</strong> (<code>position: absolute</code> on icon circle)<br>
+                • <strong>Smooth Width Transition</strong> (<code>transition: width 0.6s ease</code>)
+              </td>
+            </tr>
+            <tr class="clickable-target" onclick="inspect('arch_chartjs')">
+              <td><strong>InteractiveBarChart.vue</strong><br><small class="text-muted">client/src/components/dashboard/</small></td>
+              <td>
+                • <code>v-if="chartData &amp;&amp; chartData.labels"</code> / <code>v-else</code> guard (Wk 4)<br>
+                • <code>computed()</code> chart options &amp; <code>defineProps</code> (Wk 5–6)<br>
+                • <code>&lt;style scoped&gt;</code> component isolation (Wk 6)
+              </td>
+              <td>
+                • <strong>Chart.js v4 + vue-chartjs</strong> third-party HTML5 Canvas integration<br>
+                • <strong>Tree-Shakeable Module Registration</strong> (<code>ChartJS.register(...)</code>)<br>
+                • <strong>Responsive Aspect Ratio Override</strong> (<code>maintainAspectRatio: false</code> + integer Y-axis <code>precision: 0</code>)
+              </td>
+            </tr>
+            <tr class="clickable-target" onclick="inspect('arch_backend_controller')">
+              <td><strong>boardController.js</strong><br><small class="text-muted">server/controllers/</small></td>
+              <td>
+                • Express REST route handlers (<code>req.params</code>, <code>req.query</code>)<br>
+                • Mongoose <code>User.find().select().sort().lean()</code>
+              </td>
+              <td>
+                • <strong>MongoDB Aggregation Pipelines</strong> (<code>$match</code>, <code>$group</code>, <code>$avg</code>, <code>$sum</code>) for real ratings &amp; token ledgers<br>
+                • <strong>MongoDB <code>.distinct()</code> &amp; <code>$in</code> Joins</strong> across 6 collections<br>
+                • <strong>Live NEA 2-Hour Weather API</strong> integration for Rainy Day Hero
+              </td>
+            </tr>
+            <tr class="clickable-target" onclick="inspect('arch_testing_suite')">
+              <td><strong>Vitest &amp; Playwright Tests</strong><br><small class="text-muted">*.spec.js &amp; e2e/boards.spec.js</small></td>
+              <td>
+                • Component Unit Testing with <code>mount()</code> &amp; <code>props</code> (Wk 10 Slides 18–25)<br>
+                • Child Component Stubbing (<code>stubs: { RouterLink: true, Bar: ... }</code>) (Wk 10 Slide 23–24)<br>
+                • Integration Testing parent + child components (Wk 10 Slide 31–32)<br>
+                • End-to-End Testing with Playwright (Wk 10 Slides 48–61)
+              </td>
+              <td>
+                • <strong>Full E2E + Unit Test Coverage</strong> across all 5 board files + 11 backend test files
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section B: Deep-Dive Clickable Architecture Cards -->
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_dashboard_lifecycle')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-success">DashboardView.vue</span>
+            <small class="text-muted font-monospace">Lines 115–210</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">1. Reactive Defaults &amp; Sequential API Chaining</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            Why <code>userData</code> starts with empty defaults, why <code>activityChartData</code> starts as <code>null</code> instead of <code>{}</code>, and why 3 Axios calls are awaited sequentially in <code>onMounted</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_leaderboard_optimistic')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-primary">LeaderboardView.vue</span>
+            <small class="text-muted font-monospace">Lines 134–270</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">2. Optimistic UI, Dual-Match &amp; Rank Recalculation</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            How <code>isCurrentUser()</code> dual-matches ID and username, how <code>filteredLeaderboard</code> recomputes ranks with spread <code>...u</code>, and how <code>toggleOptOut()</code> reverts on server failure.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_badge_card')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-warning text-dark">BadgeCard.vue</span>
+            <small class="text-muted font-monospace">Lines 1–198</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">3. Array+Object :class, Inline :style &amp; Scoped CSS</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            Why <code>:class="['badge-card glass-card', { unlocked: badge.unlocked }]"</code> mixes static and conditional classes, and why runtime percentage widths require <code>:style</code> instead of CSS classes.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_chartjs')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-info text-dark">InteractiveBarChart.vue</span>
+            <small class="text-muted font-monospace">Lines 1–144</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">4. Chart.js Tree-Shaking &amp; Null-Guard Rendering</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            Why Chart.js v3+ requires <code>ChartJS.register()</code>, why <code>v-if="chartData &amp;&amp; chartData.labels"</code> checks both properties, and how <code>maintainAspectRatio: false</code> works.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_backend_controller')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-dark">boardController.js</span>
+            <small class="text-muted font-monospace">Lines 1–880</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">5. MongoDB Aggregations, 10 Badges &amp; 6-Month Buckets</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            How <code>getLeaderboard</code>, <code>syncUserBadges</code>, <code>getUserStats</code>, and <code>getUserCharts</code> query live MongoDB collections using <code>$match</code>, <code>$group</code>, <code>$in</code>, and <code>.distinct()</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="glass-card p-3 h-100 clickable-target" onclick="inspect('arch_testing_suite')">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge" style="background: #7c3aed;">Vitest + Playwright</span>
+            <small class="text-muted font-monospace">Week 10 Testing</small>
+          </div>
+          <h5 style="font-size: 1rem; font-weight: 700;">6. Unit, Integration &amp; Playwright E2E Test Suite</h5>
+          <p style="font-size: 0.82rem; color: #4b5563; margin: 0;">
+            Complete breakdown of <code>BadgeCard.spec.js</code>, <code>CommunityPodium.spec.js</code>, <code>InteractiveBarChart.spec.js</code>, <code>DashboardView.spec.js</code>, <code>LeaderboardView.spec.js</code>, and <code>boards.spec.js</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <script>
+    // Tab switching logic
+    function switchView(viewName) {
+      document.querySelectorAll('.tab-pill').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      const target = document.getElementById('view-' + viewName);
+      if (target) target.classList.add('active');
+      window.scrollTo({ top: 50, behavior: 'smooth' });
+    }
+
+    // Complete Database of Professor Defense Answers & Exact Code (Zero Placeholders)
+    const cheatData = {"badge_first_sit":{"title":"Milestone Badge: First Sit (🌱)","file":"server/controllers/boardController.js (Lines 677–687) & client/src/components/dashboard/BadgeCard.vue","feature":"Rewards a community member immediately after they complete their very first plant-sitting visit as a helper. It operates as a binary unlock (0% or 100%) to provide immediate positive reinforcement on user onboarding.","tech":"Computed in Node/Express via MongoDB <code>carevisits</code> collection query (<code>sitterId === userId</code> and <code>status === 'COMPLETED'</code>). In frontend Vue 3, rendered by <code>BadgeCard.vue</code> using dynamic <code>:class=\"['badge-card', { unlocked: badge.unlocked }]\"</code> and inline width binding <code>:style=\"{ width: badge.progress + '%' }\"</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"first_sit\",\n  name: \"First Sit\",\n  description: \"Completed your first plant sitting visit!\",\n  unlocked: visitsCompleted >= 1,\n  progress: visitsCompleted >= 1 ? 100 : 0,\n  icon: \"🌱\",\n}","lines":[{"num":"Line 681","text":"<code>id: 'first_sit'</code>: Unique key used to index the badge and sync into the user's MongoDB document."},{"num":"Line 684","text":"<code>unlocked: visitsCompleted >= 1</code>: Evaluates boolean unlock state based on completed care visits count in DB."},{"num":"Line 685","text":"<code>progress: visitsCompleted >= 1 ? 100 : 0</code>: Binary progress calculation (no partial progress for a single first action)."}],"rapid":"<strong>Prof:</strong> 'Why is progress binary here but percentage-based on other badges?'<br><strong>Answer:</strong> 'Because completing a single visit cannot be partially done; binary badges instantly award 100% upon their threshold trigger.'"},"badge_ten_plants":{"title":"Milestone Badge: 10 Plants Saved (🌿)","file":"server/controllers/boardController.js (Lines 689–700)","feature":"Rewards cumulative plant care impact. It calculates the total number of individual plants watered across all completed visits (averaging ~3 plants per visit) and displays an animated progress bar from 0% to 100%.","tech":"Calculated with <code>Math.min(100, Math.round((plantsCaredFor / 10) * 100))</code>. In CSS, <code>.progress-fill</code> animates smoothly via <code>transition: width 0.6s ease;</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"ten_plants_saved\",\n  name: \"10 Plants Saved\",\n  description: \"Successfully watered and cared for 10 plants.\",\n  unlocked: plantsCaredFor >= 10,\n  progress: Math.min(100, Math.round((plantsCaredFor / 10) * 100)),\n  icon: \"🌿\",\n}","lines":[{"num":"Line 697","text":"<code>unlocked: plantsCaredFor >= 10</code>: Threshold check for 10 individual plants nurtured."},{"num":"Line 698","text":"<code>Math.min(100, Math.round((plantsCaredFor / 10) * 100))</code>: Clamps progress to 100% max so progress bars never exceed container width."}],"rapid":"<strong>Prof:</strong> 'What happens if a user waters 15 plants?'<br><strong>Answer:</strong> '<code>Math.min(100, ...)</code> clamps the calculation so the progress bar never overflows past 100%.'"},"badge_rainy_day":{"title":"Milestone Badge: Rainy Day Hero (🌧️)","file":"server/controllers/boardController.js (Lines 702–715) & External NEA Weather API","feature":"The only badge driven by live meteorological weather data. Unlocks if a helper completed a care visit while an active rain or thunderstorm alert was active in Singapore, protecting corridor plants from wind/rain damage.","tech":"External API integration with <strong>Data.gov.sg / NEA 2-Hour Weather Nowcast API</strong>. When visit proof is submitted in <code>careRequestController.js</code>, current weather condition is stamped. If weather alert includes 'rain', 'thunder', or 'shower', <code>rainyVisitsCount</code> increments.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"rainy_day_hero\",\n  name: \"Rainy Day Hero\",\n  description: \"Cared for corridor plants during an active weather alert.\",\n  unlocked: rainyVisitsCount >= 1,\n  progress: rainyVisitsCount >= 1 ? 100 : 0,\n  icon: \"🌧️\",\n}","lines":[{"num":"Line 712","text":"<code>unlocked: rainyVisitsCount >= 1</code>: Checks if at least 1 visit was executed during adverse rain conditions."},{"num":"Line 714","text":"<code>icon: '🌧️'</code>: Clean emoji icon rendered consistently without external font icon dependencies."}],"rapid":"<strong>Prof:</strong> 'How does the system know it was raining?'<br><strong>Answer:</strong> 'When proof is uploaded, our backend queries the Singapore NEA weather API and stamps <code>weatherAlert</code> onto the care visit document in MongoDB.'"},"badge_paparazzi":{"title":"Milestone Badge: Paparazzi Planter (📸)","file":"server/controllers/boardController.js (Lines 717–729)","feature":"Encourages trust and transparency by rewarding helpers who take and upload clear photo proofs of their watering visits. Reaching 5 photo proofs unlocks this badge.","tech":"MongoDB <code>$in</code> join on <code>PhotoProof</code> collection matching the user's completed <code>visitIds</code> array. Fallback mechanism estimates proof count if legacy visit records lack explicit photo references.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"paparazzi_planter\",\n  name: \"Paparazzi Planter\",\n  description: \"Uploaded clear photo proof for 5 completed care visits.\",\n  unlocked: photoProofCount >= 5,\n  progress: Math.min(100, Math.round((photoProofCount / 5) * 100)),\n  icon: \"📸\",\n}","lines":[{"num":"Line 726","text":"<code>unlocked: photoProofCount >= 5</code>: Unlocks upon reaching 5 verified photographic proofs."},{"num":"Line 727","text":"<code>progress: Math.min(100, Math.round((photoProofCount / 5) * 100))</code>: Visual percentage feedback (e.g. 2 proofs = 40%)."}],"rapid":"<strong>Prof:</strong> 'Where are the photos stored?'<br><strong>Answer:</strong> 'Image URLs or Base64 payloads are stored in the <code>PhotoProof</code> MongoDB collection linked to the respective <code>visitId</code>.'"},"badge_five_star":{"title":"Milestone Badge: 5-Star Sitter (⭐)","file":"server/controllers/boardController.js (Lines 731–743)","feature":"Rewards service quality and neighbour satisfaction. Requires accumulating 5 separate 5.0-star reviews from plant owners.","tech":"MongoDB query on <code>reviews</code> collection where <code>receiverId === userId</code> and <code>rating === 5</code>. Filtered dynamically in memory: <code>reviews.filter(r => r.rating === 5).length</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"five_star_sitter\",\n  name: \"5-Star Sitter\",\n  description: \"Earned 5 perfect 5-star reviews from happy plant parents.\",\n  unlocked: fiveStarReviewsCount >= 5,\n  progress: Math.min(100, Math.round((fiveStarReviewsCount / 5) * 100)),\n  icon: \"⭐\",\n}","lines":[{"num":"Line 739","text":"<code>fiveStarReviewsCount >= 5</code>: Confirms five 5-star ratings have been awarded."},{"num":"Line 741","text":"<code>Math.round((fiveStarReviewsCount / 5) * 100)</code>: Standard progress bar calculation."}],"rapid":"<strong>Prof:</strong> 'Does a 4-star review count toward this?'<br><strong>Answer:</strong> 'No, the query strictly requires <code>rating === 5</code> to maintain high reputation incentive.'"},"badge_green_thumb":{"title":"Milestone Badge: Green Thumb Master (🪴)","file":"server/controllers/boardController.js (Lines 745–756)","feature":"Rewards plant ownership. Encourages users to register and track 5 or more plants in their corridor or balcony garden.","tech":"MongoDB <code>Plant</code> collection count query: <code>db.collection('Plant').countDocuments({ ownerId: userId })</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"green_thumb_master\",\n  name: \"Green Thumb Master\",\n  description: \"Registered and nurtured 5 or more plants in your corridor garden.\",\n  unlocked: totalPlantsOwned >= 5,\n  progress: Math.min(100, Math.round((totalPlantsOwned / 5) * 100)),\n  icon: \"🪴\",\n}","lines":[{"num":"Line 753","text":"<code>totalPlantsOwned >= 5</code>: Threshold for managing a robust corridor collection."},{"num":"Line 754","text":"<code>Math.min(100, Math.round((totalPlantsOwned / 5) * 100))</code>: Incremental progress bar tracking."}],"rapid":"<strong>Prof:</strong> 'If a user deletes a plant, does badge progress decrease?'<br><strong>Answer:</strong> 'Yes, dynamic progress reflects live registered plants, but unlocked badges remain persisted in the user profile document.'"},"badge_token_tycoon":{"title":"Milestone Badge: Token Tycoon (🪙)","file":"server/controllers/boardController.js (Lines 758–769)","feature":"Rewards cumulative economic contribution by tracking lifetime tokens earned (150 tokens threshold). Crucially, spending tokens does NOT decrease progress on this badge.","tech":"MongoDB <strong>Aggregation Pipeline</strong>: <code>db.collection('tokentransactions').aggregate([ { $match: { receiverId: userId } }, { $group: { _id: null, total: { $sum: '$amount' } } } ])</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"token_tycoon\",\n  name: \"Token Tycoon\",\n  description: \"Accumulated a lifetime total of 150 community tokens through helpful deeds.\",\n  unlocked: tokensEarnedTotal >= 150,\n  progress: Math.min(100, Math.round((tokensEarnedTotal / 150) * 100)),\n  icon: \"🪙\",\n}","lines":[{"num":"Line 766","text":"<code>tokensEarnedTotal >= 150</code>: Lifetime earned sum comparison."},{"num":"Line 767","text":"<code>progress: Math.min(100, ...)</code>: Calculates percentage of 150 tokens earned."}],"rapid":"<strong>Prof:</strong> 'Why lifetime tokens instead of current balance?'<br><strong>Answer:</strong> 'Because we want users to freely spend their tokens in the community without penalizing their badge achievement progress.'"},"badge_botanist":{"title":"Milestone Badge: Botanist in Training (🌺)","file":"server/controllers/boardController.js (Lines 771–782)","feature":"Rewards biodiversity in plant care. Unlocks when a user cares for or registers at least 3 distinctly different plant species (e.g. Monstera, Orchid, Snake Plant).","tech":"MongoDB <code>.distinct()</code> operator: <code>db.collection('Plant').distinct('plantName', { ownerId: userId })</code>. Returns an array of unique strings; length of array determines distinct count.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"botanist_in_training\",\n  name: \"Botanist in Training\",\n  description: \"Cared for or registered 3 distinctly different plant types.\",\n  unlocked: distinctPlantTypes >= 3,\n  progress: Math.min(100, Math.round((distinctPlantTypes / 3) * 100)),\n  icon: \"🌺\",\n}","lines":[{"num":"Line 779","text":"<code>distinctPlantTypes >= 3</code>: Checks if 3 distinct species names exist."},{"num":"Line 780","text":"<code>Math.min(100, Math.round((distinctPlantTypes / 3) * 100))</code>: Calculates progress in 33% increments."}],"rapid":"<strong>Prof:</strong> 'How do you ensure duplicates like 3 Monsteras only count as 1?'<br><strong>Answer:</strong> 'We use MongoDB distinct query <code>.distinct('plantName')</code>, which automatically deduplicates species names.'"},"badge_generous_sprout":{"title":"Milestone Badge: Generous Sprout (🤝)","file":"server/controllers/boardController.js (Lines 784–795)","feature":"Rewards the plant-owner role. Acknowledges owners who post 5 or more care requests and reward neighbours with community tokens.","tech":"MongoDB <code>carerequests</code> collection query using <code>$or</code> to accommodate different requester field schemas: <code>{ $or: [{ requesterId: userId }, { ownerId: userId }] }</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"generous_sprout\",\n  name: \"Generous Sprout\",\n  description: \"Posted 5 care requests and rewarded helper neighbours.\",\n  unlocked: careRequestsPosted >= 5,\n  progress: Math.min(100, Math.round((careRequestsPosted / 5) * 100)),\n  icon: \"🤝\",\n}","lines":[{"num":"Line 792","text":"<code>careRequestsPosted >= 5</code>: Threshold check for 5 posted care requests."},{"num":"Line 793","text":"<code>Math.min(100, Math.round((careRequestsPosted / 5) * 100))</code>: 20% progress increment per request."}],"rapid":"<strong>Prof:</strong> 'Why reward posting requests when other badges reward helping?'<br><strong>Answer:</strong> 'A two-sided marketplace needs both supply and demand. Rewarding owners encourages requests which creates jobs for helpers.'"},"badge_kampung_legend":{"title":"Milestone Badge: Kampung Legend (👑)","file":"server/controllers/boardController.js (Lines 797–808)","feature":"The prestige endgame badge. Unlocks after 25 completed visits across Singapore. 'Kampung' (Malay for village) celebrates the Singapore spirit of Gotong Royong (mutual community help).","tech":"Uses <code>visitsCompleted >= 25</code> with dynamic progress bar tracking <code>Math.min(100, Math.round((visitsCompleted / 25) * 100))</code>.","lang":"JavaScript (boardController.js)","code":"// server/controllers/boardController.js\n{\n  id: \"kampung_legend\",\n  name: \"Kampung Legend\",\n  description: \"Completed 25 total care visits across Singapore.\",\n  unlocked: visitsCompleted >= 25,\n  progress: Math.min(100, Math.round((visitsCompleted / 25) * 100)),\n  icon: \"👑\",\n}","lines":[{"num":"Line 805","text":"<code>visitsCompleted >= 25</code>: High milestone threshold for active power users."},{"num":"Line 806","text":"<code>Math.min(100, Math.round((visitsCompleted / 25) * 100))</code>: Clear visual feedback for long-term goal progression."}],"rapid":"<strong>Prof:</strong> 'How is this badge persisted so it doesn't get recomputed constantly?'<br><strong>Answer:</strong> 'In <code>syncUserBadges(userId)</code>, all unlocked badge objects are written to the <code>badges</code> array in the user document in MongoDB.'"},"stat_plants":{"title":"Dashboard Stat: Total Plants Owned","file":"client/src/views/boards/DashboardView.vue (Lines 37–44) & server/controllers/boardController.js","feature":"Shows the live number of plants the user has registered in their digital corridor collection.","tech":"Queried via MongoDB <code>Plant.countDocuments({ ownerId: userId })</code>. Displayed in Vue 3 using short-circuit interpolation <code>{{ stats.totalPlantsOwned || 0 }}</code> inside a CSS glassmorphic card.","lang":"Vue 3 & Express (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"stat-card glass-card anim-slide-up anim-delay-1\">\n  <span class=\"stat-icon\">🌱</span>\n  <div>\n    <div class=\"stat-val\">{{ stats.totalPlantsOwned || 0 }}</div>\n    <div class=\"stat-label\">Total Plants Owned</div>\n  </div>\n</div>","lines":[{"num":"Line 41","text":"<code>{{ stats.totalPlantsOwned || 0 }}</code>: Displays live count with clean fallback to 0."},{"num":"Line 662","text":"<code>Plant.countDocuments({ ownerId })</code>: High-performance indexed B-tree count query."}],"rapid":"<strong>Prof:</strong> 'Why use countDocuments instead of fetching all plants and doing .length?'<br><strong>Answer:</strong> '<code>countDocuments()</code> runs on the database engine using index metadata, avoiding the memory overhead of transferring full documents to Node.js.'"},"stat_requests":{"title":"Dashboard Stat: Total Requests Posted","file":"client/src/views/boards/DashboardView.vue (Lines 46–52) & server/controllers/boardController.js","feature":"Displays the total care requests created by the user asking neighbours for plant-sitting assistance.","tech":"MongoDB query on <code>carerequests</code> matching <code>$or: [{ requesterId: userId }, { ownerId: userId }]</code>. Handled reactively via Vue 3 reactive ref <code>stats</code>.","lang":"Vue 3 & Express (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"stat-card glass-card anim-slide-up anim-delay-2\">\n  <span class=\"stat-icon\">📋</span>\n  <div>\n    <div class=\"stat-val\">{{ stats.careRequestsPosted || 0 }}</div>\n    <div class=\"stat-label\">Total Requests Posted</div>\n  </div>\n</div>","lines":[{"num":"Line 49","text":"<code>{{ stats.careRequestsPosted || 0 }}</code>: Template interpolation."},{"num":"Line 668","text":"<code>$or</code> query ensures backward-compatibility across schema migrations."}],"rapid":"<strong>Prof:</strong> 'What happens if a request is still open vs completed?'<br><strong>Answer:</strong> 'This metric tracks lifetime requests created by the owner to acknowledge their role as a community care requester.'"},"stat_visits":{"title":"Dashboard Stat: Total Visits as Helper","file":"client/src/views/boards/DashboardView.vue (Lines 54–60) & server/controllers/boardController.js","feature":"Reflects the user's caregiver contribution by counting verified, successfully completed sitting visits.","tech":"Queried with <code>CareVisit.countDocuments({ sitterId: userId, status: 'COMPLETED' })</code>.","lang":"Vue 3 & Express (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"stat-card glass-card anim-slide-up anim-delay-3\">\n  <span class=\"stat-icon\">🤝</span>\n  <div>\n    <div class=\"stat-val\">{{ stats.visitsCompleted || 0 }}</div>\n    <div class=\"stat-label\">Total Visits as Helper</div>\n  </div>\n</div>","lines":[{"num":"Line 57","text":"<code>{{ stats.visitsCompleted || 0 }}</code>: Reactive count display."},{"num":"Line 673","text":"<code>status: 'COMPLETED'</code> strictly filters out pending, cancelled, or missed visits."}],"rapid":"<strong>Prof:</strong> 'What if a visit was cancelled?'<br><strong>Answer:</strong> 'Cancelled visits have status <code>CANCELLED</code>, so they are excluded by the strict <code>status: 'COMPLETED'</code> query.'"},"stat_rating":{"title":"Dashboard Stat: Helper Rating","file":"client/src/views/boards/DashboardView.vue (Lines 62–69)","feature":"Displays the helper's average satisfaction rating out of 5.0 stars awarded by plant owners.","tech":"Formatted with JavaScript <code>Number(userData.ratingAverage).toFixed(1)</code>, falling back to <code>'5.0'</code> for new caregivers.","lang":"Vue 3 (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"stat-card glass-card anim-slide-up anim-delay-4\">\n  <span class=\"stat-icon\">⭐</span>\n  <div>\n    <div class=\"stat-val\">\n      {{ userData.ratingAverage ? Number(userData.ratingAverage).toFixed(1) : '5.0' }}\n    </div>\n    <div class=\"stat-label\">Helper Rating</div>\n  </div>\n</div>","lines":[{"num":"Line 66","text":"<code>.toFixed(1)</code> formats floating-point averages cleanly (e.g. 4.8 instead of 4.83333333)."},{"num":"Line 66","text":"<code>'5.0'</code> fallback provides a welcoming initial score for new onboarding helpers."}],"rapid":"<strong>Prof:</strong> 'Why default new users to 5.0?'<br><strong>Answer:</strong> 'Defaulting to 0 creates an immediate penalty where neighbours avoid booking new sitters; starting with 5.0 stimulates trust.'"},"view_leaderboard_btn":{"title":"Navigation Button: View Leaderboard","file":"client/src/views/boards/DashboardView.vue (Lines 26–29)","feature":"Provides instant single-page-app transition from the personal dashboard to the community leaderboard. Vertically centered on the Y-axis.","tech":"Vue Router <code>&lt;router-link to=\"/leaderboard\"&gt;</code> with custom CSS flexbox alignment (<code>display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;</code>) and Bootstrap <code>.btn .btn-primary .btn-sm</code>.","lang":"Vue 3 Template (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<router-link to=\"/leaderboard\" class=\"btn btn-primary btn-sm btn-nav-action\">\n  <span class=\"btn-icon\">🏆</span>\n  <span class=\"btn-text\">View Leaderboard</span>\n</router-link>","lines":[{"num":"Line 26","text":"<code>to=\"/leaderboard\"</code>: RouterLink navigates client-side without full browser reloads."},{"num":"Line 27","text":"<code>.btn-nav-action</code>: Uses flexbox with <code>align-items: center</code> to ensure emoji and text are perfectly centered on the Y-axis."}],"rapid":"<strong>Prof:</strong> 'Why use router-link instead of regular &lt;a href&gt;?'<br><strong>Answer:</strong> '<code>&lt;router-link&gt;</code> prevents full page reloads, preserving client-side Pinia auth state and token caches.'"},"view_dashboard_btn":{"title":"Navigation Button: View Dashboard","file":"client/src/views/boards/LeaderboardView.vue (Lines 21–24)","feature":"Returns the caregiver back to their personal dashboard. Vertically centered on the Y-axis.","tech":"Vue Router <code>&lt;router-link to=\"/dashboard\"&gt;</code> with CSS flexbox vertical alignment.","lang":"Vue 3 Template (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<router-link to=\"/dashboard\" class=\"btn btn-primary btn-sm btn-nav-action\">\n  <span class=\"btn-icon\">🌱</span>\n  <span class=\"btn-text\">View Dashboard</span>\n</router-link>","lines":[{"num":"Line 21","text":"<code>to=\"/dashboard\"</code>: Client-side route transition back to private statistics."},{"num":"Line 23","text":"<code>btn-nav-action</code>: Standardized button class ensuring identical heights and alignments across pages."}],"rapid":"<strong>Prof:</strong> 'How did you fix the Y-axis text alignment issue?'<br><strong>Answer:</strong> 'We applied <code>display: inline-flex; align-items: center; justify-content: center;</code> with <code>line-height: 1</code>.'"},"chart_activity":{"title":"Activity Over Time Bar Chart","file":"client/src/components/dashboard/InteractiveBarChart.vue & DashboardView.vue","feature":"Visualises monthly caregiver contributions: compares visits completed as a helper (blue bars) against care requests posted as an owner (purple bars) across the past 6 months.","tech":"Built using <strong>Chart.js v3+</strong> and the official Vue wrapper <strong>vue-chartjs</strong> (<code>&lt;Bar :data='chartData' :options='chartOptions' /&gt;</code>). Custom styled with rounded corners, custom tooltip backgrounds, Outfit typography, and zero vertical gridlines.","lang":"Vue 3 Component (InteractiveBarChart.vue)","code":"// client/src/components/dashboard/InteractiveBarChart.vue\nimport { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'\nimport { Bar } from 'vue-chartjs'\n\nChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)\n\nconst chartOptions = computed(() => ({\n  responsive: true,\n  maintainAspectRatio: false,\n  plugins: {\n    legend: { position: 'top', labels: { usePointStyle: true } },\n    tooltip: { backgroundColor: 'rgba(28, 25, 23, 0.92)', cornerRadius: 10 }\n  },\n  scales: {\n    x: { grid: { display: false } },\n    y: { beginAtZero: true, ticks: { precision: 0 } }\n  }\n}))","lines":[{"num":"Line 47","text":"<code>ChartJS.register(...)</code>: Tree-shakes Chart.js modules so only needed chart components are bundled into the app."},{"num":"Line 67","text":"<code>maintainAspectRatio: false</code>: Allows the chart canvas to freely fill the parent responsive container height."},{"num":"Line 99","text":"<code>ticks: { precision: 0 }</code>: Forces the Y-axis to show integer counts (e.g. 1, 2, 3 visits) avoiding decimal visit counts."}],"rapid":"<strong>Prof:</strong> 'Why did you choose Chart.js over plain SVG or D3?'<br><strong>Answer:</strong> 'Chart.js is lightweight, highly performant via HTML5 Canvas rendering, and provides built-in accessibility, hover tooltips, and responsive resize out of the box.'"},"chart_tokens":{"title":"Token Flow (Earned vs Spent) Chart","file":"client/src/views/boards/DashboardView.vue & InteractiveBarChart.vue","feature":"Shows the user's monthly token economics: tokens earned through helpful deeds (green bars) versus tokens spent creating care requests (amber bars).","tech":"Computed in <code>fetchDashboard()</code> by querying token transactions grouped by month, passing structured datasets into <code>InteractiveBarChart.vue</code>.","lang":"Vue 3 (DashboardView.vue)","code":"// client/src/views/boards/DashboardView.vue\ntokenChartData.value = {\n  labels: months,\n  datasets: [\n    { label: 'Tokens Earned', data: monthlyEarned, backgroundColor: '#22c55e', borderRadius: 6 },\n    { label: 'Tokens Spent', data: monthlySpent, backgroundColor: '#f59e0b', borderRadius: 6 }\n  ]\n}","lines":[{"num":"Line 142","text":"<code>backgroundColor: '#22c55e'</code>: Fresh emerald green branding for token gains."},{"num":"Line 143","text":"<code>borderRadius: 6</code>: Rounds bar tops for modern aesthetic styling."}],"rapid":"<strong>Prof:</strong> 'How does the chart handle months with zero transactions?'<br><strong>Answer:</strong> 'The backend aggregation initializes all 6 monthly buckets with 0 so the timeline remains continuous without gaps.'"},"token_pill":{"title":"Token Balance Pill (Available vs Frozen)","file":"client/src/views/boards/DashboardView.vue (Lines 17–24)","feature":"Displays the user's community tokens, breaking down liquid 'Available' tokens vs 'Frozen' escrow tokens held while care requests are pending.","tech":"Computed property in Pinia / Vue template: <code>(userData.availableTokenBalance ?? 0)</code> and <code>(userData.frozenTokenBalance || 0)</code> with CSS glass pill styling.","lang":"Vue Template (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"token-pill anim-bounce-in\" :title=\"`Total: ${userData.tokenBalance} · Avail: ${userData.availableTokenBalance} · Frozen: ${userData.frozenTokenBalance}`\">\n  <span class=\"coin\">🪙</span>\n  <span class=\"amount\">{{ userData.tokenBalance || 0 }}</span>\n  <span class=\"token-tag\">Tokens</span>\n  <span v-if=\"userData.frozenTokenBalance > 0\" class=\"token-breakdown\">\n    ({{ userData.availableTokenBalance ?? 0 }} Avail · {{ userData.frozenTokenBalance }} Frozen)\n  </span>\n</div>","lines":[{"num":"Line 17","text":"<code>:title=\"...\"</code>: Provides native browser hover tooltip showing the complete ledger breakdown."},{"num":"Line 21","text":"<code>v-if=\"userData.frozenTokenBalance > 0\"</code>: Only renders the escrow breakdown badge when tokens are actively frozen."}],"rapid":"<strong>Prof:</strong> 'Why do tokens get frozen?'<br><strong>Answer:</strong> 'To prevent double-spending: when an owner posts a request offering 10 tokens, those 10 tokens are frozen in escrow until the visit is completed and verified.'"},"opt_out":{"title":"Leaderboard Privacy Opt-Out Toggle","file":"client/src/views/boards/LeaderboardView.vue (Lines 25–30 & toggleOptOut)","feature":"Grants users privacy autonomy to exclude their name, avatar, and rankings from public community view. Recalculates remaining rankings dynamically with no gap numbers.","tech":"HTTP <code>PATCH /api/user/opt-out</code> updating <code>isOptedOut: Boolean</code> in MongoDB. In Vue 3, computed property <code>filteredLeaderboard</code> dynamically filters out opted-out users without requiring full page reload.","lang":"JavaScript / Vue 3 (LeaderboardView.vue)","code":"// client/src/views/boards/LeaderboardView.vue\nasync function toggleOptOut() {\n  try {\n    const res = await auth.authorizedRequest('/user/opt-out', { method: 'PATCH' })\n    isOptedOut.value = res.isOptedOut\n    await fetchLeaderboard()\n  } catch (err) {\n    console.error('Failed to update opt-out status', err)\n  }\n}","lines":[{"num":"Line 230","text":"<code>await auth.authorizedRequest('/user/opt-out', { method: 'PATCH' })</code>: Authenticated PATCH request carrying JWT token."},{"num":"Line 232","text":"<code>await fetchLeaderboard()</code>: Refetches the community rankings to immediately reflect the user's updated visibility."}],"rapid":"<strong>Prof:</strong> 'If rank #2 opts out, does rank #3 stay #3 or become #2?'<br><strong>Answer:</strong> 'Rank is recalculated from array index (<code>i + 1</code>), so rank #3 smoothly moves up to rank #2 with no missing ranking numbers.'"},"podium_gold":{"title":"Top 3 Podium: Gold Champion (#1)","file":"client/src/views/boards/LeaderboardView.vue (Lines 55–67)","feature":"Highlights Singapore's #1 plant caregiver on an elevated golden pedestal with floating crown animation and metallic foil shimmer effect.","tech":"CSS 3D transform <code>translateY(-16px)</code>, custom keyframe animation <code>@keyframes crownFloat</code>, CSS linear-gradient metallic background, and reusable <code>UserAvatar.vue</code> component.","lang":"CSS & Vue Template (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div class=\"podium-card glass-card gold\">\n  <span class=\"crown\">👑</span>\n  <span class=\"medal\">🥇</span>\n  <div class=\"podium-avatar-container\">\n    <UserAvatar\n      :user=\"{ photoUrl: filteredLeaderboard[0].photoUrl, userName: filteredLeaderboard[0].name }\"\n      :size=\"76\"\n      class=\"podium-avatar top\"\n    />\n  </div>\n  <h4>{{ filteredLeaderboard[0].name }}</h4>\n  <div class=\"token-pill gold-pill\">🪙 {{ filteredLeaderboard[0].availableTokens }}</div>\n</div>","lines":[{"num":"Line 56","text":"<code>&lt;span class='crown'&gt;👑&lt;/span&gt;</code>: Floats above avatar with 3s bobbing keyframe animation."},{"num":"Line 59","text":"<code>&lt;UserAvatar :size='76' /&gt;</code>: Reusable avatar component rendering photo or soft-green initial."}],"rapid":"<strong>Prof:</strong> 'How does the UserAvatar work if the user has no photo?'<br><strong>Answer:</strong> 'It falls back to extracting the first letter of their username, centered inside a soft green circle with dark green lettering.'"},"podium_silver":{"title":"Top 3 Podium: Silver Contender (#2)","file":"client/src/views/boards/LeaderboardView.vue (Lines 41–52)","feature":"Displays Singapore's #2 helper on the left silver pedestal with silver medal emoji and metallic silver badge styling.","tech":"CSS metallic gradients, flexbox alignment, and <code>UserAvatar.vue</code> sizing at 60px.","lang":"Vue Template (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div class=\"podium-card glass-card silver\">\n  <span class=\"medal\">🥈</span>\n  <div class=\"podium-avatar-container\">\n    <UserAvatar\n      :user=\"{ photoUrl: filteredLeaderboard[1].photoUrl, userName: filteredLeaderboard[1].name }\"\n      :size=\"60\"\n      class=\"podium-avatar\"\n    />\n  </div>\n  <h4>{{ filteredLeaderboard[1].name }}</h4>\n  <div class=\"token-pill\">🪙 {{ filteredLeaderboard[1].availableTokens }}</div>\n</div>","lines":[{"num":"Line 42","text":"<code>&lt;span class=\"medal\"&gt;🥈&lt;/span&gt;</code>: Silver medal marker."},{"num":"Line 47","text":"<code>:size=\"60\"</code>: Sized slightly smaller than gold (76px) to maintain visual hierarchy."}],"rapid":"<strong>Prof:</strong> 'What if there are fewer than 3 users on the platform?'<br><strong>Answer:</strong> '<code>v-if=\"filteredLeaderboard.length >= 3\"</code> guards the podium section so it only renders when at least 3 participants exist.'"},"podium_bronze":{"title":"Top 3 Podium: Bronze Achiever (#3)","file":"client/src/views/boards/LeaderboardView.vue (Lines 70–81)","feature":"Displays Singapore's #3 helper on the right bronze pedestal with warm copper tones and token tally.","tech":"CSS warm bronze gradients and reactive data binding from <code>filteredLeaderboard[2]</code>.","lang":"Vue Template (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div class=\"podium-card glass-card bronze\">\n  <span class=\"medal\">🥉</span>\n  <div class=\"podium-avatar-container\">\n    <UserAvatar\n      :user=\"{ photoUrl: filteredLeaderboard[2].photoUrl, userName: filteredLeaderboard[2].name }\"\n      :size=\"60\"\n      class=\"podium-avatar\"\n    />\n  </div>\n  <h4>{{ filteredLeaderboard[2].name }}</h4>\n  <div class=\"token-pill\">🪙 {{ filteredLeaderboard[2].availableTokens }}</div>\n</div>","lines":[{"num":"Line 71","text":"<code>&lt;span class=\"medal\"&gt;🥉&lt;/span&gt;</code>: Bronze medal marker."},{"num":"Line 80","text":"<code>filteredLeaderboard[2].availableTokens</code>: Liquid token score."}],"rapid":"<strong>Prof:</strong> 'Why rank by availableTokens instead of totalPlants?'<br><strong>Answer:</strong> 'Community tokens directly reflect active, verified contributions to other neighbours rather than passive private possession.'"},"leaderboard_list":{"title":"Leaderboard Rankings Table Container","file":"client/src/views/boards/LeaderboardView.vue (Lines 85–130)","feature":"The full public rankings container showing Singapore caregivers ordered by community token balance, with active neighbour count badges.","tech":"Bootstrap 5 flex column with CSS glassmorphism, responsive horizontal scroll on mobile, and dynamic active count.","lang":"Vue Template (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div class=\"leaderboard-card glass-card anim-slide-up anim-delay-2\">\n  <div class=\"lb-header-row\">\n    <h3 class=\"chart-title\">Top Token Holders in Singapore</h3>\n    <span class=\"badge badge-done\">{{ filteredLeaderboard.length }} Neighbours Active</span>\n  </div>\n  <div class=\"lb-list\">\n    <div v-for=\"u in filteredLeaderboard\" :key=\"u.id\" class=\"lb-row\" :class=\"{ 'lb-me': isCurrentUser(u) }\">\n      ...\n    </div>\n  </div>\n</div>","lines":[{"num":"Line 89","text":"<code>{{ filteredLeaderboard.length }} Neighbours Active</code>: Dynamic count updating immediately on privacy opt-out."},{"num":"Line 98","text":"<code>v-for=\"u in filteredLeaderboard\" :key=\"u.id\"</code>: Vue reactive list rendering."}],"rapid":"<strong>Prof:</strong> 'Why use v-for with :key?'<br><strong>Answer:</strong> 'Vue’s virtual DOM uses the key to diff and reorder DOM elements efficiently without rebuilding the entire list on change.'"},"leaderboard_row":{"title":"Leaderboard Row & Current User Highlight","file":"client/src/views/boards/LeaderboardView.vue (Lines 97–128)","feature":"Individual participant row displaying rank medal, UserAvatar, name, neighbourhood, helper rating, and proportional token progress bar. Highlights current logged-in user.","tech":"Vue dynamic class <code>:class=\"{ 'lb-me': isCurrentUser(u) }\"</code>, custom <code>rankMedal(u.rank)</code> function, and proportional CSS width calculation <code>(u.availableTokens / topTokens) * 100 + '%'</code>.","lang":"Vue 3 & CSS (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div v-for=\"u in filteredLeaderboard\" :key=\"u.id\" class=\"lb-row\" :class=\"{ 'lb-me': isCurrentUser(u) }\">\n  <div class=\"lb-rank\">{{ rankMedal(u.rank) }}</div>\n  <div class=\"lb-avatar-wrap\">\n    <UserAvatar :user=\"{ photoUrl: u.photoUrl, userName: u.name }\" :size=\"38\" />\n  </div>\n  <div class=\"lb-info\">\n    <span class=\"lb-name\">{{ u.name }}</span>\n    <span class=\"lb-sub\">📍 {{ u.neighbourhood }} · ⭐ {{ u.rating ? Number(u.rating).toFixed(1) : '5.0' }}</span>\n  </div>\n  <div class=\"lb-bar-wrap\">\n    <div class=\"lb-bar\" :style=\"{ width: Math.min(100, Math.round((u.availableTokens / topTokenCount) * 100)) + '%' }\"></div>\n  </div>\n  <div class=\"lb-tokens\">🪙 {{ u.availableTokens }}</div>\n</div>","lines":[{"num":"Line 100","text":"<code>:class=\"{ 'lb-me': isCurrentUser(u) }\"</code>: Highlights the user’s own row with a green outline and glow."},{"num":"Line 103","text":"<code>rankMedal(u.rank)</code>: Renders medals 🥇, 🥈, 🥉 for top 3 and integer numbers 4, 5, 6 for subsequent ranks."},{"num":"Line 116","text":"Relative bar calculation normalizes each user’s bar against the leader’s score."}],"rapid":"<strong>Prof:</strong> 'How does the current user know where they rank?'<br><strong>Answer:</strong> '<code>isCurrentUser(u)</code> compares <code>u.id === auth.user._id</code> and adds the <code>.lb-me</code> CSS glow class.'"},"user_avatar_component":{"title":"Reusable Component: UserAvatar.vue","file":"client/src/components/user/UserAvatar.vue (Lines 1–23)","feature":"Standardized avatar component used across Leaderboard, Profile, Navbar, and Community. Renders the user's real uploaded photo or falls back to clean, soft-green initials. Replaces external robot avatar APIs.","tech":"Vue 3 <code>&lt;script setup&gt;</code> with <code>defineProps({ user: Object, size: Number })</code>, <code>watch</code> handler, and <code>@error=\"failed = true\"</code> fallback.","lang":"Vue 3 Component (UserAvatar.vue)","code":"<script setup>\nimport { computed, ref, watch } from 'vue'\n\nconst props = defineProps({\n  user: { type: Object, default: null },\n  size: { type: Number, default: 40 },\n})\nconst failed = ref(false)\nwatch(() => props.user?.photoUrl, () => { failed.value = false })\nconst initial = computed(() => (props.user?.userName?.trim()?.[0] || 'U').toUpperCase())\n</script>\n\n<template>\n  <span class=\"user-avatar\" :style=\"{ width: `${size}px`, height: `${size}px`, fontSize: `${size * 0.38}px` }\">\n    <img v-if=\"user?.photoUrl && !failed\" :src=\"user.photoUrl\" :alt=\"`${user.userName}'s profile photo`\" @error=\"failed = true\" />\n    <span v-else aria-hidden=\"true\">{{ initial }}</span>\n  </span>\n</template>","lines":[{"num":"Line 10","text":"<code>initial = computed(...)</code>: Extracts uppercase first letter of username."},{"num":"Line 15","text":"<code>@error=\"failed = true\"</code>: Handles broken image URLs by switching to initials instantly."},{"num":"Line 21","text":"<code>background: var(--accent-soft); color: var(--accent);</code>: Custom soft-green palette matching project brand."}],"rapid":"<strong>Prof:</strong> 'Why did you remove the robot API?'<br><strong>Answer:</strong> 'External robot APIs like RoboHash add external network latency, risk broken links, and don’t match professional branding. UserAvatar is zero-dependency and 100% reliable.'"},"profile_badge_sync":{"title":"Profile Live Badge Synchronization","file":"client/src/views/user/ProfileView.vue (onMounted) & server/controllers/userController.js (getMe)","feature":"Solves Problem 1: Unlocked badges show up immediately when visiting `/profile`, without requiring the user to open `/dashboard` first to trigger badge calculation.","tech":"<code>await auth.refreshUser()</code> runs inside <code>onMounted()</code> in <code>ProfileView.vue</code>, invoking <code>GET /api/user/me</code>. On the backend, <code>getMe</code> runs <code>syncUserBadges(req.user._id)</code> to recalculate and persist all unlocked badges directly into MongoDB.","lang":"JavaScript (ProfileView.vue & userController.js)","code":"// client/src/views/user/ProfileView.vue\nonMounted(async () => {\n  // Refresh user profile/badges immediately so newly unlocked badges show up\n  try {\n    await auth.refreshUser()\n  } catch (e) {\n    // silently catch if offline\n  }\n})\n\n// server/controllers/userController.js\nexports.getMe = async (req, res) => {\n  try {\n    if (typeof syncUserBadges === \"function\") {\n      const updatedBadges = await syncUserBadges(req.user.userId || req.user._id);\n      if (updatedBadges) {\n        req.user.badges = updatedBadges;\n      }\n    }\n  } catch (err) {\n    console.error(\"Error auto-syncing badges in getMe:\", err);\n  }\n  res.json({ user: req.user });\n};","lines":[{"num":"Line 59","text":"<code>await auth.refreshUser()</code>: Automatically refetches authenticated user document on profile mount."},{"num":"Line 148","text":"<code>syncUserBadges(req.user._id)</code>: Server-side calculation evaluating all care visits, photo proofs, and reviews."}],"rapid":"<strong>Prof:</strong> 'Why did badges previously only update after visiting dashboard?'<br><strong>Answer:</strong> 'Badge evaluation logic was originally coupled to <code>boardController.getDashboard</code>. By extracting <code>syncUserBadges</code> and calling it inside <code>userController.getMe</code>, profile always displays up-to-date achievements.'"},"profile_badge_tray":{"title":"Profile Sidebar: Achieved Badges Tray","file":"client/src/views/user/ProfileView.vue (Lines 237–250 & 555–595)","feature":"A compact circular trophy case in the profile sidebar displaying emojis for all achievements earned so far. Hovering shows a tooltip with the badge title and description.","tech":"Vue 3 <code>v-if=\"user.badges && user.badges.length\"</code>, CSS flexbox wrap with circular borders, and <code>:title=\"`${b.name}: ${b.description}`\"</code> for native tooltip.","lang":"Vue 3 & CSS (ProfileView.vue)","code":"<!-- client/src/views/user/ProfileView.vue -->\n<div v-if=\"user.badges && user.badges.length\" class=\"sidebar-badges-section\">\n  <p class=\"sidebar-badges-title\">ACHIEVED BADGES</p>\n  <div class=\"sidebar-badges-grid\">\n    <div\n      v-for=\"b in user.badges\"\n      :key=\"b.id\"\n      class=\"sidebar-badge-item\"\n      :title=\"`${b.name}: ${b.description}`\"\n    >\n      <span class=\"sidebar-badge-icon\">{{ b.icon }}</span>\n    </div>\n  </div>\n</div>","lines":[{"num":"Line 237","text":"<code>v-if=\"user.badges && user.badges.length\"</code>: Hides section cleanly if user has not unlocked any achievements yet."},{"num":"Line 244","text":"<code>:title=\"...\"</code>: Accessible hover tooltip explaining badge meaning."},{"num":"Line 587","text":"CSS <code>transform: scale(1.15)</code> delivers engaging tactile feedback on mouse hover."}],"rapid":"<strong>Prof:</strong> 'Where does user.badges come from in ProfileView?'<br><strong>Answer:</strong> 'It comes from the Pinia auth store <code>user</code> object, kept synchronized by <code>auth.refreshUser()</code>.'"},"profile_empty_state":{"title":"Profile Empty Badges State","file":"client/src/views/user/ProfileView.vue (Lines 455 & 469–484)","feature":"Solves Problem 2: When a user has 0 unlocked milestone badges, replaces the blank area with an encouraging message: 'Unlock milestone badges by completing plant care visits'.","tech":"Conditional rendering <code>v-if=\"user.badges && user.badges.length\" ... v-else</code> with styled dashed green container and CTA button to <code>/dashboard</code>.","lang":"Vue 3 Template (ProfileView.vue)","code":"<!-- client/src/views/user/ProfileView.vue -->\n<div class=\"section-heading\">\n  <div>\n    <h2>Unlocked Milestone Badges</h2>\n    <p v-if=\"user.badges && user.badges.length\">Badges you've earned from your plant care journey.</p>\n    <p v-else class=\"empty-badges-subtitle\">Unlock milestone badges by completing plant care visits</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm\">View all on Dashboard ↗</RouterLink>\n</div>\n\n<div v-else class=\"empty-badges-banner\">\n  <span class=\"empty-badges-icon\">🌱</span>\n  <div class=\"empty-badges-info\">\n    <h4>No milestone badges unlocked yet</h4>\n    <p>Unlock milestone badges by completing plant care visits and helping your neighbours.</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm empty-badges-btn\">Explore Badges</RouterLink>\n</div>","lines":[{"num":"Line 455","text":"<code>class=\"empty-badges-subtitle\"</code>: Dynamically changes subtitle to the required sentence."},{"num":"Line 470","text":"<code>.empty-badges-banner</code>: Dashed border card with friendly sprout icon and call-to-action."}],"rapid":"<strong>Prof:</strong> 'Why display an empty state banner?'<br><strong>Answer:</strong> 'Good UX prevents confusion when lists are empty and gives new users a clear goal to complete their first visit.'"},"profile_sidebar_nav":{"title":"Profile ScrollSpy Navigation Sidebar","file":"client/src/views/user/ProfileView.vue (Lines 17–69 & 220–228)","feature":"Sidebar navigation linking to 'About me', 'Personal details', 'My address', 'My reviews', 'My posts', and 'My badges'. Automatically highlights the section currently in view during scrolling.","tech":"Vue 3 <code>computed</code> sections array, <code>window.addEventListener('scroll')</code> with <code>requestAnimationFrame</code> throttling, and <code>ResizeObserver</code>.","lang":"JavaScript & Vue 3 (ProfileView.vue)","code":"// client/src/views/user/ProfileView.vue\nconst sections = computed(() => [\n  { id: 'about-me', label: 'About me', icon: '◉' },\n  { id: 'personal-details', label: 'Personal details', icon: '☷' },\n  { id: 'address', label: 'My address', icon: '⌂' },\n  { id: 'profile-reviews', label: 'My reviews', icon: '☆' },\n  { id: 'profile-posts', label: 'My posts', icon: '▧' },\n  { id: 'profile-badges', label: 'My badges', icon: '✦' },\n])\n\nfunction updateActiveSection() {\n  const available = sections.value.map(s => profilePage.value?.querySelector(`#${s.id}`)).filter(Boolean)\n  for (const s of available) {\n    if (s.getBoundingClientRect().top <= scrollOffset.value + 8) activeSection.value = s.id\n  }\n}","lines":[{"num":"Line 25","text":"<code>id: 'profile-badges'</code>: Anchor link to milestone badges section."},{"num":"Line 46","text":"<code>requestAnimationFrame(updateActiveSection)</code>: Guarantees 60fps performance without CPU lag during rapid scrolls."}],"rapid":"<strong>Prof:</strong> 'How is the active tab highlighted?'<br><strong>Answer:</strong> 'By comparing section element bounding boxes against viewport offset and dynamically binding <code>:class=\"{ selected: activeSection === s.id }\"</code>.'"},"profile_posts":{"title":"Profile Post Preview Card","file":"client/src/views/user/ProfileView.vue & client/src/components/user/ProfilePosts.vue","feature":"Shows recent photos and stories posted by the user in the community feed, including plant species tags and heart like counts.","tech":"MongoDB query on <code>posts</code> by <code>authorId: userId</code>, Vue template card layout with lazy loading and like counter.","lang":"Vue 3 (ProfilePosts.vue)","code":"<!-- client/src/components/user/ProfilePosts.vue -->\n<div class=\"profile-post-card\">\n  <img :src=\"post.image || '/monstera.jpg'\" class=\"profile-post-thumb\" alt=\"Post thumbnail\" />\n  <div class=\"profile-post-info\">\n    <h4>{{ post.title || 'monstera' }}</h4>\n    <div class=\"post-like-count\">❤️ {{ post.likesCount || 2 }}</div>\n  </div>\n</div>","lines":[{"num":"Line 14","text":"<code>post.likesCount</code>: Displays real-time social engagement."},{"num":"Line 22","text":"<code>View all posts ↗</code>: Deep links directly to community feed filtered by this user."}],"rapid":"<strong>Prof:</strong> 'Can users delete or edit their posts here?'<br><strong>Answer:</strong> 'Yes, clicking edit or delete sends authorized PATCH/DELETE requests to <code>/api/posts/:id</code>.'"},"community_podium":{"title":"Community Podium: Top Helpers","file":"client/src/components/dashboard/CommunityPodium.vue & CommunityView.vue","feature":"Spotlights the most helpful neighbours in Singapore directly at the top of the community feed to encourage positive social norms.","tech":"Uses <code>UserAvatar.vue</code> with circular borders and soft green backgrounds matching the project design system palette (<code>var(--accent-soft)</code>).","lang":"Vue 3 (CommunityPodium.vue)","code":"<!-- client/src/components/dashboard/CommunityPodium.vue -->\n<div class=\"podium-card glass-card\" v-for=\"(user, idx) in topHelpers\" :key=\"user.id\">\n  <span class=\"medal\">{{ ['🥇', '🥈', '🥉'][idx] }}</span>\n  <UserAvatar :user=\"user\" :size=\"48\" />\n  <div class=\"helper-name\">{{ user.name }}</div>\n  <div class=\"tokens-pill\">🪙 {{ user.tokens }}</div>\n</div>","lines":[{"num":"Line 12","text":"<code>v-for=\"(user, idx) in topHelpers\"</code>: Renders top helpers in ranked order."},{"num":"Line 13","text":"<code>UserAvatar</code>: Standardized avatar component matching Leaderboard and Profile."}],"rapid":"<strong>Prof:</strong> 'Why use the same UserAvatar across pages?'<br><strong>Answer:</strong> 'Component reusability (WAD2 Week 6) ensures consistent styling and single source of truth for photo and fallback initials.'"},"community_post":{"title":"Community Post Feed Card","file":"client/src/components/post/PostCard.vue & client/src/views/post/CommunityView.vue","feature":"Community feed item where neighbours share plant care updates, ask questions, and celebrate new sprouts. Supports image carousels with keyboard arrow navigation.","tech":"Vue 3 <code>Transition name=\"card-preview\"</code>, <code>@keydown.left / right</code>, modulo arithmetic <code>(i + amount) % length</code>, and <code>LikeButton.vue</code> component.","lang":"Vue 3 (PostCard.vue)","code":"<!-- client/src/components/post/PostCard.vue -->\n<article class=\"post-card community-panel\">\n  <div class=\"post-card-cover\" @keydown.left.prevent=\"movePreview(-1)\" @keydown.right.prevent=\"movePreview(1)\">\n    <RouterLink :to=\"`/community/${post.postId}`\">\n      <Transition name=\"card-preview\" mode=\"out-in\">\n        <img v-if=\"images.length && !failedImages.has(previewIndex)\" :src=\"images[previewIndex]\" />\n        <p v-else class=\"post-card-text\">{{ post.title }}</p>\n      </Transition>\n    </RouterLink>\n  </div>\n  <div class=\"post-card-meta\">\n    <UserAvatar :user=\"author\" :size=\"32\" />\n    <span class=\"post-author\">{{ author.userName }}</span>\n    <LikeButton :postId=\"post.postId\" :initialLikes=\"post.likesCount\" />\n  </div>\n</article>","lines":[{"num":"Line 28","text":"<code>(previewIndex + amount + images.length) % images.length</code>: Cycles through multiple photos."},{"num":"Line 54","text":"<code>@error=\"failedImages.add(previewIndex)\"</code>: Gracefully falls back to text title if image fails."}],"rapid":"<strong>Prof:</strong> 'How does the like counter prevent multiple likes from the same user?'<br><strong>Answer:</strong> 'The backend stores an array of user IDs in <code>post.likedBy</code>. If the user ID is already present, clicking again unlikes the post (toggles state).'"},"landing_orbit":{"title":"Landing Page: Interactive Orbital Tree","file":"client/src/views/landingpage.vue (Lines 16–60)","feature":"Interactive onboarding hero animation: a painted garden tree surrounded by revolving orbital feature nodes highlighting watering schedules, nearby helpers, and community.","tech":"HTML5 Canvas API, mathematical orbital trigonometry (<code>cos</code> & <code>sin</code> for circular trajectory), and smooth requestAnimationFrame physics loop.","lang":"JavaScript / HTML5 Canvas (landingpage.vue)","code":"// client/src/views/landingpage.vue\nconst features = [\n  { title: 'Check your plant water schedule', link: '/schedule' },\n  { title: 'Find helpers to sit your plants', link: '/find-nearby' },\n  { title: 'Meet other plant lovers', link: '/community' }\n]\n\nfunction drawOrbit() {\n  ctx.beginPath()\n  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)\n  ctx.strokeStyle = 'rgba(20, 128, 74, 0.2)'\n  ctx.stroke()\n}","lines":[{"num":"Line 20","text":"<code>features</code> array: Defines the core value propositions with direct router links."},{"num":"Line 115","text":"<code>ctx.arc(...)</code>: Draws the smooth orbital path around the central illustrated tree."}],"rapid":"<strong>Prof:</strong> 'How does the canvas adapt to mobile phones?'<br><strong>Answer:</strong> 'On smaller screens, the orbital radius scales dynamically via window resize listeners to prevent canvas overflow.'"},"landing_title":{"title":"Landing Page: Hero Value Proposition","file":"client/src/views/landingpage.vue (Lines 1–25)","feature":"Welcoming introduction to the platform: 'Plants cared for together. Connect with trusted neighbours to sit your corridor and balcony plants.'","tech":"Responsive typography with Outfit and Inter font pairings, accessible ARIA headings, and smooth scroll buttons.","lang":"Vue 3 Template (landingpage.vue)","code":"<!-- client/src/views/landingpage.vue -->\n<div class=\"landing-hero\">\n  <h1>Leaf It To Us</h1>\n  <p class=\"hero-sub\">\n    Plants cared for together. Connect with trusted neighbours to sit your corridor and balcony plants.\n  </p>\n  <div class=\"hero-ctas\">\n    <RouterLink to=\"/find-nearby\" class=\"btn btn-primary\">Find Nearby Helpers</RouterLink>\n    <RouterLink to=\"/schedule\" class=\"btn btn-outline\">My Watering Schedule</RouterLink>\n  </div>\n</div>","lines":[{"num":"Line 10","text":"<code>RouterLink to=\"/find-nearby\"</code>: Primary onboarding conversion path."},{"num":"Line 11","text":"<code>RouterLink to=\"/schedule\"</code>: Secondary path for existing plant owners."}],"rapid":"<strong>Prof:</strong> 'What is the goal of this landing page?'<br><strong>Answer:</strong> 'To immediately explain the two-sided marketplace value: owners get plant care while away, and green-thumb neighbours earn tokens.'"},"navbar":{"title":"Responsive Full-Width Navbar","file":"client/src/components/nav/NavBar.vue & App.vue","feature":"Edge-to-edge navigation bar providing instant access to My Plants, Find Nearby, Requests, Community, notification badge bell, and profile avatar dropdown.","tech":"Bootstrap 5 <code>.navbar</code> with <code>.container-fluid</code>, flexbox alignment, and Pinia auth store watcher for notifications.","lang":"Vue 3 (NavBar.vue)","code":"<!-- client/src/components/nav/NavBar.vue -->\n<nav class=\"navbar navbar-expand-sm bg-body-tertiary\" aria-label=\"Main navigation\">\n  <div class=\"container-fluid flex-wrap gap-2 px-3 px-sm-4 px-lg-5\">\n    <RouterLink class=\"navbar-brand\" to=\"/\"><img src=\"/logo.png\" height=\"40px\"></RouterLink>\n    <div class=\"d-flex align-items-center gap-2 ms-auto\">\n      <UserAvatar :user=\"auth.user\" :size=\"34\" />\n      <span>{{ auth.user.userName }}</span>\n    </div>\n  </div>\n</nav>","lines":[{"num":"Line 80","text":"<code>.navbar-expand-sm</code>: Collapses into hamburger menu on mobile, expands into full bar on tablet/desktop."},{"num":"Line 81","text":"<code>.container-fluid</code>: Stretches edge-to-edge across the screen with responsive gutters."}],"rapid":"<strong>Prof:</strong> 'Why did you avoid negative margins for full-width?'<br><strong>Answer:</strong> 'Negative margins like <code>-50vw</code> break when vertical scrollbars appear. <code>.container-fluid</code> with <code>width: 100%</code> naturally fits client width without overflow.'"},"navbar_brand":{"title":"Responsive Full-Width Navbar","file":"client/src/components/nav/NavBar.vue & App.vue","feature":"Edge-to-edge navigation bar providing instant access to My Plants, Find Nearby, Requests, Community, notification badge bell, and profile avatar dropdown.","tech":"Bootstrap 5 <code>.navbar</code> with <code>.container-fluid</code>, flexbox alignment, and Pinia auth store watcher for notifications.","lang":"Vue 3 (NavBar.vue)","code":"<!-- client/src/components/nav/NavBar.vue -->\n<nav class=\"navbar navbar-expand-sm bg-body-tertiary\" aria-label=\"Main navigation\">\n  <div class=\"container-fluid flex-wrap gap-2 px-3 px-sm-4 px-lg-5\">\n    <RouterLink class=\"navbar-brand\" to=\"/\"><img src=\"/logo.png\" height=\"40px\"></RouterLink>\n    <div class=\"d-flex align-items-center gap-2 ms-auto\">\n      <UserAvatar :user=\"auth.user\" :size=\"34\" />\n      <span>{{ auth.user.userName }}</span>\n    </div>\n  </div>\n</nav>","lines":[{"num":"Line 80","text":"<code>.navbar-expand-sm</code>: Collapses into hamburger menu on mobile, expands into full bar on tablet/desktop."},{"num":"Line 81","text":"<code>.container-fluid</code>: Stretches edge-to-edge across the screen with responsive gutters."}],"rapid":"<strong>Prof:</strong> 'Why did you avoid negative margins for full-width?'<br><strong>Answer:</strong> 'Negative margins like <code>-50vw</code> break when vertical scrollbars appear. <code>.container-fluid</code> with <code>width: 100%</code> naturally fits client width without overflow.'"},"navbar_links":{"title":"Responsive Full-Width Navbar","file":"client/src/components/nav/NavBar.vue & App.vue","feature":"Edge-to-edge navigation bar providing instant access to My Plants, Find Nearby, Requests, Community, notification badge bell, and profile avatar dropdown.","tech":"Bootstrap 5 <code>.navbar</code> with <code>.container-fluid</code>, flexbox alignment, and Pinia auth store watcher for notifications.","lang":"Vue 3 (NavBar.vue)","code":"<!-- client/src/components/nav/NavBar.vue -->\n<nav class=\"navbar navbar-expand-sm bg-body-tertiary\" aria-label=\"Main navigation\">\n  <div class=\"container-fluid flex-wrap gap-2 px-3 px-sm-4 px-lg-5\">\n    <RouterLink class=\"navbar-brand\" to=\"/\"><img src=\"/logo.png\" height=\"40px\"></RouterLink>\n    <div class=\"d-flex align-items-center gap-2 ms-auto\">\n      <UserAvatar :user=\"auth.user\" :size=\"34\" />\n      <span>{{ auth.user.userName }}</span>\n    </div>\n  </div>\n</nav>","lines":[{"num":"Line 80","text":"<code>.navbar-expand-sm</code>: Collapses into hamburger menu on mobile, expands into full bar on tablet/desktop."},{"num":"Line 81","text":"<code>.container-fluid</code>: Stretches edge-to-edge across the screen with responsive gutters."}],"rapid":"<strong>Prof:</strong> 'Why did you avoid negative margins for full-width?'<br><strong>Answer:</strong> 'Negative margins like <code>-50vw</code> break when vertical scrollbars appear. <code>.container-fluid</code> with <code>width: 100%</code> naturally fits client width without overflow.'"},"navbar_user":{"title":"Reusable Component: UserAvatar.vue","file":"client/src/components/user/UserAvatar.vue (Lines 1–23)","feature":"Standardized avatar component used across Leaderboard, Profile, Navbar, and Community. Renders the user's real uploaded photo or falls back to clean, soft-green initials. Replaces external robot avatar APIs.","tech":"Vue 3 <code>&lt;script setup&gt;</code> with <code>defineProps({ user: Object, size: Number })</code>, <code>watch</code> handler, and <code>@error=\"failed = true\"</code> fallback.","lang":"Vue 3 Component (UserAvatar.vue)","code":"<script setup>\nimport { computed, ref, watch } from 'vue'\n\nconst props = defineProps({\n  user: { type: Object, default: null },\n  size: { type: Number, default: 40 },\n})\nconst failed = ref(false)\nwatch(() => props.user?.photoUrl, () => { failed.value = false })\nconst initial = computed(() => (props.user?.userName?.trim()?.[0] || 'U').toUpperCase())\n</script>\n\n<template>\n  <span class=\"user-avatar\" :style=\"{ width: `${size}px`, height: `${size}px`, fontSize: `${size * 0.38}px` }\">\n    <img v-if=\"user?.photoUrl && !failed\" :src=\"user.photoUrl\" :alt=\"`${user.userName}'s profile photo`\" @error=\"failed = true\" />\n    <span v-else aria-hidden=\"true\">{{ initial }}</span>\n  </span>\n</template>","lines":[{"num":"Line 10","text":"<code>initial = computed(...)</code>: Extracts uppercase first letter of username."},{"num":"Line 15","text":"<code>@error=\"failed = true\"</code>: Handles broken image URLs by switching to initials instantly."},{"num":"Line 21","text":"<code>background: var(--accent-soft); color: var(--accent);</code>: Custom soft-green palette matching project brand."}],"rapid":"<strong>Prof:</strong> 'Why did you remove the robot API?'<br><strong>Answer:</strong> 'External robot APIs like RoboHash add external network latency, risk broken links, and don’t match professional branding. UserAvatar is zero-dependency and 100% reliable.'"},"navbar_notifications":{"title":"Responsive Full-Width Navbar","file":"client/src/components/nav/NavBar.vue & App.vue","feature":"Edge-to-edge navigation bar providing instant access to My Plants, Find Nearby, Requests, Community, notification badge bell, and profile avatar dropdown.","tech":"Bootstrap 5 <code>.navbar</code> with <code>.container-fluid</code>, flexbox alignment, and Pinia auth store watcher for notifications.","lang":"Vue 3 (NavBar.vue)","code":"<!-- client/src/components/nav/NavBar.vue -->\n<nav class=\"navbar navbar-expand-sm bg-body-tertiary\" aria-label=\"Main navigation\">\n  <div class=\"container-fluid flex-wrap gap-2 px-3 px-sm-4 px-lg-5\">\n    <RouterLink class=\"navbar-brand\" to=\"/\"><img src=\"/logo.png\" height=\"40px\"></RouterLink>\n    <div class=\"d-flex align-items-center gap-2 ms-auto\">\n      <UserAvatar :user=\"auth.user\" :size=\"34\" />\n      <span>{{ auth.user.userName }}</span>\n    </div>\n  </div>\n</nav>","lines":[{"num":"Line 80","text":"<code>.navbar-expand-sm</code>: Collapses into hamburger menu on mobile, expands into full bar on tablet/desktop."},{"num":"Line 81","text":"<code>.container-fluid</code>: Stretches edge-to-edge across the screen with responsive gutters."}],"rapid":"<strong>Prof:</strong> 'Why did you avoid negative margins for full-width?'<br><strong>Answer:</strong> 'Negative margins like <code>-50vw</code> break when vertical scrollbars appear. <code>.container-fluid</code> with <code>width: 100%</code> naturally fits client width without overflow.'"},"dashboard_header":{"title":"Dashboard Stat: Total Plants Owned","file":"client/src/views/boards/DashboardView.vue (Lines 37–44) & server/controllers/boardController.js","feature":"Shows the live number of plants the user has registered in their digital corridor collection.","tech":"Queried via MongoDB <code>Plant.countDocuments({ ownerId: userId })</code>. Displayed in Vue 3 using short-circuit interpolation <code>{{ stats.totalPlantsOwned || 0 }}</code> inside a CSS glassmorphic card.","lang":"Vue 3 & Express (DashboardView.vue)","code":"<!-- client/src/views/boards/DashboardView.vue -->\n<div class=\"stat-card glass-card anim-slide-up anim-delay-1\">\n  <span class=\"stat-icon\">🌱</span>\n  <div>\n    <div class=\"stat-val\">{{ stats.totalPlantsOwned || 0 }}</div>\n    <div class=\"stat-label\">Total Plants Owned</div>\n  </div>\n</div>","lines":[{"num":"Line 41","text":"<code>{{ stats.totalPlantsOwned || 0 }}</code>: Displays live count with clean fallback to 0."},{"num":"Line 662","text":"<code>Plant.countDocuments({ ownerId })</code>: High-performance indexed B-tree count query."}],"rapid":"<strong>Prof:</strong> 'Why use countDocuments instead of fetching all plants and doing .length?'<br><strong>Answer:</strong> '<code>countDocuments()</code> runs on the database engine using index metadata, avoiding the memory overhead of transferring full documents to Node.js.'"},"dashboard_badges_header":{"title":"Profile Empty Badges State","file":"client/src/views/user/ProfileView.vue (Lines 455 & 469–484)","feature":"Solves Problem 2: When a user has 0 unlocked milestone badges, replaces the blank area with an encouraging message: 'Unlock milestone badges by completing plant care visits'.","tech":"Conditional rendering <code>v-if=\"user.badges && user.badges.length\" ... v-else</code> with styled dashed green container and CTA button to <code>/dashboard</code>.","lang":"Vue 3 Template (ProfileView.vue)","code":"<!-- client/src/views/user/ProfileView.vue -->\n<div class=\"section-heading\">\n  <div>\n    <h2>Unlocked Milestone Badges</h2>\n    <p v-if=\"user.badges && user.badges.length\">Badges you've earned from your plant care journey.</p>\n    <p v-else class=\"empty-badges-subtitle\">Unlock milestone badges by completing plant care visits</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm\">View all on Dashboard ↗</RouterLink>\n</div>\n\n<div v-else class=\"empty-badges-banner\">\n  <span class=\"empty-badges-icon\">🌱</span>\n  <div class=\"empty-badges-info\">\n    <h4>No milestone badges unlocked yet</h4>\n    <p>Unlock milestone badges by completing plant care visits and helping your neighbours.</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm empty-badges-btn\">Explore Badges</RouterLink>\n</div>","lines":[{"num":"Line 455","text":"<code>class=\"empty-badges-subtitle\"</code>: Dynamically changes subtitle to the required sentence."},{"num":"Line 470","text":"<code>.empty-badges-banner</code>: Dashed border card with friendly sprout icon and call-to-action."}],"rapid":"<strong>Prof:</strong> 'Why display an empty state banner?'<br><strong>Answer:</strong> 'Good UX prevents confusion when lists are empty and gives new users a clear goal to complete their first visit.'"},"leaderboard_header":{"title":"Leaderboard Privacy Opt-Out Toggle","file":"client/src/views/boards/LeaderboardView.vue (Lines 25–30 & toggleOptOut)","feature":"Grants users privacy autonomy to exclude their name, avatar, and rankings from public community view. Recalculates remaining rankings dynamically with no gap numbers.","tech":"HTTP <code>PATCH /api/user/opt-out</code> updating <code>isOptedOut: Boolean</code> in MongoDB. In Vue 3, computed property <code>filteredLeaderboard</code> dynamically filters out opted-out users without requiring full page reload.","lang":"JavaScript / Vue 3 (LeaderboardView.vue)","code":"// client/src/views/boards/LeaderboardView.vue\nasync function toggleOptOut() {\n  try {\n    const res = await auth.authorizedRequest('/user/opt-out', { method: 'PATCH' })\n    isOptedOut.value = res.isOptedOut\n    await fetchLeaderboard()\n  } catch (err) {\n    console.error('Failed to update opt-out status', err)\n  }\n}","lines":[{"num":"Line 230","text":"<code>await auth.authorizedRequest('/user/opt-out', { method: 'PATCH' })</code>: Authenticated PATCH request carrying JWT token."},{"num":"Line 232","text":"<code>await fetchLeaderboard()</code>: Refetches the community rankings to immediately reflect the user's updated visibility."}],"rapid":"<strong>Prof:</strong> 'If rank #2 opts out, does rank #3 stay #3 or become #2?'<br><strong>Answer:</strong> 'Rank is recalculated from array index (<code>i + 1</code>), so rank #3 smoothly moves up to rank #2 with no missing ranking numbers.'"},"leaderboard_me":{"title":"Leaderboard Row & Current User Highlight","file":"client/src/views/boards/LeaderboardView.vue (Lines 97–128)","feature":"Individual participant row displaying rank medal, UserAvatar, name, neighbourhood, helper rating, and proportional token progress bar. Highlights current logged-in user.","tech":"Vue dynamic class <code>:class=\"{ 'lb-me': isCurrentUser(u) }\"</code>, custom <code>rankMedal(u.rank)</code> function, and proportional CSS width calculation <code>(u.availableTokens / topTokens) * 100 + '%'</code>.","lang":"Vue 3 & CSS (LeaderboardView.vue)","code":"<!-- client/src/views/boards/LeaderboardView.vue -->\n<div v-for=\"u in filteredLeaderboard\" :key=\"u.id\" class=\"lb-row\" :class=\"{ 'lb-me': isCurrentUser(u) }\">\n  <div class=\"lb-rank\">{{ rankMedal(u.rank) }}</div>\n  <div class=\"lb-avatar-wrap\">\n    <UserAvatar :user=\"{ photoUrl: u.photoUrl, userName: u.name }\" :size=\"38\" />\n  </div>\n  <div class=\"lb-info\">\n    <span class=\"lb-name\">{{ u.name }}</span>\n    <span class=\"lb-sub\">📍 {{ u.neighbourhood }} · ⭐ {{ u.rating ? Number(u.rating).toFixed(1) : '5.0' }}</span>\n  </div>\n  <div class=\"lb-bar-wrap\">\n    <div class=\"lb-bar\" :style=\"{ width: Math.min(100, Math.round((u.availableTokens / topTokenCount) * 100)) + '%' }\"></div>\n  </div>\n  <div class=\"lb-tokens\">🪙 {{ u.availableTokens }}</div>\n</div>","lines":[{"num":"Line 100","text":"<code>:class=\"{ 'lb-me': isCurrentUser(u) }\"</code>: Highlights the user’s own row with a green outline and glow."},{"num":"Line 103","text":"<code>rankMedal(u.rank)</code>: Renders medals 🥇, 🥈, 🥉 for top 3 and integer numbers 4, 5, 6 for subsequent ranks."},{"num":"Line 116","text":"Relative bar calculation normalizes each user’s bar against the leader’s score."}],"rapid":"<strong>Prof:</strong> 'How does the current user know where they rank?'<br><strong>Answer:</strong> '<code>isCurrentUser(u)</code> compares <code>u.id === auth.user._id</code> and adds the <code>.lb-me</code> CSS glow class.'"},"profile_user_card":{"title":"Reusable Component: UserAvatar.vue","file":"client/src/components/user/UserAvatar.vue (Lines 1–23)","feature":"Standardized avatar component used across Leaderboard, Profile, Navbar, and Community. Renders the user's real uploaded photo or falls back to clean, soft-green initials. Replaces external robot avatar APIs.","tech":"Vue 3 <code>&lt;script setup&gt;</code> with <code>defineProps({ user: Object, size: Number })</code>, <code>watch</code> handler, and <code>@error=\"failed = true\"</code> fallback.","lang":"Vue 3 Component (UserAvatar.vue)","code":"<script setup>\nimport { computed, ref, watch } from 'vue'\n\nconst props = defineProps({\n  user: { type: Object, default: null },\n  size: { type: Number, default: 40 },\n})\nconst failed = ref(false)\nwatch(() => props.user?.photoUrl, () => { failed.value = false })\nconst initial = computed(() => (props.user?.userName?.trim()?.[0] || 'U').toUpperCase())\n</script>\n\n<template>\n  <span class=\"user-avatar\" :style=\"{ width: `${size}px`, height: `${size}px`, fontSize: `${size * 0.38}px` }\">\n    <img v-if=\"user?.photoUrl && !failed\" :src=\"user.photoUrl\" :alt=\"`${user.userName}'s profile photo`\" @error=\"failed = true\" />\n    <span v-else aria-hidden=\"true\">{{ initial }}</span>\n  </span>\n</template>","lines":[{"num":"Line 10","text":"<code>initial = computed(...)</code>: Extracts uppercase first letter of username."},{"num":"Line 15","text":"<code>@error=\"failed = true\"</code>: Handles broken image URLs by switching to initials instantly."},{"num":"Line 21","text":"<code>background: var(--accent-soft); color: var(--accent);</code>: Custom soft-green palette matching project brand."}],"rapid":"<strong>Prof:</strong> 'Why did you remove the robot API?'<br><strong>Answer:</strong> 'External robot APIs like RoboHash add external network latency, risk broken links, and don’t match professional branding. UserAvatar is zero-dependency and 100% reliable.'"},"profile_dashboard_link":{"title":"Profile Empty Badges State","file":"client/src/views/user/ProfileView.vue (Lines 455 & 469–484)","feature":"Solves Problem 2: When a user has 0 unlocked milestone badges, replaces the blank area with an encouraging message: 'Unlock milestone badges by completing plant care visits'.","tech":"Conditional rendering <code>v-if=\"user.badges && user.badges.length\" ... v-else</code> with styled dashed green container and CTA button to <code>/dashboard</code>.","lang":"Vue 3 Template (ProfileView.vue)","code":"<!-- client/src/views/user/ProfileView.vue -->\n<div class=\"section-heading\">\n  <div>\n    <h2>Unlocked Milestone Badges</h2>\n    <p v-if=\"user.badges && user.badges.length\">Badges you've earned from your plant care journey.</p>\n    <p v-else class=\"empty-badges-subtitle\">Unlock milestone badges by completing plant care visits</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm\">View all on Dashboard ↗</RouterLink>\n</div>\n\n<div v-else class=\"empty-badges-banner\">\n  <span class=\"empty-badges-icon\">🌱</span>\n  <div class=\"empty-badges-info\">\n    <h4>No milestone badges unlocked yet</h4>\n    <p>Unlock milestone badges by completing plant care visits and helping your neighbours.</p>\n  </div>\n  <RouterLink to=\"/dashboard\" class=\"btn btn-sm empty-badges-btn\">Explore Badges</RouterLink>\n</div>","lines":[{"num":"Line 455","text":"<code>class=\"empty-badges-subtitle\"</code>: Dynamically changes subtitle to the required sentence."},{"num":"Line 470","text":"<code>.empty-badges-banner</code>: Dashed border card with friendly sprout icon and call-to-action."}],"rapid":"<strong>Prof:</strong> 'Why display an empty state banner?'<br><strong>Answer:</strong> 'Good UX prevents confusion when lists are empty and gives new users a clear goal to complete their first visit.'"},"community_header":{"title":"Community Podium: Top Helpers","file":"client/src/components/dashboard/CommunityPodium.vue & CommunityView.vue","feature":"Spotlights the most helpful neighbours in Singapore directly at the top of the community feed to encourage positive social norms.","tech":"Uses <code>UserAvatar.vue</code> with circular borders and soft green backgrounds matching the project design system palette (<code>var(--accent-soft)</code>).","lang":"Vue 3 (CommunityPodium.vue)","code":"<!-- client/src/components/dashboard/CommunityPodium.vue -->\n<div class=\"podium-card glass-card\" v-for=\"(user, idx) in topHelpers\" :key=\"user.id\">\n  <span class=\"medal\">{{ ['🥇', '🥈', '🥉'][idx] }}</span>\n  <UserAvatar :user=\"user\" :size=\"48\" />\n  <div class=\"helper-name\">{{ user.name }}</div>\n  <div class=\"tokens-pill\">🪙 {{ user.tokens }}</div>\n</div>","lines":[{"num":"Line 12","text":"<code>v-for=\"(user, idx) in topHelpers\"</code>: Renders top helpers in ranked order."},{"num":"Line 13","text":"<code>UserAvatar</code>: Standardized avatar component matching Leaderboard and Profile."}],"rapid":"<strong>Prof:</strong> 'Why use the same UserAvatar across pages?'<br><strong>Answer:</strong> 'Component reusability (WAD2 Week 6) ensures consistent styling and single source of truth for photo and fallback initials.'"},"community_feed":{"title":"Community Post Feed Card","file":"client/src/components/post/PostCard.vue & client/src/views/post/CommunityView.vue","feature":"Community feed item where neighbours share plant care updates, ask questions, and celebrate new sprouts. Supports image carousels with keyboard arrow navigation.","tech":"Vue 3 <code>Transition name=\"card-preview\"</code>, <code>@keydown.left / right</code>, modulo arithmetic <code>(i + amount) % length</code>, and <code>LikeButton.vue</code> component.","lang":"Vue 3 (PostCard.vue)","code":"<!-- client/src/components/post/PostCard.vue -->\n<article class=\"post-card community-panel\">\n  <div class=\"post-card-cover\" @keydown.left.prevent=\"movePreview(-1)\" @keydown.right.prevent=\"movePreview(1)\">\n    <RouterLink :to=\"`/community/${post.postId}`\">\n      <Transition name=\"card-preview\" mode=\"out-in\">\n        <img v-if=\"images.length && !failedImages.has(previewIndex)\" :src=\"images[previewIndex]\" />\n        <p v-else class=\"post-card-text\">{{ post.title }}</p>\n      </Transition>\n    </RouterLink>\n  </div>\n  <div class=\"post-card-meta\">\n    <UserAvatar :user=\"author\" :size=\"32\" />\n    <span class=\"post-author\">{{ author.userName }}</span>\n    <LikeButton :postId=\"post.postId\" :initialLikes=\"post.likesCount\" />\n  </div>\n</article>","lines":[{"num":"Line 28","text":"<code>(previewIndex + amount + images.length) % images.length</code>: Cycles through multiple photos."},{"num":"Line 54","text":"<code>@error=\"failedImages.add(previewIndex)\"</code>: Gracefully falls back to text title if image fails."}],"rapid":"<strong>Prof:</strong> 'How does the like counter prevent multiple likes from the same user?'<br><strong>Answer:</strong> 'The backend stores an array of user IDs in <code>post.likedBy</code>. If the user ID is already present, clicking again unlikes the post (toggles state).'"},"community_interactions":{"title":"Community Post Feed Card","file":"client/src/components/post/PostCard.vue & client/src/views/post/CommunityView.vue","feature":"Community feed item where neighbours share plant care updates, ask questions, and celebrate new sprouts. Supports image carousels with keyboard arrow navigation.","tech":"Vue 3 <code>Transition name=\"card-preview\"</code>, <code>@keydown.left / right</code>, modulo arithmetic <code>(i + amount) % length</code>, and <code>LikeButton.vue</code> component.","lang":"Vue 3 (PostCard.vue)","code":"<!-- client/src/components/post/PostCard.vue -->\n<article class=\"post-card community-panel\">\n  <div class=\"post-card-cover\" @keydown.left.prevent=\"movePreview(-1)\" @keydown.right.prevent=\"movePreview(1)\">\n    <RouterLink :to=\"`/community/${post.postId}`\">\n      <Transition name=\"card-preview\" mode=\"out-in\">\n        <img v-if=\"images.length && !failedImages.has(previewIndex)\" :src=\"images[previewIndex]\" />\n        <p v-else class=\"post-card-text\">{{ post.title }}</p>\n      </Transition>\n    </RouterLink>\n  </div>\n  <div class=\"post-card-meta\">\n    <UserAvatar :user=\"author\" :size=\"32\" />\n    <span class=\"post-author\">{{ author.userName }}</span>\n    <LikeButton :postId=\"post.postId\" :initialLikes=\"post.likesCount\" />\n  </div>\n</article>","lines":[{"num":"Line 28","text":"<code>(previewIndex + amount + images.length) % images.length</code>: Cycles through multiple photos."},{"num":"Line 54","text":"<code>@error=\"failedImages.add(previewIndex)\"</code>: Gracefully falls back to text title if image fails."}],"rapid":"<strong>Prof:</strong> 'How does the like counter prevent multiple likes from the same user?'<br><strong>Answer:</strong> 'The backend stores an array of user IDs in <code>post.likedBy</code>. If the user ID is already present, clicking again unlikes the post (toggles state).'"},"community_new_post":{"title":"Community Post Feed Card","file":"client/src/components/post/PostCard.vue & client/src/views/post/CommunityView.vue","feature":"Community feed item where neighbours share plant care updates, ask questions, and celebrate new sprouts. Supports image carousels with keyboard arrow navigation.","tech":"Vue 3 <code>Transition name=\"card-preview\"</code>, <code>@keydown.left / right</code>, modulo arithmetic <code>(i + amount) % length</code>, and <code>LikeButton.vue</code> component.","lang":"Vue 3 (PostCard.vue)","code":"<!-- client/src/components/post/PostCard.vue -->\n<article class=\"post-card community-panel\">\n  <div class=\"post-card-cover\" @keydown.left.prevent=\"movePreview(-1)\" @keydown.right.prevent=\"movePreview(1)\">\n    <RouterLink :to=\"`/community/${post.postId}`\">\n      <Transition name=\"card-preview\" mode=\"out-in\">\n        <img v-if=\"images.length && !failedImages.has(previewIndex)\" :src=\"images[previewIndex]\" />\n        <p v-else class=\"post-card-text\">{{ post.title }}</p>\n      </Transition>\n    </RouterLink>\n  </div>\n  <div class=\"post-card-meta\">\n    <UserAvatar :user=\"author\" :size=\"32\" />\n    <span class=\"post-author\">{{ author.userName }}</span>\n    <LikeButton :postId=\"post.postId\" :initialLikes=\"post.likesCount\" />\n  </div>\n</article>","lines":[{"num":"Line 28","text":"<code>(previewIndex + amount + images.length) % images.length</code>: Cycles through multiple photos."},{"num":"Line 54","text":"<code>@error=\"failedImages.add(previewIndex)\"</code>: Gracefully falls back to text title if image fails."}],"rapid":"<strong>Prof:</strong> 'How does the like counter prevent multiple likes from the same user?'<br><strong>Answer:</strong> 'The backend stores an array of user IDs in <code>post.likedBy</code>. If the user ID is already present, clicking again unlikes the post (toggles state).'"},"landing_cta":{"title":"Landing Page: Hero Value Proposition","file":"client/src/views/landingpage.vue (Lines 1–25)","feature":"Welcoming introduction to the platform: 'Plants cared for together. Connect with trusted neighbours to sit your corridor and balcony plants.'","tech":"Responsive typography with Outfit and Inter font pairings, accessible ARIA headings, and smooth scroll buttons.","lang":"Vue 3 Template (landingpage.vue)","code":"<!-- client/src/views/landingpage.vue -->\n<div class=\"landing-hero\">\n  <h1>Leaf It To Us</h1>\n  <p class=\"hero-sub\">\n    Plants cared for together. Connect with trusted neighbours to sit your corridor and balcony plants.\n  </p>\n  <div class=\"hero-ctas\">\n    <RouterLink to=\"/find-nearby\" class=\"btn btn-primary\">Find Nearby Helpers</RouterLink>\n    <RouterLink to=\"/schedule\" class=\"btn btn-outline\">My Watering Schedule</RouterLink>\n  </div>\n</div>","lines":[{"num":"Line 10","text":"<code>RouterLink to=\"/find-nearby\"</code>: Primary onboarding conversion path."},{"num":"Line 11","text":"<code>RouterLink to=\"/schedule\"</code>: Secondary path for existing plant owners."}],"rapid":"<strong>Prof:</strong> 'What is the goal of this landing page?'<br><strong>Answer:</strong> 'To immediately explain the two-sided marketplace value: owners get plant care while away, and green-thumb neighbours earn tokens.'"},"scroll_to_top":{"title":"Profile ScrollSpy Navigation Sidebar","file":"client/src/views/user/ProfileView.vue (Lines 17–69 & 220–228)","feature":"Sidebar navigation linking to 'About me', 'Personal details', 'My address', 'My reviews', 'My posts', and 'My badges'. Automatically highlights the section currently in view during scrolling.","tech":"Vue 3 <code>computed</code> sections array, <code>window.addEventListener('scroll')</code> with <code>requestAnimationFrame</code> throttling, and <code>ResizeObserver</code>.","lang":"JavaScript & Vue 3 (ProfileView.vue)","code":"// client/src/views/user/ProfileView.vue\nconst sections = computed(() => [\n  { id: 'about-me', label: 'About me', icon: '◉' },\n  { id: 'personal-details', label: 'Personal details', icon: '☷' },\n  { id: 'address', label: 'My address', icon: '⌂' },\n  { id: 'profile-reviews', label: 'My reviews', icon: '☆' },\n  { id: 'profile-posts', label: 'My posts', icon: '▧' },\n  { id: 'profile-badges', label: 'My badges', icon: '✦' },\n])\n\nfunction updateActiveSection() {\n  const available = sections.value.map(s => profilePage.value?.querySelector(`#${s.id}`)).filter(Boolean)\n  for (const s of available) {\n    if (s.getBoundingClientRect().top <= scrollOffset.value + 8) activeSection.value = s.id\n  }\n}","lines":[{"num":"Line 25","text":"<code>id: 'profile-badges'</code>: Anchor link to milestone badges section."},{"num":"Line 46","text":"<code>requestAnimationFrame(updateActiveSection)</code>: Guarantees 60fps performance without CPU lag during rapid scrolls."}],"rapid":"<strong>Prof:</strong> 'How is the active tab highlighted?'<br><strong>Answer:</strong> 'By comparing section element bounding boxes against viewport offset and dynamically binding <code>:class=\"{ selected: activeSection === s.id }\"</code>.'"},"arch_dashboard_lifecycle":{"title":"DashboardView.vue: Full Code Notes & Lifecycle","file":"client/src/views/boards/DashboardView.vue (All Stripped Comments)","feature":"Main Personal Dashboard view aggregating 3 stat cards, 2 interactive 6-month bar charts, and 6 milestone badges. Uses parallel data fetching and defensive Vue reactivity.","tech":"<strong>WAD2 Syllabus:</strong> Week 4 & 5 (<code>ref</code>, <code>computed</code>, <code>v-if/v-else</code>, <code>v-for</code>), Week 6 (Props passing to <code>InteractiveBarChart</code> & <code>BadgeCard</code>), Week 8 (<code>async/await</code>), Week 9 (Lifecycle <code>onMounted</code>).<br><strong>Bonus Beyond WAD2:</strong> Pinia <code>useAuthStore</code>, <code>watch(() => auth.user?._id)</code> for session hydration, CSS Grid <code>repeat(3, 1fr)</code>, and glassmorphic <code>backdrop-filter: blur(10px)</code>.","lang":"Vue 3 Composition API (DashboardView.vue)","code":"const auth = useAuthStore()\nconst loading = ref(true)\nconst error = ref('')\nconst stats = ref({\n  totalPlantsOwned: 0,\n  plantsHelpedCareFor: 0,\n  availableTokens: 0,\n  badges: [],\n  monthlyData: { labels: [], visitsCompleted: [], tokensEarned: [] }\n})\n\nconst hasNoActivity = computed(() => {\n  const v = stats.value.monthlyData?.visitsCompleted || []\n  const t = stats.value.monthlyData?.tokensEarned || []\n  return v.every(n => n === 0) && t.every(n => n === 0)\n})\n\nasync function fetchStats() {\n  loading.value = true\n  error.value = ''\n  try {\n    const data = await auth.authorizedRequest('/user/stats')\n    stats.value = data\n  } catch (err) {\n    error.value = err.message || 'Could not load dashboard metrics.'\n  } finally {\n    loading.value = false\n  }\n}\n\nonMounted(fetchStats)\nwatch(() => auth.user?._id, (newId, oldId) => {\n  if (newId && newId !== oldId) fetchStats()\n})","lines":[{"num":"stats = ref({...})","text":"<strong>Defensive Initialization:</strong> Pre-populating nested arrays (<code>badges: []</code>, <code>monthlyData: { labels: [], ... }</code>) prevents <code>TypeError: Cannot read properties of undefined</code> on initial template render before the async fetch resolves."},{"num":"hasNoActivity","text":"<strong>Computed Property (Week 5 Slide 32):</strong> Automatically caches and re-evaluates only when <code>stats.value.monthlyData</code> changes. Checks <code>.every(n => n === 0)</code> across both arrays to decide whether to show the friendly 'No activity recorded yet' banner."},{"num":"try / catch / finally","text":"<strong>Async Error Handling (Week 8):</strong> <code>finally { loading.value = false }</code> guarantees the loading spinner turns off whether the API call succeeds or throws a network/401 error."},{"num":"onMounted + watch","text":"<strong>Lifecycle & Reactivity (Week 9):</strong> <code>onMounted(fetchStats)</code> fires on initial mount; <code>watch(() => auth.user?._id)</code> handles edge cases where Pinia finishes restoring the user session after mount or switches accounts."}],"rapid":"<strong>Prof:</strong> 'Why did you use both <code>onMounted</code> and <code>watch</code> on <code>auth.user?._id</code>?'<br><strong>Answer:</strong> '<code>onMounted</code> fetches immediately when navigating to <code>/dashboard</code>. The <code>watch</code> handles hard refreshes where Pinia restores the user token asynchronously, or when a user logs out and logs into a different account—ensuring the dashboard never displays stale stats.'"},"arch_leaderboard_optimistic":{"title":"LeaderboardView.vue: Optimistic UI & Rank Recalculation","file":"client/src/views/boards/LeaderboardView.vue (All Stripped Comments)","feature":"Community Leaderboard with Top 3 Podium, full ranked list with proportional token bars, current-user highlight, and instant privacy opt-out toggle.","tech":"<strong>WAD2 Syllabus:</strong> Week 4 & 5 (<code>v-for</code>, <code>computed</code>, <code>:class</code> object syntax, <code>:style</code> binding), Week 6 (<code>CommunityPodium</code> & <code>UserAvatar</code> components), Week 8 (REST <code>GET</code> & <code>PATCH</code>).<br><strong>Bonus Beyond WAD2:</strong> Optimistic UI update with rollback on error, dynamic rank recalculation via <code>.filter().map()</code>.","lang":"Vue 3 Composition API (LeaderboardView.vue)","code":"const filteredLeaderboard = computed(() => {\n  const list = isOptedOut.value\n    ? leaderboard.value.filter(u => !isCurrentUser(u))\n    : leaderboard.value\n  return list.map((u, idx) => ({\n    ...u,\n    rank: idx + 1\n  }))\n})\n\nconst topThree = computed(() => filteredLeaderboard.value.slice(0, 3))\n\nconst topTokenCount = computed(() => {\n  if (!filteredLeaderboard.value.length) return 1\n  return Math.max(...filteredLeaderboard.value.map(u => u.availableTokens || 0), 1)\n})\n\nasync function toggleOptOut() {\n  if (!auth.user || toggling.value) return\n  toggling.value = true\n  const previous = isOptedOut.value\n  isOptedOut.value = !previous // Optimistic UI flip\n  try {\n    const data = await auth.authorizedRequest('/user/opt-out', {\n      method: 'PATCH',\n      body: JSON.stringify({ isOptedOut: isOptedOut.value })\n    })\n    isOptedOut.value = Boolean(data.isOptedOut)\n    await fetchLeaderboard()\n  } catch (err) {\n    isOptedOut.value = previous // Rollback on failure\n  } finally {\n    toggling.value = false\n  }\n}","lines":[{"num":"filteredLeaderboard","text":"<strong>Gapless Rank Recalculation:</strong> Filters out the current user immediately if <code>isOptedOut.value</code> is true, then chains <code>.map((u, idx) => ({ ...u, rank: idx + 1 }))</code> so that if #2 opts out, #3 smoothly becomes #2 without any gap in rank numbers."},{"num":"topTokenCount","text":"<strong>Zero-Division Guard:</strong> <code>Math.max(..., 1)</code> ensures the denominator in <code>(u.availableTokens / topTokenCount) * 100</code> is at least <code>1</code>, preventing <code>NaN%</code> CSS widths when all users have 0 tokens."},{"num":"Optimistic UI","text":"<strong>Instant Feedback + Rollback:</strong> Flips <code>isOptedOut.value = !previous</code> before awaiting the network <code>PATCH</code> request so the UI feels instantaneous. If the server fails, <code>catch</code> restores <code>isOptedOut.value = previous</code>."},{"num":"toggling.value","text":"<strong>Double-Click Guard:</strong> Disables the button while the <code>PATCH</code> request is in flight to prevent race conditions from rapid clicking."}],"rapid":"<strong>Prof:</strong> 'What happens if the server crashes right when the user clicks Opt Out?'<br><strong>Answer:</strong> 'We implemented Optimistic UI with state rollback: we save <code>const previous = isOptedOut.value</code> before flipping the toggle. If the <code>PATCH /api/user/opt-out</code> throws an error, the <code>catch</code> block reverts <code>isOptedOut.value = previous</code> so the UI stays strictly consistent with MongoDB.'"},"arch_badge_card":{"title":"BadgeCard.vue & CommunityPodium.vue: Props, A11y & CSS","file":"client/src/components/dashboard/BadgeCard.vue & CommunityPodium.vue","feature":"Reusable gamification components: BadgeCard renders locked/unlocked milestone progress with clamped progress bars; CommunityPodium renders the Olympic 2nd–1st–3rd place layout.","tech":"<strong>WAD2 Syllabus:</strong> Week 2 (CSS Flexbox, transitions, <code>filter: grayscale(100%)</code>), Week 5 (<code>:class</code>, <code>:style</code>, <code>v-if/v-else</code>), Week 6 (<code>defineProps</code> with validator).<br><strong>Bonus Beyond WAD2:</strong> WAI-ARIA <code>role=\"progressbar\"</code> attributes, Olympic podium ordering in DOM.","lang":"Vue 3 Components (BadgeCard.vue & CommunityPodium.vue)","code":"<!-- BadgeCard.vue -->\n<script setup>\nimport { computed } from 'vue'\nconst props = defineProps({\n  badge: {\n    type: Object,\n    required: true,\n    validator: (b) => b && typeof b.name === 'string'\n  }\n})\nconst progressPercent = computed(() => {\n  if (props.badge.unlocked) return 100\n  const req = props.badge.requirement || 1\n  const prog = props.badge.progress || 0\n  return Math.min(100, Math.round((prog / req) * 100))\n})\n</script>\n\n<!-- CommunityPodium.vue -->\n<!-- Visual order: 2nd Place (Left) -> 1st Place (Center, Elevated) -> 3rd Place (Right) -->\n<div class=\"podium-wrap\">\n  <div v-if=\"topThree[1]\" class=\"podium-item podium-2\">...</div>\n  <div v-if=\"topThree[0]\" class=\"podium-item podium-1\">...</div>\n  <div v-if=\"topThree[2]\" class=\"podium-item podium-3\">...</div>\n</div>","lines":[{"num":"defineProps validator","text":"<strong>Custom Prop Validation (Week 6):</strong> Validates at runtime in dev mode that <code>badge</code> is a valid object containing a string <code>name</code>."},{"num":"Math.min(100, ...)","text":"<strong>Clamped Percentage:</strong> Guarantees the CSS fill bar never overflows past <code>100%</code> of its container even if <code>progress > requirement</code> (e.g., 12/10 visits)."},{"num":"req = ... || 1","text":"<strong>Division-by-Zero Protection:</strong> Defaults <code>requirement</code> to <code>1</code> if missing or 0."},{"num":"Olympic DOM Order","text":"<strong>CommunityPodium Layout:</strong> Renders <code>topThree[1]</code> (Silver), then <code>topThree[0]</code> (Gold with <code>.crown</code> and taller <code>110px</code> pedestal), then <code>topThree[2]</code> (Bronze) with <code>align-items: flex-end</code> so the pedestals sit flush on the baseline."}],"rapid":"<strong>Prof:</strong> 'In BadgeCard.vue, why do you clamp the progress percentage with <code>Math.min(100, ...)</code>?'<br><strong>Answer:</strong> 'Because a user’s raw lifetime progress (e.g. 25 visits) can exceed a badge’s requirement (e.g. 5 visits). Without <code>Math.min(100, ...)</code>, the inner progress bar width would become <code>500%</code> and overflow outside the card.'"},"arch_chartjs":{"title":"InteractiveBarChart.vue: Chart.js 4 Wrapper & Computed Reactivity","file":"client/src/components/dashboard/InteractiveBarChart.vue","feature":"Reusable HTML5 Canvas bar chart wrapper used twice on DashboardView (for Monthly Visits Completed in green and Monthly Tokens Earned in amber).","tech":"<strong>WAD2 Syllabus:</strong> Week 5 (<code>computed</code> reactive props transformation), Week 6 (<code>defineProps</code> with default values and type checking).<br><strong>Bonus Beyond WAD2:</strong> <code>chart.js</code> v4 + <code>vue-chartjs</code> <code>&lt;Bar /&gt;</code> component, modular tree-shakable registration (<code>ChartJS.register(...)</code>).","lang":"Vue 3 + Chart.js 4 (InteractiveBarChart.vue)","code":"<script setup>\nimport { computed } from 'vue'\nimport { Bar } from 'vue-chartjs'\nimport {\n  Chart as ChartJS,\n  Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale\n} from 'chart.js'\n\nChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)\n\nconst props = defineProps({\n  title: { type: String, required: true },\n  subtitle: { type: String, default: '' },\n  labels: { type: Array, default: () => [] },\n  data: { type: Array, default: () => [] },\n  color: { type: String, default: '#14804a' },\n  hoverColor: { type: String, default: '#0f6339' },\n  unit: { type: String, default: '' }\n})\n\nconst chartData = computed(() => ({\n  labels: props.labels,\n  datasets: [{\n    label: props.title,\n    data: props.data,\n    backgroundColor: props.color,\n    hoverBackgroundColor: props.hoverColor,\n    borderRadius: 8,\n    maxBarThickness: 38\n  }]\n}))\n</script>","lines":[{"num":"ChartJS.register(...)","text":"<strong>Tree-Shaking Optimization:</strong> Chart.js v4 is modular; registering only <code>BarElement</code>, <code>CategoryScale</code>, <code>LinearScale</code>, and <code>Tooltip</code> keeps our Vite production bundle small by excluding unused pie/line/radar controllers."},{"num":"default: () => []","text":"<strong>Factory Function for Array Props (Week 6):</strong> In Vue, object/array prop defaults must be returned from a factory function <code>() => []</code> so multiple chart instances don't share the same mutated array reference in memory."},{"num":"chartData = computed","text":"<strong>Reactive Canvas Redraw:</strong> Wrapping <code>chartData</code> in <code>computed()</code> ensures that as soon as <code>DashboardView</code> finishes its async fetch and updates <code>:data</code>, <code>vue-chartjs</code> automatically animates the bars from 0 to their live values."},{"num":"precision: 0","text":"<strong>Integer Y-Axis Ticks:</strong> Configured in <code>chartOptions.scales.y.ticks</code> so the chart never shows fractional visits like <code>1.5 visits</code>."}],"rapid":"<strong>Prof:</strong> 'Why must Array or Object default props in Vue use a factory function like <code>default: () => []</code>?'<br><strong>Answer:</strong> 'In JavaScript, arrays and objects are passed by reference. Using a factory function ensures every instance of <code>InteractiveBarChart</code> receives its own fresh array reference rather than sharing state across components.'"},"arch_backend_controller":{"title":"boardController.js: Parallel Queries, 6-Month Bucketing & Badges","file":"server/controllers/boardController.js (All Stripped Comments)","feature":"Express controller powering GET /api/leaderboard, GET /api/user/stats, and PATCH /api/user/opt-out. Computes live counts, 6-month historical buckets, and 6 milestone badges on the fly.","tech":"<strong>WAD2 Syllabus:</strong> Week 8 (REST status codes <code>200/400/401/404/500</code>, JSON payloads, <code>async/await</code>).<br><strong>Bonus Beyond WAD2:</strong> Express + Mongoose ODM, <code>Promise.all()</code> parallel DB execution, <code>.select().sort().limit().lean()</code> query optimization, <code>new Date(year, month - i, 1)</code> JS Date roll-back.","lang":"Node.js / Express / Mongoose (boardController.js)","code":"// 1. Parallel Database Queries in getUserStats\nconst [totalPlantsOwned, completedSittingsAsSitter, userDoc, allReviews, userPostsCount] = await Promise.all([\n  Plant.countDocuments({ ownerId: userIdStr }),\n  PlantSitting.find({ sitterId: userIdStr, status: 'completed' }).lean(),\n  User.findById(userId).lean(),\n  Review.find({ revieweeId: userIdStr }).lean(),\n  Post.countDocuments({ authorId: userIdStr })\n])\n\n// 2. 6-Month Rolling Window Bucketing\nconst now = new Date()\nfor (let i = 5; i >= 0; i--) {\n  const d = new Date(now.getFullYear(), now.getMonth() - i, 1)\n  buckets.push({\n    year: d.getFullYear(),\n    month: d.getMonth(),\n    label: `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`,\n    visits: 0,\n    tokens: 0\n  })\n}\n\n// 3. Leaderboard Query with Opt-Out Filter & Lean Projection\nconst users = await User.find({ isOptedOut: { $ne: true } })\n  .select('userName neighbourhood rating creditBalance photoUrl isOptedOut')\n  .sort({ creditBalance: -1, rating: -1, userName: 1 })\n  .limit(50)\n  .lean()","lines":[{"num":"Promise.all([...])","text":"<strong>Parallel Execution:</strong> Fires all 5 independent MongoDB queries concurrently instead of sequentially awaiting them one by one, cutting API response latency by ~70%."},{"num":".lean()","text":"<strong>Mongoose Performance:</strong> Returns plain JavaScript objects instead of heavy Mongoose Document instances (skipping change-tracking getters/setters), which is much faster for read-only stats and leaderboard endpoints."},{"num":"isOptedOut: { $ne: true }","text":"<strong>Backward-Compatible MongoDB Filter:</strong> Matches both <code>isOptedOut: false</code> AND legacy user documents created before the <code>isOptedOut</code> field existed (<code>undefined</code>)."},{"num":"sort({ creditBalance: -1, rating: -1, userName: 1 })","text":"<strong>3-Tier Tie-Breaker:</strong> Ranks by highest tokens first; ties are broken by highest star rating, and further ties are ordered alphabetically by username."},{"num":"Calculated on the fly","text":"<strong>Single Source of Truth for Badges:</strong> The 6 badges (First Sprout, Neighbourhood Helper, Token Collector, Trusted Caretaker, Green Thumb, Community Voice) are computed dynamically from real collections so badge progress can never go out of sync."}],"rapid":"<strong>Prof:</strong> 'Why did you use <code>{ isOptedOut: { $ne: true } }</code> instead of <code>{ isOptedOut: false }</code> in MongoDB?'<br><strong>Answer:</strong> 'In MongoDB, querying <code>{ isOptedOut: false }</code> only matches documents where the field explicitly exists and equals <code>false</code>. Using <code>{ $ne: true }</code> also includes older seeded users where <code>isOptedOut</code> might be <code>undefined</code>, ensuring nobody is accidentally hidden.'"},"arch_testing_suite":{"title":"Vitest Unit Tests & Playwright E2E Suite (Full Notes)","file":"client/src/**/*.spec.js & client/e2e/boards.spec.js","feature":"30 automated Vitest component unit tests across 5 spec files + 4 real-browser Chromium Playwright E2E user journey tests verifying the entire Dashboard & Leaderboard flow.","tech":"<strong>WAD2 Syllabus:</strong> Week 10 Automated Testing — <code>describe</code>, <code>it</code>, <code>expect</code>, <code>mount</code>, <code>shallowMount</code>, <code>trigger('click')</code>, <code>flushPromises()</code>, <code>vi.fn()</code>.<br><strong>Bonus Beyond WAD2:</strong> Playwright E2E browser automation (<code>page.route</code> network mocking, <code>addInitScript</code> JWT injection, <code>getByRole</code> locators).","lang":"Vitest + Vue Test Utils + Playwright","code":"// 1. Unit Test: Optimistic UI Rollback (LeaderboardView.spec.js)\nit('rolls back optimistic opt-out state if PATCH request fails', async () => {\n  mockAuthorizedRequest.mockImplementation(async (url, options) => {\n    if (options?.method === 'PATCH') throw new Error('Server error')\n    return sampleLeaderboardResponse\n  })\n  const wrapper = mount(LeaderboardView, { global: { stubs: { RouterLink: true } } })\n  await flushPromises()\n\n  const toggleBtn = wrapper.find('.opt-out-btn')\n  await toggleBtn.trigger('click')\n  await flushPromises()\n\n  // Reverted back to visible (3 rows) after server error\n  expect(wrapper.findAll('.lb-row')).toHaveLength(3)\n})\n\n// 2. Playwright E2E Test: Opt-Out Journey (client/e2e/boards.spec.js)\ntest('Leaderboard renders Top 3 podium, rankings, and supports Privacy Opt-Out toggle', async ({ page }) => {\n  await page.goto('/leaderboard')\n  await expect(page.locator('.lb-row')).toHaveCount(3)\n  await page.getByRole('button', { name: /Opt Out of Leaderboard/i }).click()\n  await expect(page.getByText(/currently hidden from the public leaderboard/i)).toBeVisible()\n  await expect(page.locator('.lb-row')).toHaveCount(2)\n})","lines":[{"num":"flushPromises()","text":"<strong>Week 10 Async Testing:</strong> Waits for all pending Promises (such as <code>fetchStats()</code> inside <code>onMounted</code>) and Vue’s next DOM tick to resolve before running assertions."},{"num":"global.stubs","text":"<strong>Component Isolation (Week 10):</strong> In <code>DashboardView.spec.js</code>, we stub <code>InteractiveBarChart</code> because JSDOM does not implement a real HTML5 2D Canvas rendering context."},{"num":"vi.fn()","text":"<strong>API Spying & Mocking:</strong> Mocks <code>auth.authorizedRequest</code> so unit tests run in milliseconds without needing a live Express/MongoDB server, while allowing us to simulate both <code>200 OK</code> and <code>500 Server Error</code> responses."},{"num":"Playwright E2E","text":"<strong>Real Browser Verification:</strong> Unlike JSDOM unit tests, Playwright launches a real Chromium browser, renders the actual Chart.js HTML5 <code>&lt;canvas&gt;</code> elements, and tests navigation between <code>/dashboard</code> and <code>/leaderboard</code>."}],"rapid":"<strong>Prof:</strong> 'Why did you use both Vitest AND Playwright?'<br><strong>Answer:</strong> 'They cover different layers of the testing pyramid (Week 10): Vitest with <code>@vue/test-utils</code> runs fast isolated unit tests in JSDOM for edge cases like division-by-zero and API error rollbacks, while Playwright runs full End-to-End tests in a real Chromium browser where HTML5 Canvas charts and Vue Router navigation actually render.'"}};
+
+    function inspect(key) {
+      const data = cheatData[key] || cheatData['stat_plants'];
+
+      document.getElementById('inspectTitle').innerText = data.title;
+      document.getElementById('inspectFile').innerText = data.file;
+      document.getElementById('inspectFeature').innerHTML = data.feature;
+      document.getElementById('inspectTech').innerHTML = data.tech;
+      document.getElementById('inspectCodeLang').innerText = data.lang;
+      document.getElementById('inspectCodeSnippet').innerText = data.code;
+
+      const linesList = document.getElementById('inspectLineByLine');
+      linesList.innerHTML = '';
+      if (data.lines && data.lines.length) {
+        data.lines.forEach(l => {
+          const div = document.createElement('div');
+          div.className = 'line-annotation-item';
+          div.innerHTML = '<span class="line-num">' + l.num + '</span> ' + l.text;
+          linesList.appendChild(div);
+        });
+      } else {
+        linesList.innerHTML = '<div class="line-annotation-item">Clean modular design following WAD2 Vue standards.</div>';
+      }
+
+      document.getElementById('inspectRapidQ').innerHTML = data.rapid;
+
+      document.getElementById('inspectorDrawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('open');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspectorDrawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeInspector();
+    });
+
+  </script>
+</body>
+</html>
+
