@@ -10,24 +10,27 @@ maplibregl.setWorkerUrl(maplibreWorkerUrl) // must run before any map is created
 
 const props = defineProps({
   center: { type: Object, required: true },
+  home: { type: Object, required: true },
+  overview: { type: Boolean, default: false },
+  searchPin: { type: Object, default: null },
   radiusKm: { type: Number, default: 1 },
   requests: { type: Array, default: () => [] },
   selected: { type: Object, default: null },
 })
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'drop-pin', 'select-home', 'reset-overview'])
 
 const mapEl = ref(null)
 let map = null
 let ready = false // true once the style and layers have loaded
 let plantMarkers = []
 let homeMarker = null
+let searchMarker = null
 
 
 const RADIUS_COLOR = '#2563eb' // blue, like your original; change to taste
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 let displayRadius = 0 // the radius currently drawn; it eases towards props.radiusKm
-let introDone = false // becomes true once the opening flight finishes
 let rippleId = null // requestAnimationFrame handles, so we can cancel them
 let tweenId = null
 
@@ -116,9 +119,20 @@ function startRipple() {
 }
 // the user's home
 // builds the home marker from an image file
-function makeHomeEl(sizePx = 40) {
-  const el = document.createElement('div')
+function makeHomeEl(sizePx = 64) {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.setAttribute('aria-label', 'Find requests near home')
+  el.title = 'Find requests near home'
+  el.addEventListener('click', (event) => {
+    event.stopPropagation()
+    emit('select-home')
+  })
   Object.assign(el.style, {
+    border: 'none',
+    padding: '0',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
     width: `${sizePx}px`,
     height: `${sizePx}px`,
     backgroundImage: `url(${homePin})`,
@@ -167,6 +181,38 @@ function drawMarkers() {
   })
 }
 
+function updateSearchArea() {
+  if (!ready) return
+  for (const id of ['radius-fill', 'radius-line', 'ripple-fill', 'ripple-line']) {
+    map.setLayoutProperty(id, 'visibility', props.overview ? 'none' : 'visible')
+  }
+  searchMarker?.remove()
+  searchMarker = null
+  if (props.searchPin && (props.searchPin.lat !== props.home.lat || props.searchPin.lng !== props.home.lng)) {
+    searchMarker = new maplibregl.Marker({ color: '#2f7d4f', draggable: true })
+      .setLngLat([props.searchPin.lng, props.searchPin.lat]).addTo(map)
+    const pinElement = searchMarker.getElement()
+    pinElement.title = 'Drag to move the search location'
+    pinElement.addEventListener('click', (event) => event.stopPropagation())
+    searchMarker.on('dragend', () => {
+      const { lat, lng } = searchMarker.getLngLat()
+      emit('drop-pin', { lat, lng })
+    })
+  }
+  animateRadius(props.radiusKm)
+  if (props.overview) {
+    map.fitBounds([[103.59, 1.16], [104.1, 1.48]], { padding: 40, pitch: 0, bearing: 0, duration: reduceMotion ? 0 : 1500 })
+  } else {
+    map.flyTo({ center: [props.center.lng, props.center.lat], ...NEIGHBOURHOOD, duration: reduceMotion ? 0 : 1800 })
+  }
+}
+
+function showAllRequests() {
+  emit('reset-overview')
+  // Also reset the camera if the user only panned or zoomed the overview.
+  if (props.overview) updateSearchArea()
+}
+
 onMounted(() => {
   map = new maplibregl.Map({
     container: mapEl.value,
@@ -181,6 +227,10 @@ onMounted(() => {
   })
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: ATTRIBUTION }))
+
+  map.on('click', (event) => {
+    emit('drop-pin', { lat: event.lngLat.lat, lng: event.lngLat.lng })
+  })
 
   map.on('load', async () => {
     // 3D island: the planning areas extruded upwards, shrinking to flat as you zoom in
@@ -241,8 +291,8 @@ onMounted(() => {
     })
 
     
-    homeMarker = new maplibregl.Marker({ element: makeHomeEl(40), anchor: 'bottom' })
-      .setLngLat([props.center.lng, props.center.lat])
+    homeMarker = new maplibregl.Marker({ element: makeHomeEl(), anchor: 'bottom' })
+      .setLngLat([props.home.lng, props.home.lat])
       .addTo(map)
     
     ready = true
@@ -253,11 +303,12 @@ onMounted(() => {
     }
 
     startRipple() // no longer waits for the camera
-    map.flyTo({ center: [props.center.lng, props.center.lat], ...NEIGHBOURHOOD, duration: 4000, essential: true })
+    updateSearchArea()
   })
 })
 
 watch(() => [props.requests, props.radiusKm], drawMarkers)
+watch(() => [props.center, props.overview, props.searchPin], updateSearchArea)
 
 watch(
   () => props.selected,
@@ -266,7 +317,7 @@ watch(
     if (r) {
       map.flyTo({ center: [r.lng, r.lat], ...STREET, duration: 2200, essential: true })
     } else {
-      map.flyTo({ center: [props.center.lng, props.center.lat], ...NEIGHBOURHOOD, duration: 1800, essential: true })
+      updateSearchArea()
     }
   }
 )
@@ -286,10 +337,40 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="mapEl" class="map"></div>
+  <div class="mapContainer">
+    <div ref="mapEl" class="map"></div>
+    <button type="button" class="showAllButton" @click.stop="showAllRequests">
+      Show all requests
+    </button>
+  </div>
 </template>
 
 <style scoped>
+.mapContainer {
+  position: relative;
+  min-height: 300px;
+}
+
+.showAllButton {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #d5ded8;
+  border-radius: 8px;
+  background: #fff;
+  color: #28623a;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.showAllButton:hover {
+  background: #e7f3e9;
+}
+
 .map {
   height: 100%;
   min-height: 300px;
