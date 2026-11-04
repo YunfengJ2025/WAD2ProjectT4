@@ -159,10 +159,10 @@ async function markHealthSeen(check) {
 
 <template>
   <main class="care-page">
-    <RouterLink v-if="props.section === 'create'" to="/requests" class="back-link">← My requests</RouterLink>
+    <RouterLink v-if="props.section === 'create'" to="/requests" class="back-link">← My Requests</RouterLink>
     <header class="page-heading">
       <div>
-        <h1>{{ props.section === 'mine' ? 'My requests' : 'New Requests' }}</h1>
+        <h1>{{ props.section === 'mine' ? 'My Requests' : 'New Requests' }}</h1>
         <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
         <p v-else>View and manage the care requests you have posted.</p>
       </div>
