@@ -230,6 +230,12 @@ async function confirmDelete() {
 </template>
 
 <style scoped>
+/* same width as Community, My Requests and My Sits, so pages don't jump when switching tabs */
+.my-plants {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 0 3rem;
+}
 .page-head {
   display: flex;
   flex-wrap: wrap;
@@ -239,9 +245,11 @@ async function confirmDelete() {
   margin-bottom: 1.25rem;
 }
 
+/* same title size as the Community page */
 h1 {
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
+  letter-spacing: -0.04em;
   color: var(--color-heading);
   line-height: 1.2;
 }

@@ -45,3 +45,38 @@ exports.markRead = async (req, res) => {
     res.status(400).json({ message: "Invalid notification" });
   }
 };
+
+// (Carolyn) PATCH /notifications/read-all: mark every unread notice of this user as read
+exports.markAllRead = async (req, res) => {
+  try {
+    const readAt = new Date();
+    const result = await Notification.updateMany({ userId: req.userId, readAt: null }, { $set: { readAt } });
+    res.json({ updated: result.modifiedCount, readAt });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Could not mark notifications as read" });
+  }
+};
+
+// (Carolyn) DELETE /notifications/:notificationId: a user can delete only their own notice
+exports.removeOne = async (req, res) => {
+  try {
+    const result = await Notification.deleteOne({ _id: req.params.notificationId, userId: req.userId });
+    if (!result.deletedCount) return res.status(404).json({ message: "Notification not found" });
+    res.json({ deleted: 1 });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Invalid notification" });
+  }
+};
+
+// (Carolyn) DELETE /notifications: clear all of this user's notices
+exports.clearAll = async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({ userId: req.userId });
+    res.json({ deleted: result.deletedCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Could not clear notifications" });
+  }
+};
