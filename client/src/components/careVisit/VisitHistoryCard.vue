@@ -52,7 +52,7 @@ function stepsSummary(item) {
       </span>
     </div>
     <div class="card-actions">
-      <span v-if="paid" class="paid">Reward paid</span>
+      <span v-if="paid" class="paid"><span aria-hidden="true">🪙</span> Reward paid</span>
       <button
         v-else-if="visit.status === 'completed'"
         type="button"
@@ -64,7 +64,8 @@ function stepsSummary(item) {
     </div>
     <Teleport to="body">
     <div v-if="detailsOpen" class="modal-backdrop" role="presentation" @click.self="detailsOpen = false">
-      <section class="details-modal" role="dialog" aria-modal="true" :aria-label="`Visit ${visit.visitId} history details`" @keydown.esc="detailsOpen = false">
+      <!-- (Carolyn) .single = one plant, so a narrower pop-up -->
+      <section class="details-modal" :class="{ single: (visit.items || []).length <= 1 }" role="dialog" aria-modal="true" :aria-label="`Visit ${visit.visitId} history details`" @keydown.esc="detailsOpen = false">
         <!-- (Carolyn) Fix 4: status, date, tokens and proof photos first; visit page link last -->
         <div class="modal-heading">
           <div>
@@ -144,9 +145,11 @@ p { margin: 0.2rem 0 0; color: #59665c; }
 .plant-strip img { object-fit: cover; }
 .plant-count { display: grid; place-items: center; background: #edf3ed; color: #34463a; font-size: 0.9rem; font-weight: 700; }
 a { white-space: normal; }
-.paid { color: #2d6740; font-size: 0.9rem; }
+/* (Carolyn) "Reward paid" as a soft green pill with a coin, like the status badges */
+.paid { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.7rem; border: 1px solid #b8dfc0; border-radius: 999px; background: #e6f5ea; color: #14532d; font-size: 0.82rem; font-weight: 600; }
 .card-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; margin-top: auto; }
-.more-details { padding: 0.45rem 0.8rem; border: 1px solid #dce5dc; border-radius: 9px; background: #f4f8f4; color: #245b34; font-weight: 600; cursor: pointer; }
+/* (Carolyn) margin-left: auto = always on the right, with or without "Reward paid" beside it */
+.more-details { margin-left: auto; padding: 0.45rem 0.8rem; border: 1px solid #dce5dc; border-radius: 9px; background: #f4f8f4; color: #245b34; font-weight: 600; cursor: pointer; }
 .modal-backdrop { position: fixed; z-index: 1050; inset: 0; display: grid; place-items: center; padding: 1rem; background: #10231bb3; }
 .details-modal { box-sizing: border-box; width: min(720px, 100%); max-height: min(85vh, 800px); overflow: auto; padding: 1.25rem; border: 1px solid #e2e8e2; border-radius: 16px; background: #fff; box-shadow: 0 22px 70px #10231b50; }
 .modal-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.8rem; padding-bottom: 0.7rem; border-bottom: 1px solid #e7ece7; }
@@ -166,7 +169,12 @@ a { white-space: normal; }
 .summary .tone-accepted, .summary .tone-open { background: #fff3d1; color: #795900; }
 .summary .tone-missed, .summary .tone-expired { background: #fde8ea; color: #a3212f; }
 .summary .tone-cancelled { background: #eceeed; color: #4d5650; }
-.proof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 0.75rem; }
+/* (Carolyn) pop-up size follows the plants: 1 plant = 440px wide, 2+ = 720px with 2 photos a row.
+   Heading, chips and footer stay put; only the photos scroll when there are many. */
+.details-modal { display: flex; flex-direction: column; overflow: hidden; }
+.details-modal.single { width: min(440px, 100%); }
+.modal-heading, .summary, .modal-foot { flex-shrink: 0; }
+.proof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 0.75rem; min-height: 0; overflow-y: auto; grid-auto-rows: max-content; /* rows keep full height, so it scrolls instead of squashing */ }
 .proof-card { overflow: hidden; border: 1px solid #e2e8e2; border-radius: 14px; background: #fbfdfb; }
 .proof-photo { display: block; aspect-ratio: 4 / 3; padding: 0; background: #eef4ef; }
 .proof-photo img { width: 100%; height: 100%; object-fit: cover; }

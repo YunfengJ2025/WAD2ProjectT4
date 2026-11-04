@@ -28,9 +28,12 @@ const error = ref('')
 const notice = ref('')
 
 // Scroll the linked owner request into view after its cards have rendered.
+// Switch to the tab that holds it first (e.g. a missed-visit notice usually points to a completed request).
 async function focusRequestedCard() {
   const requestId = Number(route.query.requestId)
   if (!Number.isSafeInteger(requestId)) return
+  const request = owned.value.find((item) => item.requestId === requestId)
+  if (request) filter.value = groupOf(request)
   await nextTick()
   document.getElementById(`care-request-${requestId}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
 }
@@ -215,6 +218,7 @@ async function markHealthSeen(check) {
             v-for="request in shown"
             :key="request.requestId"
             :request="request"
+            :highlighted="String(route.query.requestId) === String(request.requestId)"
             :busy="cancellingRequestId === request.requestId"
             :makeup-busy-visit-id="makeupBusyVisitId"
             @cancel-request="cancelRequest"
@@ -228,9 +232,10 @@ async function markHealthSeen(check) {
 </template>
 
 <style scoped>
-.care-page { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+/* (Carolyn) width and title match the Community page (was max-width 1100px, padding 0 1rem) */
+.care-page { max-width: 1160px; margin: 0 auto; padding: 0 0 3rem; }
 .page-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.75rem 1rem; margin-bottom: 1.25rem; }
-h1 { font-weight: 700; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.04em; }
 .panel { padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--color-border, #dce5dc); border-radius: 12px; background: var(--surface, #fff); }
 .panel h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .requests-list h2 { margin-bottom: 1rem; font-size: 1.2rem; }
