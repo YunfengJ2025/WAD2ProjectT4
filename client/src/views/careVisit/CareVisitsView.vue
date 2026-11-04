@@ -155,7 +155,7 @@ async function submitVisitProof(details) {
   <main class="visits-page">
     <header class="page-heading">
       <div>
-        <h1>{{ props.section === 'available' ? 'Available Sits' : 'My Sits' }}</h1>
+        <h1>{{ props.section === 'available' ? 'Available sits' : 'My sits' }}</h1>
         <p v-if="props.section === 'available'">
           Browse open visits and accept ones that fit your schedule.
         </p>
@@ -193,7 +193,7 @@ async function submitVisitProof(details) {
       <h2>Accepted visits</h2>
       <p v-if="loading" role="status">Loading visits…</p>
       <p v-else-if="!assignments.length">
-        You have no accepted visits yet. Use “Available Sits” to find one nearby.
+        You have no accepted visits yet. Use “Available sits” to find one nearby.
       </p>
       <AssignedVisitCard
         v-for="visit in assignments"

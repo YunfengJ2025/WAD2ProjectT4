@@ -12,8 +12,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['saved', 'cancel'])
 const plantsStore = usePlantsStore()
-const { burst } = useLeafBurst({ keepOnUnmount: true })
-const saveBtn = ref(null) // the Confirm button, where the leaves burst from
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2MB in bytes
@@ -228,7 +226,7 @@ function buildFormData() {
   return data
 }
 
-// Runs when the form is submitted (Confirm / Save changes button).
+// Runs when the form is submitted (Add plant / Save changes button).
 // 1. Validate in the browser. 2. Send to the server. 3. Show any server errors.
 async function onSubmit() {
   if (saving.value) return
@@ -242,7 +240,6 @@ async function onSubmit() {
   try {
     const data = buildFormData()
     const saved = await plantsStore.savePlant(data, isEdit.value ? props.plant.plantId : undefined)
-    if (!isEdit.value) burst(saveBtn.value) // celebrate the new plant (only once it really saved)
     emit('saved', saved) // tell the parent page it worked
   } catch (err) {
     // per-field messages, which we show under the fields like ours.
@@ -1021,20 +1018,8 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
-/* flat Save changes button */
-.save-btn.btn-primary,
-.save-btn.btn-primary:hover {
-  box-shadow: none;
-}
-/* Leaf Confirm button: the .btn rule above (same specificity, loaded after main.css)
-   would square off the corners and remove the shadow, so put the leaf shape back. */
-.btn.btn-leaf {
-  padding: 0 1.4rem;
-  border-radius: 2rem 0.3rem 2rem 0.3rem;
-  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.35);
-}
-  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.4);
-}
+.save-btn,
+.save-btn:hover {
   box-shadow: none;
 }
 
