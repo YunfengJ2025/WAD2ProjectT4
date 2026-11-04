@@ -1,19 +1,15 @@
 <template>
-  <!-- anim-fade-in = CSS animation class from main.css [NOT IN WAD2 CONTENT] -->
   <div class="dashboard-page anim-fade-in">
     <main class="content">
       <!-- HEADER -->
-      <!-- anim-slide-up = CSS animation class [NOT IN WAD2 CONTENT] -->
       <header class="page-header anim-slide-up">
         <div>
-          <!-- {{ }} template interpolation — covered in WAD2 wk4 -->
           <p class="greeting">Good {{ timeOfDay }}, <strong>{{ userData.name || 'Plant Pal' }}</strong> 👋</p>
           <h1>My Green Space</h1>
           <p class="subtitle">📍 {{ userData.neighbourhood }} | Active Community Caregiver</p>
         </div>
 
         <div class="header-ctas">
-          <!-- token-pill & anim-bounce-in = custom CSS classes from main.css [NOT IN WAD2 CONTENT] -->
           <div class="token-pill anim-bounce-in" :title="`Total: ${userData.tokenBalance || userData.availableTokens || 0} tokens · Available: ${userData.availableTokenBalance ?? (userData.availableTokens || 0)} · Frozen: ${userData.frozenTokenBalance || 0}`">
             <span class="coin">🪙</span>
             <span class="amount">{{ userData.tokenBalance || userData.availableTokens || 0 }}</span>
@@ -22,7 +18,6 @@
               ({{ userData.availableTokenBalance ?? 0 }} Avail · {{ userData.frozenTokenBalance }} Frozen)
             </span>
           </div>
-          <!-- <router-link> — covered in WAD2 wk6 (Vue Router) -->
           <router-link to="/leaderboard" class="btn btn-primary btn-sm btn-nav-action">
             <span class="btn-icon">🏆</span>
             <span class="btn-text">View Leaderboard</span>
@@ -31,13 +26,10 @@
       </header>
 
       <!-- STATS ROW -->
-      <!-- CSS Grid layout — not explicitly covered in WAD2 (Bootstrap grid taught in wk3 instead) -->
       <div class="stats-row">
-        <!-- glass-card = glassmorphism CSS class [NOT IN WAD2 CONTENT] -->
         <div class="stat-card glass-card anim-slide-up anim-delay-1">
           <span class="stat-icon">🌱</span>
           <div>
-            <!-- || 0 fallback — basic JS short-circuit, WAD2 wk4+ -->
             <div class="stat-val">{{ stats.totalPlantsOwned || 0 }}</div>
             <div class="stat-label">Total Plants Owned</div>
           </div>
@@ -62,7 +54,6 @@
         <div class="stat-card glass-card anim-slide-up anim-delay-4">
           <span class="stat-icon">⭐</span>
           <div>
-            <!-- .toFixed(1) — JavaScript number formatting, not WAD2-specific -->
             <div class="stat-val">{{ userData.ratingAverage ? Number(userData.ratingAverage).toFixed(1) : '5.0' }}</div>
             <div class="stat-label">Helper Rating</div>
           </div>
@@ -76,11 +67,6 @@
             <h3 class="chart-title">📋 Activity Over Time</h3>
             <span class="badge badge-accepted">Live Visits</span>
           </div>
-          <!--
-            <InteractiveBarChart> — custom component using chart.js/vue-chartjs
-            [NOT IN WAD2 CONTENT] — third-party charting library, not in weekly notes.
-            Covered concepts: component import & usage with :prop binding (WAD2 wk6)
-          -->
           <InteractiveBarChart :chartData="activityChartData" />
         </div>
 
@@ -101,10 +87,6 @@
         </div>
         <p class="section-sub">Unlock milestone badges by completing plant care visits</p>
         <div class="badges-grid">
-          <!--
-            v-for with :key — covered in WAD2 wk4 (Vue Basics I)
-            :badge prop binding — covered in WAD2 wk6 (Vue Components, defineProps)
-          -->
           <BadgeCard v-for="badge in badges" :key="badge.id" :badge="badge" />
         </div>
       </section>
@@ -113,28 +95,14 @@
 </template>
 
 <script setup>
-// ref, computed, onMounted — covered in WAD2 wk4/wk5 (Vue Basics)
 import { ref, computed, onMounted } from 'vue'
-
-// axios — covered in WAD2 wk5 (server/client communication)
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
-
-// useAuthStore() is a Pinia store — a global reactive state manager [NOT IN WAD2 CONTENT]
-// It holds the currently logged-in user's data (userId, name, tokens, etc.)
-// across all components without prop-drilling. WAD2 wk6 introduces Vuex/Pinia conceptually.
-const auth = useAuthStore()
-
-// Component imports — covered in WAD2 wk6 (<script setup> imports)
-// These are locally registered child components — they do NOT need app.component() registration
-// because <script setup> automatically makes imported components available in the template.
 import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
 import BadgeCard from '../../components/dashboard/BadgeCard.vue'
 
-// ref() reactive state — covered in WAD2 wk4/wk5
-// We initialise userData and stats with empty/zero defaults so Vue never tries to
-// render {{ undefined }} while waiting for the API. Without defaults, accessing
-// userData.name before the API responds would throw "Cannot read property of null".
+const auth = useAuthStore()
+
 const userData = ref({
   name: "",
   avatarUrl: "",
@@ -153,19 +121,10 @@ const stats = ref({
   plantsCaredFor: 0,
 })
 
-// badges starts as [] so v-for renders nothing (empty grid) until data arrives.
 const badges = ref([])
-
-// activityChartData and tokenChartData start as null — NOT empty {}.
-// <InteractiveBarChart> uses v-if="chartData && chartData.labels" to guard rendering.
-// null = spinner shows; {} = Chart.js tries to render with missing data and crashes.
 const activityChartData = ref(null)
 const tokenChartData = ref(null)
 
-// computed() — covered in WAD2 wk4/wk5
-// Reads the current hour once at mount time and returns a greeting string.
-// Using computed() instead of a plain variable means Vue memoises the result —
-// it won't recompute every render if the hour hasn't changed.
 const timeOfDay = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return 'morning'
@@ -173,17 +132,10 @@ const timeOfDay = computed(() => {
   return 'evening'
 })
 
-// async/await + axios.get() — covered in WAD2 wk5 (Express + Axios)
-// We chain three sequential API calls:
-// 1. GET /api/leaderboard   — to resolve the logged-in user's userId
-// 2. GET /api/dashboard/stats/:id — returns stats, user object, and badge array
-// 3. GET /api/dashboard/charts/:id — returns 6-month activity & token datasets
-// All three are awaited so data flows in order: no chart rendering before userId is known.
+// Fetch user stats, badges, and 6-month chart datasets
 async function fetchDashboard() {
   try {
     const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
-    // Optional chaining (?.) — modern JS, not WAD2-specific.
-    // Safely reads nested properties without throwing if auth.user is null.
     const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
     if (activeUserId) {
       const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${activeUserId}`)
@@ -200,23 +152,17 @@ async function fetchDashboard() {
   }
 }
 
-// onMounted() lifecycle hook — covered in WAD2 wk5 (Vue lifecycle)
-// Fires once after the component's DOM is inserted into the page.
-// We call fetchDashboard() here rather than at the top level so that
-// the API call only runs when this component is actually rendered, not on import.
 onMounted(() => {
   fetchDashboard()
 })
 </script>
 
 <style scoped>
-/* scoped styles — Vue SFC structure shown in WAD2 wk6 */
-
 .dashboard-page {
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
-  padding-bottom: var(--space-2xl); /* CSS custom property [NOT IN WAD2 CONTENT] */
+  padding-bottom: var(--space-2xl);
   box-sizing: border-box;
 }
 
@@ -344,7 +290,6 @@ onMounted(() => {
   margin-left: 4px;
 }
 
-/* CSS Grid with Bootstrap 5 Breakpoints */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -362,17 +307,17 @@ onMounted(() => {
   border: 1px solid var(--glass-border);
   min-width: 0;
   box-sizing: border-box;
-  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base);
 }
 
 .stat-card:hover {
-  transform: translateY(-5px) scale(1.02); /* [NOT IN WAD2 CONTENT] */
+  transform: translateY(-5px) scale(1.02);
   box-shadow: 0 16px 32px rgba(34, 197, 94, 0.12);
   border-color: rgba(74, 222, 128, 0.5);
 }
 
 .stat-card:hover .stat-icon {
-  transform: scale(1.18) rotate(6deg); /* [NOT IN WAD2 CONTENT] */
+  transform: scale(1.18) rotate(6deg);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -387,7 +332,7 @@ onMounted(() => {
   font-weight: 800;
   color: var(--color-primary-900);
   line-height: 1;
-  animation: countUp 0.5s ease-out; /* [NOT IN WAD2 CONTENT] — CSS animation */
+  animation: countUp 0.5s ease-out;
 }
 
 .stat-label {
@@ -399,7 +344,6 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-/* CSS Grid with responsive columns */
 .charts-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -415,11 +359,11 @@ onMounted(() => {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
-  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
 }
 
 .chart-card:hover {
-  transform: translateY(-4px); /* [NOT IN WAD2 CONTENT] */
+  transform: translateY(-4px);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.07);
   border-color: rgba(255, 255, 255, 0.9);
 }
@@ -464,7 +408,6 @@ onMounted(() => {
   margin: 4px 0 var(--space-lg);
 }
 
-/* CSS Grid with auto-fit/minmax — [NOT IN WAD2 CONTENT] */
 .badges-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -472,18 +415,7 @@ onMounted(() => {
   width: 100%;
 }
 
-/* ============================================================
-   RESPONSIVE DESIGN — BOOTSTRAP 5 BREAKPOINTS
-   WAD2 Week 3 Bootstrap Grid System:
-   - xxl: ≥1400px (desktop wide)
-   - xl:  ≥1200px (standard desktop)
-   - lg:  ≥992px  (laptops/desktops)
-   - md:  ≥768px  (tablets)
-   - sm:  ≥576px  (landscape phones)
-   - xs:  <576px  (portrait mobile phones)
-   ============================================================ */
-
-/* Bootstrap XXL -> XL (<1400px) */
+/* Responsive Breakpoints */
 @media (max-width: 1399.98px) {
   .stats-row {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -494,7 +426,6 @@ onMounted(() => {
   }
 }
 
-/* Bootstrap XL -> LG (<1200px) */
 @media (max-width: 1199.98px) {
   .stats-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -506,7 +437,6 @@ onMounted(() => {
   }
 }
 
-/* Bootstrap LG -> MD (<992px) */
 @media (max-width: 991.98px) {
   .stats-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -519,7 +449,6 @@ onMounted(() => {
   }
 }
 
-/* Bootstrap MD -> SM (<768px - tablets and mobile) */
 @media (max-width: 767.98px) {
   .page-header {
     flex-direction: column;
@@ -555,7 +484,6 @@ onMounted(() => {
   }
 }
 
-/* Bootstrap SM -> XS (<576px - small phones) */
 @media (max-width: 575.98px) {
   .page-header h1 {
     font-size: 1.6rem;
@@ -598,7 +526,6 @@ onMounted(() => {
   }
 }
 
-/* Extra small mobile (<380px) */
 @media (max-width: 379.98px) {
   .stat-card {
     padding: var(--space-xs) var(--space-sm);
