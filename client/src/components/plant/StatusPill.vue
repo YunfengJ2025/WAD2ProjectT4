@@ -44,8 +44,13 @@ defineProps({
 }
 
 .pill.upcoming {
-  background: rgba(15, 22, 17, 0.62);
-  color: #e9f5ec;
+  background: var(--photo-label); /* was rgba(15, 22, 17, 0.62) */
+  color: #ffffff; /* was #e9f5ec */
   backdrop-filter: blur(6px);
+}
+
+/* No dot on "Next: …" (nothing to warn about) */
+.pill.upcoming .dot {
+  display: none;
 }
 </style>
