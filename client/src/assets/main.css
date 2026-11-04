@@ -16,24 +16,38 @@
   --color-background: #ffffff;
   --color-background-soft: #f8f8f8;
   --color-background-mute: #f2f2f2;
-  --color-border: rgba(60, 60, 60, 0.12);
-  --color-border-hover: rgba(60, 60, 60, 0.29);
-  --color-heading: #14532d;
-  /* dark green */
-  --color-text: #1c1917;
-  /* near black */
+  /* (Carolyn) testing new palette. Old values in the comments */
+  --primary: #14804a;
+  --primary-deep: #0e6138;
+  --selected: #aee6c6;
+  --tint: #daf2e3;
+  --bg: #eff8f2;
+  --line: #cde8d7;
+  --control-border: #4a8c66;
+  --ink: #0d3320;
+  --notification: #b3341a;
+  --danger-tint: #fbe6df;
+  --warning: #7a5500;
+  --warning-tint: #f9eecb;
+  --photo-label: rgba(15, 25, 12, 0.78);
 
-  --accent: #2f7d4a;
-  --accent-hover: #256a3d;
-  --accent-soft: #e3f1e6;
+  --color-border: var(--line); /* rgba(60, 60, 60, 0.12) */
+  --color-border-hover: var(--control-border); /* rgba(60, 60, 60, 0.29) */
+  --color-heading: var(--ink); /* #14532d */
+  --color-text: var(--ink); /* #1c1917 */
+
+  --accent: var(--primary); /* #2f7d4a */
+  --accent-hover: var(--primary-deep); /* #256a3d */
+  --accent-soft: var(--tint); /* #e3f1e6 */
   --on-accent: #ffffff;
-  --danger: #b42318;
+  --on-primary: #ffffff;
+  --danger: #a22f17; /* #b42318 */
   --on-danger: #ffffff;
-  --danger-soft: #fdeceb;
-  --warn: #8a5300;
-  --warn-soft: #fdf1d8;
+  --danger-soft: var(--danger-tint); /* #fdeceb */
+  --warn: var(--warning); /* #8a5300 */
+  --warn-soft: var(--warning-tint); /* #fdf1d8 */
   --surface: #ffffff;
-  --muted: #5f6b63;
+  --muted: #2f5c45; /* #5f6b63 */
   --radius: 12px;
   --shadow: 0 1px 2px rgba(16, 24, 18, 0.06), 0 4px 14px rgba(16, 24, 18, 0.06);
 }
@@ -133,14 +147,16 @@ a,
    ============================================================ */
 :root {
   /* Primary — fresh greens */
-  --color-primary-50: #f0fdf4;
-  --color-primary-100: #dcfce7;
-  --color-primary-200: #bbf7d0;
-  --color-primary-400: #4ade80;
-  --color-primary-500: #22c55e;
-  --color-primary-600: #16a34a;
-  --color-primary-700: #15803d;
-  --color-primary-900: #14532d;
+  /* (Carolyn) testing: uses the new palette. Old: 50 #f0fdf4, 100 #dcfce7,
+     200 #bbf7d0, 400 #4ade80, 500 #22c55e, 600 #16a34a, 700 #15803d, 900 #14532d */
+  --color-primary-50: var(--bg);
+  --color-primary-100: var(--tint);
+  --color-primary-200: var(--selected);
+  --color-primary-400: #1f9a5c;
+  --color-primary-500: var(--primary);
+  --color-primary-600: var(--primary-deep);
+  --color-primary-700: var(--primary-deep);
+  --color-primary-900: var(--ink);
 
   /* Accent — warm amber */
   --color-accent-400: #fbbf24;
@@ -275,10 +291,27 @@ img {
   position: fixed;
   inset: 0;
   z-index: -1;
+  /* (Carolyn) testing: plain --bg instead of the moving gradient */
+  background: var(--bg);
+  /* Old moving gradient:
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #e0f2fe 80%, #fef3c7 100%);
   background-size: 400% 400%;
   animation: bgShift 12s ease infinite;
-  /* [NOT IN WAD2 CONTENT] — CSS animation property */
+  [NOT IN WAD2 CONTENT] — CSS animation property */
+}
+
+/* (Carolyn) testing: white navbar with a green active link.
+   These are Bootstrap's own navbar variables (old: grey bg, black active link) */
+.navbar {
+  --bs-tertiary-bg-rgb: 255, 255, 255;
+  --bs-navbar-color: var(--muted);
+  --bs-navbar-hover-color: var(--primary);
+  --bs-navbar-active-color: var(--primary);
+  border-bottom: 1px solid var(--line);
+}
+
+.navbar .nav-link.active {
+  font-weight: 600;
 }
 
 @keyframes bgShift {
@@ -360,16 +393,18 @@ img {
   transition: 0s;
 }
 
+/* (Carolyn) testing: solid --primary button.
+   Old: gradient primary-500 -> 600, glow rgba(34, 197, 94) */
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-  color: white;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 2px 6px rgba(20, 128, 74, 0.25);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+  background: var(--primary-deep);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 4px 12px rgba(20, 128, 74, 0.3);
 }
 
 .btn-primary:active {
@@ -380,11 +415,20 @@ img {
    These are Bootstrap's own variables, set to our green so every state matches.
    .btn.btn-primary (2 classes) wins over Bootstrap's .btn-primary (1 class). */
 .btn.btn-primary {
+  /* (Carolyn) testing: Bootstrap's own fill colours, so no state shows its blue */
+  --bs-btn-color: var(--on-primary);
+  --bs-btn-bg: var(--primary);
+  --bs-btn-hover-color: var(--on-primary);
+  --bs-btn-hover-bg: var(--primary-deep);
+  --bs-btn-active-color: var(--on-primary);
+  --bs-btn-active-bg: var(--primary-deep);
+  --bs-btn-disabled-color: var(--on-primary);
+  --bs-btn-disabled-bg: var(--primary);
   --bs-btn-border-color: var(--color-primary-600);
   --bs-btn-hover-border-color: var(--color-primary-500);
   --bs-btn-active-border-color: var(--color-primary-600);
   --bs-btn-disabled-border-color: var(--color-primary-600);
-  --bs-btn-focus-shadow-rgb: 34, 197, 94;
+  --bs-btn-focus-shadow-rgb: 20, 128, 74; /* (Carolyn) was 34, 197, 94 */
 }
 
 .btn-ghost {
