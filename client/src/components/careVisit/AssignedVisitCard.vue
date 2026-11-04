@@ -105,7 +105,7 @@ function date(value) {
       <span class="status">{{ String(visit.status).replace('_', ' ') }}</span>
     </div>
     <p class="plant-summary">{{ plants.map((plant) => plant.plantName).filter(Boolean).join(', ') || 'Plant' }}</p>
-    <p v-if="visit.owner" class="owner-address"><strong>Requestor address:</strong> {{ ownerAddress(visit.owner) }}</p>
+    <p v-if="visit.owner" class="owner-address"><strong>Owner address:</strong> {{ ownerAddress(visit.owner) }}</p>
     <button type="button" class="more-details" @click="detailsOpen = true">More details</button>
     <Teleport to="body">
     <div v-if="detailsOpen" class="modal-backdrop" role="presentation" @click.self="detailsOpen = false">
@@ -123,7 +123,7 @@ function date(value) {
       Proof photos and care notes can only be submitted on {{ date(visit.visitDate) }}.
     </p>
     <form class="visit-form" @submit.prevent="submit">
-      <p v-if="visit.owner" class="owner-address"><strong>Requestor address:</strong> {{ ownerAddress(visit.owner) }}</p>
+      <p v-if="visit.owner" class="owner-address"><strong>Owner address:</strong> {{ ownerAddress(visit.owner) }}</p>
       <div class="plant-care-list">
         <div v-for="item in items" :key="item.plantId" class="plant-care-card">
           <div class="plant-chip">
