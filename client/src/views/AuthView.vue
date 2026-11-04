@@ -42,10 +42,10 @@ async function submit() {
     // "Redirect back after login" (Week 11): the route guard sent the user here as
     // /signin?redirect=/plants/5, so after logging in we go back to /plants/5.
     // Only follow it if it's a page inside our app (starts with one "/") that needs
-    // login; otherwise go to /plants. This stops links sending users to other websites.
+    // login; otherwise go to the home page (/). This stops links sending users to other websites.
     const redirect = route.query.redirect
     const destination = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
-      && router.resolve(redirect).meta.requiresAuth ? redirect : '/plants'
+      && router.resolve(redirect).meta.requiresAuth ? redirect : '/schedule'
     await router.push(destination)
   } catch {
     // The store exposes the API error to the form.
