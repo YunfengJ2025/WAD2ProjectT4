@@ -38,7 +38,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
     try {
       const data = await request(`/user/${endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       })
       sessionStorage.setItem(TOKEN_KEY, data.accessToken)
@@ -66,8 +67,13 @@ export const useAuthStore = defineStore('auth', () => {
       isRestoring.value = true
       const token = accessToken.value
       restoring = authorizedRequest('/user/me')
-        .then((data) => { if (accessToken.value === token) user.value = data.user })
-        .finally(() => { restoring = null; isRestoring.value = false })
+        .then((data) => {
+          if (accessToken.value === token) user.value = data.user
+        })
+        .finally(() => {
+          restoring = null
+          isRestoring.value = false
+        })
     }
     return restoring
   }
@@ -103,8 +109,18 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    accessToken, user, submitting, isRestoring, error, isAuthenticated, clearSession,
-    authorizedRequest, restoreSession, refreshUser, updateProfile, logout,
+    accessToken,
+    user,
+    submitting,
+    isRestoring,
+    error,
+    isAuthenticated,
+    clearSession,
+    authorizedRequest,
+    restoreSession,
+    refreshUser,
+    updateProfile,
+    logout,
     login: (credentials) => authenticate('login', credentials),
     register: (credentials) => authenticate('register', credentials),
   }
