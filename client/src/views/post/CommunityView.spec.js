@@ -79,7 +79,7 @@ it('shows the title in a card without photos and links avatars to profiles', asy
   expect(wrapper.get('.post-card-author').attributes('href')).toBe('/profile/2')
 })
 
-it('combines case-insensitive search with own and liked filters, then clears them', async () => {
+it('combines case-insensitive search with the liked filter, then clears them', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () =>
@@ -101,9 +101,6 @@ it('combines case-insensitive search with own and liked filters, then clears the
   expect(wrapper.findAll('.post-card')).toHaveLength(2)
   const filter = (label) =>
     wrapper.findAll('.community-filters button').find((button) => button.text() === label)
-  await filter('My posts').trigger('click')
-  expect(wrapper.findAll('.post-card')).toHaveLength(1)
-  expect(wrapper.get('.post-card-title').text()).toBe('Fern care')
   const likes = useLikesStore()
   likes.loaded = true
   likes.states = { 2: { liked: true, likedCount: 1 } }
@@ -129,7 +126,6 @@ it('disables personal filters for guests and resets private selection on logout'
   await flushPromises()
   expect(buttons[0].attributes('aria-pressed')).toBe('true')
   expect(buttons[1].element.disabled).toBe(true)
-  expect(buttons[2].element.disabled).toBe(true)
 })
 
 it('sorts by creation order and likes, retaining search and filter constraints', async () => {
@@ -205,4 +201,16 @@ it('keeps the feed and liked filter in sync after a confirmed like', async () =>
     .trigger('click')
   expect(wrapper.findAll('.post-card')).toHaveLength(1)
   expect(wrapper.get('.post-card-title').text()).toBe('Fern')
+})
+
+// Management navigation leaves the feed rather than changing its search results.
+it('opens My Posts through its button-style link instead of offering an own-post filter', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => reply([])))
+  const router = await open(CommunityView)
+  expect(wrapper.findAll('.community-filters button').map(button => button.text())).toEqual(['All posts', 'Liked'])
+  const link = wrapper.get('a[href="/my-posts"]')
+  expect(link.text()).toBe('My posts')
+  await link.trigger('click')
+  await flushPromises()
+  expect(router.currentRoute.value.path).toBe('/my-posts')
 })

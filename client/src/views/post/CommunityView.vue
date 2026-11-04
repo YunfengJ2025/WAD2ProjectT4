@@ -18,7 +18,6 @@ const filter = ref('all')
 const sort = ref('newest')
 const filters = [
   { value: 'all', label: 'All posts' },
-  { value: 'mine', label: 'My posts' },
   { value: 'liked', label: 'Liked' },
 ]
 const sortOptions = [
@@ -36,9 +35,6 @@ function matchesSearch(post, query) {
 }
 
 function matchesSelectedFilter(post) {
-  if (filter.value === 'mine') {
-    return post.creatorId === auth.user?.userId
-  }
   if (filter.value === 'liked') {
     return likes.states[post.postId]?.liked === true
   }
@@ -179,6 +175,9 @@ onMounted(() => {
         <h2 id="feed-title">From the community</h2>
         <!-- Keep post creation below the podium, beside the feed and search controls. -->
         <div class="community-feed-actions">
+          <!-- My Posts is a separate management page, not a search filter.
+               Its existing route guard sends guests through sign-in. -->
+          <RouterLink to="/my-posts" class="btn community-my-posts-button">My posts</RouterLink>
           <RouterLink
             to="/community/new"
             class="btn btn-primary community-create-button"
@@ -228,7 +227,7 @@ onMounted(() => {
         </select>
       </div>
       <p v-if="!auth.isAuthenticated" class="community-muted">
-        Sign in to filter your own or liked posts.
+        Sign in to filter your liked posts.
       </p>
       <!-- Share the growing-tree indicator while the community feed is fetched. -->
       <Loading v-if="loading" label="Loading community posts…" />

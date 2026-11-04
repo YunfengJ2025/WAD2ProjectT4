@@ -126,6 +126,13 @@ const routes = [
     meta: { requiresAuth: true },
     component: () => import('../views/WateringSchedView.vue'),
   },
+  // Catch unknown addresses after the known pages. Keep this public so guests
+  // see the error page rather than being sent to registration for a missing URL.
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('../views/NotFoundView.vue'),
+  },
 ]
 
 const router = createRouter({
@@ -135,7 +142,7 @@ const router = createRouter({
 })
 
 for (const route of router.getRoutes()) {
-  if (!['home', 'sign-in', 'register'].includes(route.name)) route.meta.requiresAuth = true
+  if (!['home', 'sign-in', 'register', 'not-found'].includes(route.name)) route.meta.requiresAuth = true
 }
 
 router.beforeEach(async (to) => {
@@ -151,7 +158,7 @@ router.beforeEach(async (to) => {
     return { name: to.path === '/find-nearby' ? 'sign-in' : 'register', query: { redirect: to.fullPath } }
   }
   if (['sign-in', 'register'].includes(to.name) && auth.isAuthenticated) {
-    return { name: 'my-plants' }
+    return { name: 'schedule' }
   }
 })
 

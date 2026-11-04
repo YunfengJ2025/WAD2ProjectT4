@@ -8,6 +8,9 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref(sessionStorage.getItem(TOKEN_KEY) || '')
   const user = ref(null)
   const submitting = ref(false)
+  // Expose restoration separately from login submission so refreshes can show
+  // the app's loading screen without marking the login form as submitting.
+  const isRestoring = ref(false)
   const error = ref('')
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
   let restoring
@@ -60,10 +63,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function restoreSession() {
     if (!accessToken.value || user.value) return
     if (!restoring) {
+      isRestoring.value = true
       const token = accessToken.value
       restoring = authorizedRequest('/user/me')
         .then((data) => { if (accessToken.value === token) user.value = data.user })
-        .finally(() => { restoring = null })
+        .finally(() => { restoring = null; isRestoring.value = false })
     }
     return restoring
   }
@@ -99,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    accessToken, user, submitting, error, isAuthenticated, clearSession,
+    accessToken, user, submitting, isRestoring, error, isAuthenticated, clearSession,
     authorizedRequest, restoreSession, refreshUser, updateProfile, logout,
     login: (credentials) => authenticate('login', credentials),
     register: (credentials) => authenticate('register', credentials),
