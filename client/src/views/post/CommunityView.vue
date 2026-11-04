@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -229,7 +230,8 @@ onMounted(() => {
       <p v-if="!auth.isAuthenticated" class="community-muted">
         Sign in to filter your own or liked posts.
       </p>
-      <p v-if="loading" class="community-state" role="status">Loading community posts…</p>
+      <!-- Share the growing-tree indicator while the community feed is fetched. -->
+      <Loading v-if="loading" label="Loading community posts…" />
       <div v-else-if="error" class="community-panel community-state" role="alert">
         <h2>Couldn't load posts</h2>
         <p>{{ error }}</p>
@@ -243,9 +245,7 @@ onMounted(() => {
         </p>
         <RouterLink to="/community/new" class="btn btn-primary">Create the first post</RouterLink>
       </div>
-      <p v-else-if="filter === 'liked' && likes.loading" class="community-state" role="status">
-        Loading your liked posts…
-      </p>
+      <Loading v-else-if="filter === 'liked' && likes.loading" label="Loading your liked posts…" />
       <div v-else-if="filter === 'liked' && likes.error" class="community-state" role="alert">
         <p>{{ likes.error }}</p>
         <button type="button" class="btn" @click="likes.fetchLikes(true)">Try again</button>

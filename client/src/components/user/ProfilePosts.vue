@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
@@ -22,7 +23,8 @@ onMounted(() => store.fetchPosts())
       </div>
       <RouterLink to="/community/new" class="btn">＋ Create post</RouterLink>
     </div>
-    <p v-if="store.loading" role="status">Loading your posts…</p>
+    <!-- Posts load independently, so keep the indicator within this profile section. -->
+    <Loading v-if="store.loading" label="Loading your posts…" />
     <div v-else-if="store.error" role="alert">
       <p>{{ store.error }}</p>
       <button class="btn" @click="store.fetchPosts">Try again</button>

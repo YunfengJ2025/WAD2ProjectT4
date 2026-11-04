@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 // PlantFormView: the page around the plant form, used by TWO routes:
 //   /plants/new           -> add a plant (no plantId)
 //   /plants/:plantId/edit -> edit a plant (plantId from the URL)
@@ -57,7 +58,8 @@ function onSaved(saved) {
     <!-- The form shows its own title (with Save beside it); this one is for loading/errors -->
     <h1 v-if="loading || loadError">{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
 
-    <p v-if="loading" class="muted">Loading plant…</p>
+    <!-- Wait for the saved plant before showing its editable fields. -->
+    <Loading v-if="loading" label="Loading plant…" />
     <div v-else-if="loadError" class="load-error" role="alert">
       <p>{{ loadError }}</p>
       <RouterLink to="/plants" class="btn">Back to My Plants</RouterLink>

@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
@@ -186,7 +187,8 @@ async function markHealthSeen(check) {
     </section>
 
     <template v-if="props.section !== 'mine'">
-      <p v-if="loading" role="status">Loading your plants…</p>
+      <!-- Each request tab shows the same reusable growing-tree indicator. -->
+      <Loading v-if="loading" label="Loading your plants…" />
       <CareRequestForm
         v-else
         :key="formVersion"
@@ -199,7 +201,7 @@ async function markHealthSeen(check) {
 
     <section v-if="props.section !== 'create'" class="requests-list">
       <h2 v-if="props.section === 'all'">My requests</h2>
-      <p v-if="loading" role="status">Loading requests…</p>
+      <Loading v-if="loading" label="Loading requests…" />
       <p v-else-if="!owned.length">You haven’t posted a request yet.</p>
       <template v-else>
         <PlantHealthPanel :requests="owned" @seen="markHealthSeen" />

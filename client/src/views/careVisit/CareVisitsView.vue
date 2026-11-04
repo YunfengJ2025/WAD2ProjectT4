@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import AssignedVisitCard from '@/components/careVisit/AssignedVisitCard.vue'
@@ -170,7 +171,8 @@ async function submitVisitProof(details) {
         </div>
         <span class="count">{{ availableVisits.length }} open</span>
       </div>
-      <p v-if="loading" role="status">Loading available visits…</p>
+      <!-- Keep visit sections consistent while their shared request is pending. -->
+      <Loading v-if="loading" label="Loading available visits…" />
       <p v-else-if="!availableVisits.length">No open visits right now. Check back later.</p>
       <div v-else class="available-list">
         <AvailableVisitCard
@@ -185,7 +187,7 @@ async function submitVisitProof(details) {
 
     <section v-if="props.section !== 'available'" class="panel">
       <h2>Accepted visits</h2>
-      <p v-if="loading" role="status">Loading visits…</p>
+      <Loading v-if="loading" label="Loading visits…" />
       <p v-else-if="!assignments.length">
         You have no accepted visits yet. Browse the available visits above.
       </p>
@@ -202,7 +204,7 @@ async function submitVisitProof(details) {
 
     <section v-if="props.section !== 'available'" class="panel">
       <h2>Visit history</h2>
-      <p v-if="loading" role="status">Loading history…</p>
+      <Loading v-if="loading" label="Loading history…" />
       <p v-else-if="!history.length">No visits submitted yet.</p>
       <VisitHistoryCard
         v-for="visit in history"
