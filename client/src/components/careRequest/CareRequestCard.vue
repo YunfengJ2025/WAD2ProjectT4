@@ -26,9 +26,36 @@ const plants = computed(() =>
 )
 // what the owner asked for each plant (water amount, instructions), shown under Details
 const plantRows = computed(() => (props.request.plantDetails?.length ? props.request.plantDetails : plants.value))
-const title = computed(() => plants.value.map((plant) => plant.plantName).filter(Boolean).join(', ') || 'Plant')
+const title = computed(
+  () =>
+    plants.value.map((plant) => plant.plantName).filter(Boolean).join(', ') ||
+    `${plants.value.length || 1} unnamed plant${plants.value.length > 1 ? 's' : ''}`,
+)
 const MAX_AVATARS = 3
 const visits = computed(() => props.request.visits || [])
+
+// () Progress: "2 of 5 visits done" (+ the bar), and the next visit still to come
+const doneCount = computed(() => visits.value.filter((visit) => visit.status === 'completed').length)
+const donePercent = computed(() =>
+  visits.value.length ? Math.round((doneCount.value / visits.value.length) * 100) : 0,
+)
+const nextVisit = computed(() =>
+  visits.value
+    .filter((visit) => ['open', 'accepted'].includes(visit.status))
+    .sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate))[0],
+)
+const nextVisitText = computed(() => {
+  if (!nextVisit.value) return ''
+  const who = nextVisit.value.status === 'accepted' ? 'sitter found' : 'waiting for a sitter'
+  return `${chipDate(nextVisit.value.visitDate)} · ${who}`
+})
+
+// (Ca Cancel asks first (it used to cancel straight away on one click)
+function askCancel() {
+  if (window.confirm(`Cancel the request for ${title.value}? Visits not done yet will be cancelled.`)) {
+    emit('cancel-request', props.request)
+  }
+}
 
 function date(value) {
   return new Date(value).toLocaleDateString('en-GB')
@@ -97,18 +124,45 @@ function healthLine(item) {
         />
         <span v-if="plants.length > MAX_AVATARS" class="more">+{{ plants.length - MAX_AVATARS }}</span>
       </div>
+      <!-- (Carolyn) plant names first; request number moved to small text -->
       <div class="heading">
-        <h3>Request #{{ request.requestId }} · {{ title }}</h3>
-        <div class="meta">
-          {{ date(request.startDate) }} – {{ date(request.endDate) }} · {{ request.tokenReward }} tokens per visit ·
-          💧 {{ waterSourceLabels[request.waterSource] || 'Tap available' }}
-          <template v-if="request.healthCheck"> · 🌿 Health check on</template>
-        </div>
+        <h3>{{ title }}</h3>
+        <small class="request-no">Request #{{ request.requestId }}</small>
       </div>
       <span class="status">{{ request.status.replace('_', ' ') }}</span>
     </div>
 
-    <p v-if="request.note" class="note">{{ request.note }}</p>
+    <!-- (Carolyn) key details as chips that wrap (no more cut-off text) -->
+    <ul class="facts">
+      <li>🗓️ {{ date(request.startDate) }} – {{ date(request.endDate) }}</li>
+      <li v-if="request.tokenReward">
+        🪙 {{ request.tokenReward }} token{{ request.tokenReward === 1 ? '' : 's' }} / visit
+      </li>
+      <li>💧 {{ waterSourceLabels[request.waterSource] || 'Tap available' }}</li>
+      <li v-if="request.healthCheck">🌿 Health check on</li>
+    </ul>
+
+    <!-- (Carolyn) visit progress + next visit -->
+    <div v-if="visits.length" class="progress-row">
+      <div class="progress-text">
+        <strong
+          >{{ doneCount }} of {{ visits.length }} visit{{ visits.length === 1 ? '' : 's' }} done</strong
+        >
+        <span v-if="nextVisitText">Next: {{ nextVisitText }}</span>
+      </div>
+      <div
+        class="progress-bar-track"
+        role="progressbar"
+        :aria-valuenow="donePercent"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-label="`${doneCount} of ${visits.length} visits done`"
+      >
+        <div class="progress-bar-fill" :style="{ width: donePercent + '%' }"></div>
+      </div>
+    </div>
+
+    <p v-if="request.note" class="note" :title="request.note">{{ request.note }}</p>
 
     <!-- one chip per visit; click a chip for that visit's page -->
     <ul v-if="visits.length" class="timeline" aria-label="Visits">
@@ -138,18 +192,17 @@ function healthLine(item) {
       </li>
     </ul>
 
+    <!-- (Carolyn) details is the main button; cancel is a small quiet link on the right -->
     <div class="foot">
+      <button type="button" class="details-toggle" @click="open = true">View details</button>
       <button
         v-if="['open', 'in_progress'].includes(request.status)"
         type="button"
-        class="btn btn-outline-secondary btn-sm"
+        class="cancel-link"
         :disabled="busy"
-        @click="emit('cancel-request', request)"
+        @click="askCancel"
       >
         {{ busy ? 'Cancelling…' : 'Cancel request' }}
-      </button>
-      <button type="button" class="details-toggle" @click="open = true">
-        More details
       </button>
     </div>
 
@@ -206,7 +259,7 @@ function healthLine(item) {
   flex-direction: column;
   box-sizing: border-box;
   min-width: 0;
-  height: 320px;
+  min-height: 320px; /* (Carolyn) was height: 320px; grows instead of cutting off */
   padding: 1rem 1.1rem;
   margin: 0 0 0.9rem;
   border: 1px solid #e2e8e2;
@@ -229,8 +282,20 @@ function healthLine(item) {
 .stack img:first-child { margin-left: 0; }
 .stack .more { display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; color: #245b34; }
 .heading { flex: 1; min-width: 0; }
-.heading h3 { margin: 0; font-size: 1.05rem; font-weight: 700; }
-.meta { display: -webkit-box; overflow: hidden; margin-top: 0.2rem; color: #59665c; font-size: 0.88rem; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.heading h3 { margin: 0; font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+/* (Carolyn) request number, fact chips, progress, quiet cancel */
+.request-no { color: #68766b; font-size: 0.8rem; }
+.facts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0 0; padding: 0; list-style: none; }
+.facts li { padding: 0.2rem 0.6rem; border-radius: 999px; background: #f0f6f1; color: #34463a; font-size: 0.82rem; }
+.progress-row { display: grid; gap: 0.35rem; margin-top: 0.75rem; }
+.progress-text { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 0.75rem; font-size: 0.85rem; color: #59665c; }
+.progress-text strong { color: #245b34; }
+.progress-bar-track { height: 6px; overflow: hidden; border-radius: 999px; background: #e3ece5; }
+.progress-bar-fill { height: 100%; border-radius: 999px; background: var(--primary, #14804a); transition: width 0.3s ease; }
+.cancel-link { padding: 0.3rem 0.4rem; border: 0; background: transparent; color: #8a5a55; font-size: 0.82rem; text-decoration: underline; cursor: pointer; }
+.cancel-link:hover:not(:disabled) { color: var(--danger, #a22f17); }
+.cancel-link:disabled { opacity: 0.6; cursor: default; }
+.cancel-link:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 .status { padding: 0.15rem 0.7rem; border-radius: 999px; background: #e8f3e9; color: #2d6740; font-size: 0.8rem; font-weight: 700; text-transform: capitalize; }
 .is-open .status { background: #d8f3f9; color: #07657a; }
 .is-in_progress .status { background: #fff3cf; color: #7a5a00; }
@@ -238,7 +303,8 @@ function healthLine(item) {
 .note { display: -webkit-box; overflow: hidden; margin: 0.6rem 0 0; color: #59665c; font-size: 0.9rem; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 /* ---------- visit chips ---------- */
-.timeline { display: flex; flex-wrap: wrap; align-content: flex-start; min-height: 2.2rem; max-height: 5rem; overflow: hidden; gap: 0.5rem; margin: 0.9rem 0 0.25rem; padding: 0; list-style: none; }
+/* no max-height/overflow: hidden, so make-up buttons can't get cut off */
+.timeline { display: flex; flex-wrap: wrap; align-content: flex-start; min-height: 2.2rem; gap: 0.5rem; margin: 0.9rem 0 0.25rem; padding: 0; list-style: none; }
 .timeline li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .chip {
   position: relative;
@@ -269,7 +335,8 @@ function healthLine(item) {
 
 /* ---------- footer and details ---------- */
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: auto; padding-top: 0.8rem; border-top: 1px dashed #e2e8e2; }
-.details-toggle { margin-left: auto; padding: 0.45rem 0.8rem; border: 1px solid #dce5dc; border-radius: 9px; background: #f4f8f4; color: #245b34; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.details-toggle { padding: 0.45rem 0.9rem; border: 1px solid #b9d6c1; border-radius: 999px; background: #f4f8f4; color: #245b34; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.details-toggle:hover { background: #e6f1e8; }
 .details { margin-top: 0.8rem; color: #59665c; font-size: 0.9rem; }
 .modal-backdrop { position: fixed; z-index: 1050; inset: 0; display: grid; place-items: center; padding: 1rem; background: #10231bb3; }
 .details-modal { width: min(720px, 100%); max-height: min(85vh, 800px); overflow: auto; padding: 1.25rem; border: 1px solid #e2e8e2; border-radius: 16px; background: #fff; box-shadow: 0 22px 70px #10231b50; }

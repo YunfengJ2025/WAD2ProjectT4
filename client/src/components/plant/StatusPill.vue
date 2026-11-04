@@ -43,10 +43,12 @@ defineProps({
   color: #3a2800;
 }
 
+/* "Next: …" = light frosted pill with dark text */
 .pill.upcoming {
-  background: var(--photo-label); /* was rgba(15, 22, 17, 0.62) */
-  color: #ffffff; /* was #e9f5ec */
+  background: rgba(255, 255, 255, 0.9); /* was var(--photo-label) */
+  color: var(--ink); /* was #ffffff */
   backdrop-filter: blur(6px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 /* No dot on "Next: …" (nothing to warn about) */
