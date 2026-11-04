@@ -21,8 +21,8 @@ const showLogoutConfirm = ref(false)
 // Leaderboard etc. are in the avatar dropdown (NavBar.vue).
 const navigationitems = [
   { label: 'My Plants', to: '/plants' },
-  { label: 'Find Nearby', to: '/find-nearby' },
-  { label: 'Requests', to: '/requests' },
+  { label: 'My Requests', to: '/requests' },
+  { label: 'My Sits', to: '/my-sits' },
   { label: 'Community', to: '/community' },
 ]
 

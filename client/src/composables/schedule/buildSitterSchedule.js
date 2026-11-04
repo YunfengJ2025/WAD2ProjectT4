@@ -49,7 +49,7 @@ export function buildSitterSchedule(visits, now = new Date()) {
                 // extra fields the calendar and list ignore, but the card link uses
                 visitId: visit.visitId,
                 ownerName: visit.owner?.userName ?? '',
-                link: { path: '/requests', query: { tab: 'sits' } },
+                link: { path: '/my-sits' },
             })
         }
     }
