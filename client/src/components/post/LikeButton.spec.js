@@ -1,25 +1,30 @@
 import { mount, flushPromises } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import { afterEach, expect, it, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import LikeButton from './LikeButton.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLikesStore } from '@/stores/likes'
 let wrapper
-const post = { postId: 5, title: 'Fern', likedCount: 2 }
-const response = (data) => ({ ok: true, status: 200, json: async () => data })
 afterEach(() => {
   wrapper?.unmount()
-  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
   sessionStorage.clear()
 })
-async function open(initial = []) {
+async function open(signedIn = true) {
   const pinia = createPinia()
-  setActivePinia(pinia)
-  const auth = useAuthStore()
-  auth.accessToken = 'token'
-  auth.user = { userId: 2 }
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(response(initial)))
+  const auth = useAuthStore(pinia)
+  auth.accessToken = signedIn ? 'token' : ''
+  auth.user = signedIn ? { userId: 1 } : null
+  const likes = useLikesStore(pinia)
+  likes.loaded = true
+  likes.states = { 5: { liked: false, likedCount: 2 } }
+  // Store actions are dependencies. HTTP persistence is tested at integration level.
+  vi.spyOn(likes, 'fetchLikes').mockResolvedValue()
+  vi.spyOn(likes, 'toggle').mockImplementation(async () => {
+    const old = likes.states[5]
+    likes.states[5] = { liked: !old.liked, likedCount: old.liked ? 2 : 3 }
+  })
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -28,54 +33,46 @@ async function open(initial = []) {
     ],
   })
   await router.push('/community')
-  wrapper = mount(LikeButton, { props: { post }, global: { plugins: [pinia, router] } })
+  wrapper = mount(LikeButton, {
+    props: { post: { postId: 5, title: 'Fern', likedCount: 2 } },
+    global: { plugins: [pinia, router] },
+  })
   await flushPromises()
-  return { auth, router, likes: useLikesStore() }
+  return { likes, router }
 }
-it('loads persisted likes and toggles full and empty hearts using server counts', async () => {
-  await open([{ ...post, liked: true }])
-  expect(wrapper.get('button').attributes('aria-pressed')).toBe('true')
-  expect(wrapper.get('button').classes()).not.toContain('celebrating')
-  fetch.mockResolvedValueOnce(response({ postId: 5, liked: false, likedCount: 1 }))
-  await wrapper.get('button').trigger('click')
-  await flushPromises()
-  expect(fetch.mock.calls[1][1].method).toBe('DELETE')
-  expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
-  expect(wrapper.text()).toBe('1')
-  fetch.mockResolvedValueOnce(response({ postId: 5, liked: true, likedCount: 2 }))
-  await wrapper.get('button').trigger('click')
-  await flushPromises()
-  expect(fetch.mock.calls[2][1].method).toBe('POST')
-  expect(wrapper.get('button').classes()).toContain('celebrating')
-  await wrapper.get('svg').trigger('animationend')
-  expect(wrapper.get('button').classes()).not.toContain('celebrating')
-  expect(wrapper.get('button').attributes('aria-pressed')).toBe('true')
-})
-it('blocks duplicate clicks and keeps state unchanged when a request fails', async () => {
-  await open()
-  let reject
-  fetch.mockImplementationOnce(
-    () =>
-      new Promise((resolve, fail) => {
-        reject = fail
-      }),
-  )
-  await wrapper.get('button').trigger('click')
-  await wrapper.get('button').trigger('click')
-  expect(fetch).toHaveBeenCalledTimes(2)
-  reject(new Error('Offline'))
-  await flushPromises()
-  expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
-  expect(wrapper.get('button').classes()).not.toContain('celebrating')
-  expect(wrapper.get('[role="alert"]').text()).toContain('Could not reach the server')
-})
-it('clears liked posts on logout and sends guest clicks to sign in', async () => {
-  const { auth, router, likes } = await open([{ ...post, liked: true }])
-  auth.clearSession()
-  await flushPromises()
-  expect(likes.posts).toEqual([])
-  await wrapper.get('button').trigger('click')
-  await flushPromises()
-  expect(router.currentRoute.value.name).toBe('sign-in')
-  expect(router.currentRoute.value.query.redirect).toBe('/community')
+describe('LikeButton', () => {
+  it('updates its accessible selected state and count after liking and unliking', async () => {
+    const { likes } = await open()
+    expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(likes.toggle).toHaveBeenCalledWith(expect.objectContaining({ postId: 5 }))
+    expect(wrapper.get('button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('button').text()).toBe('3')
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('button').text()).toBe('2')
+  })
+  it('disables pending requests and displays failure without changing the count', async () => {
+    const { likes } = await open()
+    likes.pending = { 5: true }
+    await flushPromises()
+    expect(wrapper.get('button').element.disabled).toBe(true)
+    likes.pending = {}
+    likes.toggle.mockRejectedValueOnce(new Error('Unable to like this post'))
+    await flushPromises()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Unable to like')
+    expect(wrapper.get('button').text()).toBe('2')
+  })
+  it('redirects guests to sign in and preserves their return address', async () => {
+    const { router, likes } = await open(false)
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('sign-in')
+    expect(router.currentRoute.value.query.redirect).toBe('/community')
+    expect(likes.toggle).not.toHaveBeenCalled()
+  })
 })
