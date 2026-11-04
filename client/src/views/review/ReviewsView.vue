@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
@@ -220,10 +221,8 @@ function displayReview(review) {
             </select>
           </div>
         </div>
-        <p v-if="store.loading" role="status" class="review-state">
-          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading your
-          reviews…
-        </p>
+        <!-- Use one shared indicator for initial loading and review refreshes. -->
+        <Loading v-if="store.loading" label="Loading your reviews…" />
         <div v-else-if="store.error" role="alert" class="review-state">
           <h3>Couldn’t load your reviews</h3>
           <p class="review-muted">{{ store.error }}</p>

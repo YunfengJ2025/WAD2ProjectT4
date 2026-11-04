@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -326,7 +327,8 @@ async function acceptVisit(visit) {
   </div>
 
   <p v-if="showAll && !searchCenter">Click the map to search within 1 km of a new pin.</p>
-  <p v-if="loading" role="status">Finding plants near you…</p>
+  <!-- Use the same indicator for nearby and island-wide request searches. -->
+  <Loading v-if="loading" label="Finding plants near you…" />
 
   <div v-else-if="loadError" class="alert alert-danger" role="alert">
     {{ loadError }}
@@ -362,7 +364,7 @@ async function acceptVisit(visit) {
 
         <!-- ===== See all requests: grouped by owner, whole request period ===== -->
         <template v-if="showAll">
-          <p v-if="loadingAll" role="status">Loading requests from across Singapore…</p>
+          <Loading v-if="loadingAll" label="Loading requests from across Singapore…" />
           <p v-else-if="loadAllError" class="text-danger" role="alert">
             {{ loadAllError }}
             <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="loadAll">Try again</button>

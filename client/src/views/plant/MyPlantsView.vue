@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PlantCard from '@/components/plant/PlantCard.vue'
@@ -106,9 +107,8 @@ async function confirmDelete() {
       <RouterLink to="/plants/new" class="btn btn-primary">+ Add plant</RouterLink>
     </header>
 
-    <ul v-if="loading" class="grid" aria-busy="true" aria-label="Loading plants">
-      <li v-for="n in 4" :key="n" class="skeleton"></li>
-    </ul>
+    <!-- Display the shared tree until the plant collection is ready. -->
+    <Loading v-if="loading" label="Loading plants…" />
 
     <section v-else-if="loadError" class="state">
       <h2>Couldn't load your plants</h2>

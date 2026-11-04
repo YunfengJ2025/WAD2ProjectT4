@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { request } from '@/api/http'
@@ -177,9 +178,8 @@ async function shareReview() {
     <button type="button" class="community-back community-back-button" @click="goBack">
       ← Back
     </button>
-    <p v-if="loading" role="status" class="community-state">
-      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading post…
-    </p>
+    <!-- Keep loading feedback consistent with the community feed. -->
+    <Loading v-if="loading" label="Loading post…" />
     <div v-else-if="error" role="alert" class="community-panel community-state">
       <h1>Couldn't load this post</h1>
       <p>{{ error }}</p>
