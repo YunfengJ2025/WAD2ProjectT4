@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function authorizedRequest(url, options = {}) {
     const token = accessToken.value
-    if (!token) throw Object.assign(new Error('Please sign in first'), { status: 401, errors: {} })
+    if (!token) throw Object.assign(new Error('Please sign in first.'), { status: 401, errors: {} })
     try {
       return await request(url, { ...options, token })
     } catch (err) {
