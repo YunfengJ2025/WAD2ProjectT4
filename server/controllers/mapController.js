@@ -113,7 +113,7 @@ exports.findNearby = async (req, res) => {
       if (!request || !owner || !pos) continue;
 
       const distanceKm = haversine(origin.lat, origin.lng, pos.lat, pos.lng);
-      if (distanceKm > MAX_RADIUS_KM) continue;
+      if (req.query.all !== "1" && distanceKm > MAX_RADIUS_KM) continue;
 
       const visitPlants = (itemsByVisit.get(visit.visitId) || []).map((item) => {
         const plant = plantById.get(item.plantId);

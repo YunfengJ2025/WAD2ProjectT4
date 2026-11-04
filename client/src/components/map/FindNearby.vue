@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -13,6 +13,7 @@ import { getCareSteps } from '@/utils/careSteps'
 const auth = useAuthStore()
 const { show: toast } = useToast()
 
+const searchCenter = ref(null)
 const origin = ref(null) // the sitter's home { lat, lng }, sent by the server
 const allVisits = ref([]) // every open visit within 1 km, already sorted nearest first
 const loading = ref(true)
@@ -24,8 +25,8 @@ const todayYmd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singap
 const selectedDate = ref(todayYmd)
 
 // "See all requests" mode: requests grouped by owner for their whole request period
-// it is simply "no date picked", so clearing the date input also switches to this view
-const showAll = computed(() => !selectedDate.value)
+// Keep the view independent of the optional date filter.
+const showAll = ref(false)
 const activeGroupKey = ref('') // the grouped request opened from the list ('' = show the list)
 
 
@@ -33,6 +34,13 @@ const acceptingId = ref(0) // visitId being accepted right now, so the button ca
 const acceptedNote = ref('') // shown after a successful accept
 
 const isSignInError = ref(false)
+
+// ---- "See all requests" shows every open request in the country, not just the ones within 1 km ----
+// the server must skip its 1 km limit when it receives ?all=1 (if it ignores this, you just get the 1 km list)
+const ALL_ENDPOINT = '/find-nearby?all=1'
+const nationwideVisits = ref([]) // every open visit in the country, nearest first
+const loadingAll = ref(false)
+const loadAllError = ref('')
 
 const waterSourceLabels = {
   left_out: 'Water left outside',
@@ -61,17 +69,64 @@ async function load() {
 onMounted(load)
 
 // ---- slider and date narrow the list instantly, without asking the server again ----
-const filteredRequests = computed(() =>
-  allVisits.value.filter(
-    (v) => (!selectedDate.value || v.date === selectedDate.value) && v.distanceKm <= radiusKm.value,
-  ),
-)
+// Distances are measured from the dropped pin when one is present.
+const filteredRequests = computed(() => {
+  const source = showAll.value || searchCenter.value ? nationwideVisits.value : allVisits.value
+  const matchingGroups = showAll.value && selectedDate.value
+    ? new Set(source.filter((v) => v.date === selectedDate.value).map(groupKey)) : null
+  return source.map((visit) => {
+    if (!searchCenter.value) return visit
+    const rad = (n) => n * Math.PI / 180
+    const { lat, lng } = searchCenter.value
+    const a = Math.sin(rad(visit.lat - lat) / 2) ** 2
+      + Math.cos(rad(lat)) * Math.cos(rad(visit.lat)) * Math.sin(rad(visit.lng - lng) / 2) ** 2
+    return { ...visit, distanceKm: 6371 * 2 * Math.asin(Math.sqrt(Math.min(1, a))) }
+  }).filter((v) => (showAll.value
+    ? !matchingGroups || matchingGroups.has(groupKey(v))
+    : !selectedDate.value || v.date === selectedDate.value)
+    && ((showAll.value && !searchCenter.value) || v.distanceKm <= radiusKm.value))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+})
+
+function toggleView() {
+  const returningToDate = showAll.value
+  showAll.value = !showAll.value
+  pinSelected.value = null
+  activeGroupKey.value = ''
+  acceptedNote.value = ''
+  searchCenter.value = null
+  radiusKm.value = 1
+  selectedDate.value = returningToDate
+    ? new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }) : ''
+}
+
+function resetOverview() {
+  pinSelected.value = null
+  activeGroupKey.value = ''
+  acceptedNote.value = ''
+  searchCenter.value = null
+  radiusKm.value = 1
+  selectedDate.value = ''
+  if (!showAll.value) {
+    showAll.value = true
+  } else {
+    loadAll()
+  }
+}
+
+async function onDropPin(point) {
+  searchCenter.value = point
+  radiusKm.value = 1
+  pinSelected.value = null
+  activeGroupKey.value = ''
+  await loadAll()
+}
 
 // ---- "See all requests": group the visits by owner and request period (no date picked, so every date is in) ----
 const requestGroups = computed(() => {
   const groups = new Map()
   for (const v of filteredRequests.value) {
-    const key = `${v.ownerId}|${v.startDate}|${v.endDate}`
+    const key = groupKey(v)
     if (!groups.has(key)) groups.set(key, { ...v, key, visits: [] }) // the first visit supplies the owner, address and period
     groups.get(key).visits.push(v)
   }
@@ -80,6 +135,63 @@ const requestGroups = computed(() => {
 })
 
 const activeGroup = computed(() => requestGroups.value.find((g) => g.key === activeGroupKey.value))
+
+// same owner + same request period = same grouped request
+function groupKey(v) {
+  return `${v.ownerId}|${v.startDate}|${v.endDate}`
+}
+
+// the postal code is the last 6 digits of the address (e.g. "Blk 333, Singapore 520301")
+function postalKey(v) {
+  return v.postalCode || v.address?.match(/\b\d{6}\b/)?.[0] || `${v.lat},${v.lng}`
+}
+
+// the pins on the map: normally every visit, but in "See all" only the first (nearest) visit per postal code
+const mapRequests = computed(() => {
+  if (!showAll.value) return filteredRequests.value
+  const seen = new Set()
+  const pins = []
+  for (const v of filteredRequests.value) {
+    const k = postalKey(v)
+    if (!seen.has(k)) {
+      seen.add(k)
+      pins.push(v)
+    }
+  }
+  return pins
+})
+
+// clicking a pin: in "See all" it opens that location's grouped request, otherwise the single visit
+function onMapSelect(v) {
+  if (showAll.value) {
+    activeGroupKey.value = groupKey(v)
+    pinSelected.value = null
+  } else {
+    pinSelected.value = v
+  }
+}
+
+async function loadAll() {
+  loadingAll.value = true
+  loadAllError.value = ''
+  try {
+    const data = await auth.authorizedRequest(ALL_ENDPOINT)
+    nationwideVisits.value = data.visits
+  } catch (err) {
+    loadAllError.value = err.message
+  } finally {
+    loadingAll.value = false
+  }
+}
+
+// Changing filters clears details without changing the current view or search pin.
+watch(selectedDate, () => {
+  pinSelected.value = null
+  activeGroupKey.value = ''
+})
+watch(showAll, (on) => {
+  if (on) loadAll()
+})
 
 // up to 3 plant photos for the strip at the top of a grouped request
 function groupPhotos(g) {
@@ -144,6 +256,7 @@ async function acceptVisit(visit) {
   try {
     await auth.authorizedRequest(`/care-visits/${visit.visitId}/accept`, { method: 'POST' })
     allVisits.value = allVisits.value.filter((v) => v.visitId !== visit.visitId) // it is yours now
+    nationwideVisits.value = nationwideVisits.value.filter((v) => v.visitId !== visit.visitId)
     pinSelected.value = null
     acceptedNote.value = `You accepted the visit on ${formatDate(visit.visitDate)}.`
     toast('Visit accepted! It is now in My Sits.', 'success')
@@ -160,7 +273,7 @@ async function acceptVisit(visit) {
 </script>
 
 <template>
-  <h1>Find nearby</h1>
+  <h1>{{ showAll ? 'Find requests' : 'Find nearby' }}</h1>
   <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
   <!--
     filter bar section (Bootstrap):
@@ -171,7 +284,7 @@ async function acceptVisit(visit) {
   -->
   <div class="d-flex flex-column flex-md-row flex-wrap gap-4 my-3">
     <!-- text and slider stay side by side at every screen size; the slider shrinks when space runs out -->
-    <label class="distanceLabel">
+    <label v-if="!showAll || searchCenter" class="distanceLabel">
       <span class="distanceText">Distance: {{ formatDistance(radiusKm) }}</span>
       <span
         class="sliderWrap"
@@ -206,12 +319,13 @@ async function acceptVisit(visit) {
       class="allRequests align-self-stretch align-self-md-end"
       :class="{ isActive: showAll }"
       :aria-pressed="showAll"
-      @click="selectedDate = showAll ? todayYmd : ''; activeGroupKey = ''"
+      @click="toggleView"
     >
-      {{ showAll ? 'Back to date view' : 'See all requests' }}
+      {{ showAll ? 'Back to Find nearby' : 'See all requests' }}
     </button>
   </div>
 
+  <p v-if="showAll && !searchCenter">Click the map to search within 1 km of a new pin.</p>
   <p v-if="loading" role="status">Finding plants near you…</p>
 
   <div v-else-if="loadError" class="alert alert-danger" role="alert">
@@ -224,11 +338,17 @@ async function acceptVisit(visit) {
     <!-- map section, about 70% of the page -->
     <RequestMap
       class="mapArea"
-      :center="origin"
+      :center="searchCenter || origin"
+      :home="origin"
+      :overview="showAll && !searchCenter"
+      :search-pin="searchCenter"
+      @drop-pin="onDropPin"
+      @select-home="onDropPin(origin)"
+      @reset-overview="resetOverview"
       :radius-km="radiusKm"
-      :requests="filteredRequests"
-      :selected="pinSelected"
-      @select="pinSelected = $event"
+      :requests="mapRequests"
+      :selected="pinSelected || activeGroup || null"
+      @select="onMapSelect"
     />
 
     <!-- request section -->
@@ -242,6 +362,12 @@ async function acceptVisit(visit) {
 
         <!-- ===== See all requests: grouped by owner, whole request period ===== -->
         <template v-if="showAll">
+          <p v-if="loadingAll" role="status">Loading requests from across Singapore…</p>
+          <p v-else-if="loadAllError" class="text-danger" role="alert">
+            {{ loadAllError }}
+            <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="loadAll">Try again</button>
+          </p>
+          <template v-else>
           <!-- one grouped request opened: its owner, period and one card per open day -->
           <div v-if="activeGroup" class="detail">
             <button type="button" class="btn btn-sm btn-outline-secondary backBtn" @click="activeGroupKey = ''">
@@ -316,7 +442,7 @@ async function acceptVisit(visit) {
           <!-- the list of grouped requests, nearest first -->
           <template v-else>
             <p v-if="requestGroups.length === 0">
-              No requests within {{ formatDistance(radiusKm) }}. Try widening the distance.
+              No requests within {{ formatDistance(radiusKm) }}. Try widening the distance or changing the date.
             </p>
 
             <ul v-else class="requestList">
@@ -346,6 +472,7 @@ async function acceptVisit(visit) {
                 </div>
               </li>
             </ul>
+          </template>
           </template>
         </template>
 

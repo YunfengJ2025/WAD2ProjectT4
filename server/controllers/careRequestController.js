@@ -37,6 +37,9 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
   const plants = await Plant.find({ ownerId, plantId: { $in: plantIds } });
   if (plants.length !== plantIds.length)
     throw fail(404, "One or more selected plants were not found in your collection");
+  // Indoor plants cannot be included in a care request, including make-up requests.
+  if (plants.some((plant) => plant.isOutdoor === false))
+    throw fail(400, "Indoor plants cannot be requested");
   const plantDetails = new Map();
   for (const detail of Array.isArray(body.plantDetails) ? body.plantDetails : []) {
     const plantId = Number(detail.plantId);
@@ -50,19 +53,6 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
       amountToWater,
       careInstructions: String(detail.careInstructions || "").trim(),
     });
-// <<<<<<<<< Temporary merge branch 1
-    const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
-    return {
-      ...visit,
-      request: request ? { ...request, healthCheck: undefined } : null,   // sitters do not see this
-      items: detailedItems,
-      plants: visitPlants,
-      plant: visitPlants[0] || null,
-      owner: request ? ownerById.get(request.ownerId) || null : null,
-      action: detailedItems[0]?.action || "",
-      proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
-    };
-// =========
   }
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const startDate = datePattern.test(body.startDate || "")
@@ -149,6 +139,9 @@ exports.create = async (req, res) => {
     const plants = await Plant.find({ ownerId: req.userId, plantId: { $in: plantIds } });
     if (plants.length !== plantIds.length)
       throw fail(404, "One or more selected plants were not found in your collection");
+    // Reject indoor plants even when a client bypasses the selection form.
+    if (plants.some((plant) => plant.isOutdoor === false))
+      throw fail(400, "Indoor plants cannot be requested");
     const plantDetails = new Map();
     for (const detail of Array.isArray(req.body.plantDetails) ? req.body.plantDetails : []) {
       const plantId = Number(detail.plantId);

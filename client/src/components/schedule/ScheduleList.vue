@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import ScheduleDayCard from './ScheduleDayCard.vue'
+import { computed } from 'vue'
+import ScheduleGroup from './ScheduleGroup.vue'
 import ScheduleLegend from './ScheduleLegend.vue'
 import { useWeekRange } from '../../composables/schedule/useWeekRange'
 import WeekNav from './WeekNav.vue'
+import { groupByStatus } from '../../utils/wateringStatus'
 
 const props = defineProps({ 
     items: { 
@@ -12,7 +13,7 @@ const props = defineProps({
     }
 })
 
-const { slide, isCurrentWeek, startISO, endISO, shiftWeek, goToToday } = useWeekRange()
+const { slide, isCurrentWeek, startISO, endISO, shiftWeek, goToToday, isOpen, toggle } = useWeekRange()
 
 // only the items that fall inside the 7 days being shown (ISO dates compare correctly as text)
 const weekItems = computed(() =>
@@ -46,24 +47,9 @@ const grouped = computed(() => {
 
 })
 
-// which days the user has expanded, e.g. { '2026-11-02': true }
-const open = ref({})
-
-function toggle(date) {
-    open.value[date] = !open.value[date]
-}
-
-// forget what was expanded when paging to another week
-watch(startISO, () => {
-    open.value = {}
-})
-
 function isAllDone(dayItems) {
     return dayItems.length > 0 && doneCount(dayItems) === dayItems.length
 }
-
-const pendingItems = (dayItems) => dayItems.filter((item) => item.status !== 'done')
-const doneItems = (dayItems) => dayItems.filter((item) => item.status === 'done')
 
 function formatDate(iso) {
     // standardising T00:00:00 keep it in local time so the day does not shift
@@ -106,60 +92,24 @@ function hasChange(dayItems) {
           class="mb-3"
           :style="{ '--i': Math.min(index, 6) }"
         >
-          <h6
-            class="date-heading text-muted d-flex align-items-center justify-content-between"
-            :class="{ clickable: isAllDone(dayItems) }"
-            :role="isAllDone(dayItems) ? 'button' : null"
-            :tabindex="isAllDone(dayItems) ? 0 : null"
-            :aria-expanded="isAllDone(dayItems) ? !!open[date] : null"
-            @click="isAllDone(dayItems) && toggle(date)"
-            @keydown.enter="isAllDone(dayItems) && toggle(date)"
-            @keydown.space.prevent="isAllDone(dayItems) && toggle(date)"
-          >
-            <span>
-              <span v-if="isAllDone(dayItems)" class="chevron" :class="{ open: open[date] }">▸</span>
-              {{ formatDate(date) }}
-            </span>
-            <span
-              class="count-badge"
-              :class="{ changed: hasChange(dayItems), finished: isAllDone(dayItems) }"
-            >
+          <h6 class="date-heading text-muted d-flex align-items-center justify-content-between">
+            <span>{{ formatDate(date) }}</span>
+            <span class="count-badge" :class="{ changed: hasChange(dayItems), finished: isAllDone(dayItems) }">
               <template v-if="isAllDone(dayItems)">✅ All done</template>
               <template v-else-if="doneCount(dayItems)">{{ doneCount(dayItems) }}/{{ dayItems.length }} done</template>
               <template v-else>{{ dayItems.length }} 💧</template>
             </span>
           </h6>
 
-          <!-- plants still to water: always visible -->
-          <TransitionGroup name="card" tag="div" appear class="card-list d-flex flex-column gap-2">
-            <ScheduleDayCard
-              v-for="item in pendingItems(dayItems)"
-              :key="item.requestItemId"
-              :item="item"
-              layout="row"
-            />
-          </TransitionGroup>
-
-          <!-- partly done day: one slim row that folds the finished plants -->
-          <button
-            v-if="doneCount(dayItems) && !isAllDone(dayItems)"
-            class="done-fold"
-            :aria-expanded="!!open[date]"
-            @click="toggle(date)"
-          >
-            <span class="chevron" :class="{ open: open[date] }">▸</span>
-            ✅ {{ doneCount(dayItems) }} done
-          </button>
-
-          <!-- finished plants: only shown when expanded -->
-          <TransitionGroup name="card" tag="div" class="card-list d-flex flex-column gap-2">
-            <ScheduleDayCard
-              v-for="item in (open[date] ? doneItems(dayItems) : [])"
-              :key="item.requestItemId"
-              :item="item"
-              layout="row"
-            />
-          </TransitionGroup>
+          <ScheduleGroup
+            v-for="group in groupByStatus(dayItems)"
+            :key="group.status"
+            :status="group.status"
+            :items="group.items"
+            :open="isOpen(date, group.status)"
+            layout="row"
+            @toggle="toggle(date, group.status)"
+          />
         </section>
 
         <p v-if="!grouped.length" class="text-center text-muted my-4">
@@ -191,33 +141,6 @@ function hasChange(dayItems) {
   backdrop-filter: blur(4px);
 }
 
-/* ---------- collapsible days ---------- */
-.date-heading.clickable { cursor: pointer; user-select: none; }
-.date-heading.clickable:hover { background: rgba(255, 255, 255, 0.98); }
-.date-heading.clickable:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-
-.chevron {
-  display: inline-block;
-  margin-right: 0.35rem;
-  transition: transform 0.2s ease;
-}
-.chevron.open { transform: rotate(90deg); }
-
-.done-fold {
-  display: block;
-  width: 100%;
-  margin: 0.5rem 0;
-  padding: 0.35rem 0.75rem;
-  border: 1px dashed rgba(22, 163, 74, 0.5);
-  border-radius: var(--radius-md);
-  background: rgba(22, 163, 74, 0.1);
-  color: #14532d;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: left;
-}
-.done-fold:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-
 /* ---------- count badge (same look as the calendar) ---------- */
 .count-badge {
   font-size: 0.75rem;
@@ -236,32 +159,8 @@ function hasChange(dayItems) {
   background: rgba(22, 163, 74, 0.25);
 }
 
-/* ---------- cards entering / leaving a day (TransitionGroup) ---------- */
-.card-list { position: relative; } /* so a leaving card can be taken out of the flow */
-
-.card-enter-active {
-  /* --i is the column number, so columns ripple in left to right */
-  animation: cardIn 0.5s var(--transition-bounce) backwards;
-  animation-delay: calc(var(--i) * 70ms);
-}
-.card-leave-active {
-  position: absolute;     /* lets the remaining cards close the gap smoothly */
-  width: 100%;
-  animation: cardOut 0.25s ease forwards;
-}
-
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(-14px) scale(0.95); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes cardOut {
-  to { opacity: 0; transform: translateY(10px) scale(0.95); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .card-enter-active, .card-leave-active,
   .week-next-enter-active, .week-next-leave-active,
   .week-prev-enter-active, .week-prev-leave-active { animation: none; transition: none; }
-  .chevron { transition: none; }
 }
 </style>

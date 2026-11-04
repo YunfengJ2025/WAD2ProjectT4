@@ -82,6 +82,7 @@ async function sweepVisits(now = new Date()) {
           "visit_missed",
           `The sitter missed your ${date} visit. ${request.tokenReward} tokens were returned. You can request a make-up visit.`,
           candidate.visitId,
+          request.requestId,
         ),
       ]);
 
@@ -101,8 +102,9 @@ async function sweepVisits(now = new Date()) {
       await notifyUser(
         request.ownerId,
         "visit_expired",
-        `No sitter accepted your ${singaporeDateLabel(candidate.visitDate)} visit. ${request.tokenReward} tokens were returned. You can request a make-up visit.`,
+        `No sitter accepted your ${singaporeDateLabel(candidate.visitDate)} visit. ${request.tokenReward} tokens were returned.`,
         candidate.visitId,
+        request.requestId,
       );
     }
 
