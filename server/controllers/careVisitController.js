@@ -5,6 +5,7 @@ const PhotoProof = require("../models/photoProofModel");
 const { Plant } = require("../models/plantModel");
 const { User, releaseTokens } = require("../models/userModel");
 const { runHealthChecks } = require("../services/plantHealth");
+const { getRequestSteps } = require("../utils/careSteps"); // Care checklist (Carolyn)
 const {
   notifyUser,
   burnSitterPenalty,
@@ -46,7 +47,8 @@ async function enrichVisits(visits) {
   const ownerIds = [...new Set(requests.map((request) => request.ownerId))];
   const [plants, owners] = await Promise.all([
     Plant.find({ plantId: { $in: plantIds } })
-      .select("plantId plantName photoUrl plantLocation")
+      // Care checklist (Carolyn): wateringInfo.notes so the sitter sees the same steps the server checks
+      .select("plantId plantName photoUrl plantLocation wateringInfo.notes")
       .lean(),
     User.find({ userId: { $in: ownerIds } })
       // Include the public profile photo for the shared UserAvatar component.
@@ -271,7 +273,8 @@ exports.addVisitProof = async (req, res) => {
     if (!request) throw fail(404, "Active care request not found");
     itemDocs = await RequestItem.find({ visitId: visitDoc.visitId });
     if (!itemDocs.length) throw fail(404, "Visit plant items not found");
-    originalItemStates = itemDocs.map((item) => ({ action: item.action, status: item.status, dueAt: item.dueAt }));
+    // Care checklist (Carolyn): completedSteps added so a failed upload puts it back too
+    originalItemStates = itemDocs.map((item) => ({ action: item.action, status: item.status, dueAt: item.dueAt, completedSteps: item.completedSteps }));
     const filesByPlant = new Map((req.files || []).map((file) => [
       /^photo_\d+$/.test(file.fieldname) ? Number(file.fieldname.slice(6)) : NaN,
       file,
@@ -291,6 +294,30 @@ exports.addVisitProof = async (req, res) => {
     }
     if (filesByPlant.size !== itemDocs.length)
       throw fail(400, "Upload exactly one proof photo for each plant in this visit");
+
+    // Care checklist (Carolyn): every care step must be ticked before the visit counts.
+    // completedSteps is sent as JSON, e.g. { "5": ["Water the soil", "Wipe the leaves"] }
+    let completedSteps;
+    try {
+      completedSteps = JSON.parse(req.body.completedSteps || "{}");
+    } catch {
+      throw fail(400, "Care checklist was not submitted correctly");
+    }
+    if (!completedSteps || typeof completedSteps !== "object" || Array.isArray(completedSteps))
+      throw fail(400, "Care checklist was not submitted correctly");
+    const checklistPlants = await Plant.find({ plantId: { $in: itemDocs.map((item) => item.plantId) } })
+      .select("plantId plantName wateringInfo.notes")
+      .lean();
+    const checklistPlantById = new Map(checklistPlants.map((plant) => [plant.plantId, plant]));
+    const tickedByPlant = new Map();
+    for (const item of itemDocs) {
+      const plant = checklistPlantById.get(item.plantId);
+      const steps = getRequestSteps(item, plant);
+      const ticked = Array.isArray(completedSteps[item.plantId]) ? completedSteps[item.plantId].map(String) : [];
+      if (steps.some((step) => !ticked.includes(step)))
+        throw fail(400, `Tick every care step for ${plant?.plantName || `plant #${item.plantId}`} first`);
+      tickedByPlant.set(item.plantId, steps); // save only the real steps
+    }
     const visitDate = new Date();
     const { uploadImage, FOLDERS } = require("../config/cloudinary");
     for (const item of itemDocs) {
@@ -305,6 +332,7 @@ exports.addVisitProof = async (req, res) => {
       });
       proofDocs.push(proof);
       item.action = String(actions[item.plantId]).trim();
+      item.completedSteps = tickedByPlant.get(item.plantId) || []; // Care checklist (Carolyn)
       item.status = "completed";
       item.dueAt = visitDate;
       await item.save();
@@ -368,6 +396,7 @@ exports.addVisitProof = async (req, res) => {
       item.action = original.action;
       item.status = original.status;
       item.dueAt = original.dueAt;
+      item.completedSteps = original.completedSteps; // Care checklist (Carolyn)
       await item.save();
     }));
     if (completionCommitted && visitDoc) {
