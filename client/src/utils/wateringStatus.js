@@ -6,7 +6,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 // Sort order for the list: lower number = shown first
-export const STATUS_ORDER = { overdue: 0, due: 1, upcoming: 2 }
+export const STATUS_ORDER = { overdue: 0, due: 1, skipped: 2, upcoming: 3, done: 4 }
 
 // Same date at 00:00, so we compare calendar days and ignore the time
 export const startOfDay = (date) => {
@@ -77,4 +77,20 @@ export function compareByWateringStatus(a, b) {
     STATUS_ORDER[a.status.key] - STATUS_ORDER[b.status.key] ||
     a.status.daysUntil - b.status.daysUntil
   )
+}
+
+// Splits one day's schedule items into [{ status, items }] groups, most urgent first (same order as STATUS_ORDER).
+export function groupByStatus(items) {
+  const groups = []
+  for (const item of items) {
+    let group = groups.find((g) => g.status === item.status)
+    if (!group) {
+      group = { status: item.status, items: [] }
+      groups.push(group)
+    }
+    group.items.push(item)
+  }
+  // a status we don't know about goes last instead of disappearing
+  const rank = (status) => STATUS_ORDER[status] ?? Object.keys(STATUS_ORDER).length
+  return groups.sort((a, b) => rank(a.status) - rank(b.status))
 }
