@@ -13,22 +13,42 @@ beforeEach(() => {
   auth = useAuthStore(pinia)
   auth.accessToken = 'token'
   vi.spyOn(auth, 'refreshUser').mockResolvedValue()
-  auth.user = { userId: 1, userName: 'Gardener', email: 'garden@example.com', block: '123A',
-    unitNumber: '#05-12', postalCode: '123456', tokenBalance: 50, photoUrl: '', createdAt: '2026-01-01' }
+  auth.user = {
+    userId: 1,
+    userName: 'Gardener',
+    email: 'garden@example.com',
+    block: '123A',
+    unitNumber: '#05-12',
+    postalCode: '123456',
+    tokenBalance: 50,
+    photoUrl: '',
+    createdAt: '2026-01-01',
+  }
   vi.stubGlobal('fetch', vi.fn())
   URL.createObjectURL = vi.fn(() => 'blob:preview')
   URL.revokeObjectURL = vi.fn()
-  wrapper = mount(ProfileView, { global: { plugins: [pinia], stubs: {
-    RouterLink: RouterLinkStub,
-    ProfilePosts: { template: '<section id="profile-posts">Posts</section>' },
-    ProfileReviews: { template: '<section id="profile-reviews">Reviews</section>' },
-  } } })
+  wrapper = mount(ProfileView, {
+    global: {
+      plugins: [pinia],
+      stubs: {
+        RouterLink: RouterLinkStub,
+        ProfilePosts: { template: '<section id="profile-posts">Posts</section>' },
+        ProfileReviews: { template: '<section id="profile-reviews">Reviews</section>' },
+      },
+    },
+  })
 })
-afterEach(() => { wrapper.unmount(); vi.unstubAllGlobals() })
+afterEach(() => {
+  wrapper.unmount()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+  sessionStorage.clear()
+})
 const reply = (user) => ({ ok: true, status: 200, json: async () => ({ user }) })
 
 it('saves an optional bio below the user icon and allows it to be cleared', async () => {
-  const edit = () => wrapper.findAll('button').find((button) => ['Add a bio', 'Edit bio'].includes(button.text()))
+  const edit = () =>
+    wrapper.findAll('button').find((button) => ['Add a bio', 'Edit bio'].includes(button.text()))
   await edit().trigger('click')
   await wrapper.get('#profile-bio').setValue('I love growing herbs.')
   fetch.mockResolvedValueOnce(reply({ ...auth.user, bio: 'I love growing herbs.' }))
@@ -45,7 +65,14 @@ it('saves an optional bio below the user icon and allows it to be cleared', asyn
 })
 
 it('includes reviews navigation and highlights only the section reached by scrolling', async () => {
-  const positions = { 'about-me': -500, 'personal-details': 20, address: 300, 'profile-reviews': 600, 'profile-posts': 900 }
+  const positions = {
+    'about-me': -500,
+    'personal-details': 20,
+    address: 300,
+    'profile-reviews': 600,
+    'profile-posts': 900,
+    'profile-badges': 1200,
+  }
   for (const id of Object.keys(positions)) {
     wrapper.get(`#${id}`).element.getBoundingClientRect = () => ({ top: positions[id] })
   }
@@ -62,21 +89,27 @@ it('includes reviews navigation and highlights only the section reached by scrol
   })
   expect(wrapper.findAll('.profile-sidebar .selected')).toHaveLength(1)
   expect(wrapper.get('.profile-sidebar [aria-current="location"]').text()).toContain('My reviews')
-  expect(wrapper.find('.profile-sidebar a[href="#profile-badges"]').exists()).toBe(false)
+  // The badges section now exists even before a user earns a badge.
+  expect(wrapper.find('.profile-sidebar a[href="#profile-badges"]').exists()).toBe(true)
   auth.user.badges = [{ id: 'first-care', name: 'First care', icon: '✦' }]
   await flushPromises()
   expect(wrapper.get('.profile-sidebar a[href="#profile-badges"]').text()).toContain('My badges')
-  wrapper.get('#profile-badges').element.getBoundingClientRect = () => ({ top: 20 })
+  positions['profile-badges'] = 20
   positions['profile-reviews'] = -400
   positions['profile-posts'] = -100
   window.dispatchEvent(new Event('scroll'))
   await vi.waitFor(() => {
-    expect(wrapper.get('.profile-sidebar [aria-current="location"]').attributes('href')).toBe('#profile-badges')
+    expect(wrapper.get('.profile-sidebar [aria-current="location"]').attributes('href')).toBe(
+      '#profile-badges',
+    )
   })
   expect(wrapper.findAll('.profile-sidebar .selected')).toHaveLength(1)
 })
 async function pick(file) {
-  Object.defineProperty(wrapper.get('#profile-photo').element, 'files', { configurable: true, value: [file] })
+  Object.defineProperty(wrapper.get('#profile-photo').element, 'files', {
+    configurable: true,
+    value: [file],
+  })
   await wrapper.get('#profile-photo').trigger('change')
 }
 
@@ -108,7 +141,9 @@ it('previews and uploads a photo without forcing a multipart Content-Type header
   const file = new File(['image'], 'avatar.png', { type: 'image/png' })
   await pick(file)
   expect(wrapper.getComponent(UserAvatar).props('user').photoUrl).toBe('blob:preview')
-  fetch.mockResolvedValueOnce(reply({ ...auth.user, photoUrl: 'https://images.example/avatar.png' }))
+  fetch.mockResolvedValueOnce(
+    reply({ ...auth.user, photoUrl: 'https://images.example/avatar.png' }),
+  )
   await wrapper.get('.photo-actions .btn-primary').trigger('click')
   await flushPromises()
   const [url, options] = fetch.mock.calls[0]
@@ -133,7 +168,11 @@ it('rejects invalid photos and releases a cancelled preview', async () => {
 
 it('keeps the previous saved avatar and reports upload errors', async () => {
   await pick(new File(['image'], 'avatar.png', { type: 'image/png' }))
-  fetch.mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({ message: 'Could not upload photo' }) })
+  fetch.mockResolvedValueOnce({
+    ok: false,
+    status: 502,
+    json: async () => ({ message: 'Could not upload photo' }),
+  })
   await wrapper.get('.photo-actions .btn-primary').trigger('click')
   await flushPromises()
   expect(wrapper.get('.feedback[role="alert"]').text()).toContain('Could not upload')

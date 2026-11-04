@@ -1044,6 +1044,19 @@
   align-items: center; /* Align the heading vertically with the create button. */
   flex-wrap: wrap; /* Let controls move to another row when horizontal space is limited. */
 } /* End the heading adjustment. */
+/* Keep management navigation secondary to creating a new community post. */
+.community-feed-actions .community-my-posts-button {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--color-border-hover);
+  border-radius: 12px;
+  min-height: 44px;
+}
+/* Reinforce pointer feedback without changing the navigation target. */
+.community-feed-actions .community-my-posts-button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
 .community-feed-actions { /* Group the post creation action beside the feed heading. */
   display: flex; /* Place the controls in a horizontal row. */
   align-items: center; /* Vertically center the label beside the button. */
