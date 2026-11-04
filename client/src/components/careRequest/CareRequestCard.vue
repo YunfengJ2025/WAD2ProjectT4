@@ -210,7 +210,7 @@ function healthLine(item) {
   padding: 1rem 1.1rem;
   margin: 0 0 0.9rem;
   border: 1px solid #e2e8e2;
-  border-left: 5px solid var(--tone);
+  border-top: 5px solid var(--tone);
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 4px 14px #183c2410;

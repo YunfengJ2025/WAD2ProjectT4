@@ -104,6 +104,15 @@ function formatDate(value, includeTime = false) {
   return new Intl.DateTimeFormat('en-SG', options).format(new Date(value))
 }
 
+function formatOwnerAddress(owner) {
+  if (!owner) return ''
+  return [
+    owner.block ? `Blk ${owner.block}` : '',
+    owner.unitNumber,
+    owner.postalCode ? `Singapore ${owner.postalCode}` : '',
+  ].filter(Boolean).join(', ')
+}
+
 // A watcher also reloads the page when navigation changes only the visit ID.
 // Cleanup prevents an older response from replacing the next visit's details.
 watch(
@@ -238,6 +247,9 @@ async function submitReview() {
                 <small v-else>No ratings yet</small>
               </div>
             </div>
+            <p v-if="visit.owner?.block" class="participant-address">
+              <strong>Owner address:</strong> {{ formatOwnerAddress(visit.owner) }}
+            </p>
           </section>
 
           <!-- An accepted visit is the model's equivalent of an in-progress visit. -->
@@ -549,6 +561,13 @@ async function submitReview() {
 }
 .participant-block p {
   margin-bottom: 0;
+}
+.participant-address {
+  margin-top: 0.65rem;
+  color: #34463a;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .participant-rating {
   /* Keep the numeric score beside the stars to reduce the card height. */

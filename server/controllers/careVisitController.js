@@ -482,6 +482,13 @@ exports.getVisitDetail = async (req, res) => {
     if (!participant && !available) {
       throw fail(404, "Visit not found");
     }
+    // Include the owner's full address only for a visit participant.
+    if (participant && detail.owner) {
+      const ownerAddress = await User.findOne({ userId: detail.owner.userId })
+        .select("userId userName photoUrl block unitNumber postalCode -_id")
+        .lean();
+      if (ownerAddress) detail.owner = { ...detail.owner, ...ownerAddress };
+    }
     // Only public profile fields are needed to identify the sitter.
     detail.sitter = await User.findOne({ userId: visit.sitterId })
       .select("userId userName photoUrl -_id")
