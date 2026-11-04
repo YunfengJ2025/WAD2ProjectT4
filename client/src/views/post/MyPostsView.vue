@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
@@ -48,7 +49,8 @@ async function remove() {
         >+</RouterLink
       >
     </header>
-    <p v-if="store.loading" role="status">Loading your posts…</p>
+    <!-- Use the shared tree while retrieving the user's posts. -->
+    <Loading v-if="store.loading" label="Loading your posts…" />
     <div v-else-if="store.error" role="alert">
       <p>{{ store.error }}</p>
       <button class="btn" @click="store.fetchPosts">Try again</button>

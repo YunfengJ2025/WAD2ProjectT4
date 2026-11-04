@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -37,7 +38,8 @@ const average = computed(() =>
 <template>
   <main class="public-profile profile-shell">
     <button type="button" class="back-link" @click="goBack">← Back</button>
-    <p v-if="store.loading" class="state" role="status">Loading profile…</p>
+    <!-- Keep the same loading feedback as the community and personal profile sections. -->
+    <Loading v-if="store.loading" label="Loading profile…" />
     <div v-else-if="store.error" class="state" role="alert">
       <h1>We couldn't load this profile</h1>
       <p>{{ store.error }}</p>

@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useLikesStore } from '@/stores/likes'
@@ -24,7 +25,8 @@ function goBack() {
         <p class="community-muted">Your liked posts, with the most recent likes first.</p>
       </div>
     </header>
-    <p v-if="likes.loading" class="community-state" role="status">Loading liked posts…</p>
+    <!-- Match the loading feedback used by the other post pages. -->
+    <Loading v-if="likes.loading" label="Loading liked posts…" />
     <div v-else-if="likes.error" class="community-panel community-state" role="alert">
       <p>{{ likes.error }}</p>
       <button class="btn" @click="likes.fetchLikes(true)">Try again</button>
