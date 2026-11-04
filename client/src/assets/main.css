@@ -291,8 +291,10 @@ img {
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* (Carolyn) testing: plain --bg instead of the moving gradient */
-  background: var(--bg);
+  /* (Carolyn) testing: pale sky at the top fading into mint, like the landing page
+     (sky above, grass below). Fixed layer, so it stays put while you scroll.
+     Before this test: background: var(--bg); */
+  background: linear-gradient(to bottom, #d6ecf8 0%, #e6f3f6 35%, var(--bg) 70%);
   /* Old moving gradient:
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #e0f2fe 80%, #fef3c7 100%);
   background-size: 400% 400%;

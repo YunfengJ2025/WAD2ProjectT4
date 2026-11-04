@@ -8,7 +8,6 @@ import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
 import PlantHealthPanel from '@/components/careRequest/PlantHealthPanel.vue'
-import plantPlaceholder from '@/assets/plant.png'
 
 // Let the parent tabs show request creation and the owner's request list separately.
 const props = defineProps({
@@ -143,9 +142,6 @@ const groups = computed(() =>
   GROUPS.map((group) => ({ ...group, requests: owned.value.filter((request) => groupOf(request) === group.key) })),
 )
 const shown = computed(() => groups.value.find((group) => group.key === filter.value)?.requests ?? [])
-// the other groups that have something in them, shown as folded strips under the list
-const others = computed(() => groups.value.filter((group) => group.key !== filter.value && group.requests.length))
-
 // the owner opened a health result: save that it has been seen (if this fails it simply stays marked new)
 async function markHealthSeen(check) {
   try {
@@ -158,11 +154,11 @@ async function markHealthSeen(check) {
 </script>
 
 <template>
-  <main class="care-page">
+  <main class="care-page" :class="{ 'mine-page': props.section === 'mine' }">
     <RouterLink v-if="props.section === 'create'" to="/requests" class="back-link">← My requests</RouterLink>
     <header class="page-heading">
       <div>
-        <h1>{{ props.section === 'mine' ? 'My requests' : 'New Requests' }}</h1>
+        <h1>{{ props.section === 'mine' ? 'My Requests' : 'New Requests' }}</h1>
         <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
         <p v-else>View and manage the care requests you have posted.</p>
       </div>
@@ -214,37 +210,18 @@ async function markHealthSeen(check) {
         <PlantHealthPanel :requests="owned" @seen="markHealthSeen" />
 
         <p v-if="!shown.length" class="empty">No {{ filter }} requests.</p>
-        <CareRequestCard
-          v-for="request in shown"
-          :key="request.requestId"
-          :request="request"
-          :busy="cancellingRequestId === request.requestId"
-          :makeup-busy-visit-id="makeupBusyVisitId"
-          @cancel-request="cancelRequest"
-          @makeup-request="requestMakeup"
-        />
+        <div v-if="shown.length" class="request-grid">
+          <CareRequestCard
+            v-for="request in shown"
+            :key="request.requestId"
+            :request="request"
+            :busy="cancellingRequestId === request.requestId"
+            :makeup-busy-visit-id="makeupBusyVisitId"
+            @cancel-request="cancelRequest"
+            @makeup-request="requestMakeup"
+          />
+        </div>
 
-        <!-- the other groups, folded: click one to switch to it -->
-        <button
-          v-for="group in others"
-          :key="group.key"
-          type="button"
-          class="fold"
-          :class="`fold-${group.key}`"
-          @click="filter = group.key"
-        >
-          <span>▸ {{ group.label }} · {{ group.requests.length }}</span>
-          <span class="thumbs" aria-hidden="true">
-            <img
-              v-for="request in group.requests.slice(0, 4)"
-              :key="request.requestId"
-              :src="request.plants?.[0]?.photoUrl || plantPlaceholder"
-              alt=""
-              @error="$event.target.src = plantPlaceholder"
-            />
-            <span v-if="group.requests.length > 4" class="more">+{{ group.requests.length - 4 }}</span>
-          </span>
-        </button>
       </template>
     </section>
   </main>
@@ -258,6 +235,7 @@ h1 { font-weight: 700; }
 .panel h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .requests-list h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .requests-list { margin-top: 1rem; }
+.mine-page .request-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1rem; align-items: start; }
 .empty { color: #59665c; }
 
 .page-heading p { margin: 0; }
@@ -272,15 +250,7 @@ h1 { font-weight: 700; }
 .pill:hover { background: #f0f8f1; }
 .pill.on { border-color: #245b34; background: #245b34; color: #fff; }
 .pill.on b { color: #fff; }
-.pill:focus-visible, .fold:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-
-/* folded strips for the other groups */
-.fold { --tone: #6c757d; --tone-bg: rgba(108, 117, 125, 0.08); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; margin-bottom: 0.6rem; padding: 0.55rem 0.9rem; border: 1px dashed var(--tone); border-radius: 12px; background: var(--tone-bg); color: var(--tone); font-size: 0.9rem; font-weight: 600; text-align: left; cursor: pointer; }
-.fold:hover { filter: brightness(0.97); }
-.fold-completed { --tone: #198754; --tone-bg: rgba(22, 163, 74, 0.08); }
-.thumbs { display: flex; align-items: center; }
-.thumbs img, .thumbs .more { width: 30px; height: 30px; margin-left: -8px; border: 2px solid #fff; border-radius: 50%; object-fit: cover; background: #fff; }
-.thumbs .more { display: grid; place-items: center; color: #4d5650; font-size: 0.7rem; }
+.pill:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) { .pill { transition: none; } }
 </style>

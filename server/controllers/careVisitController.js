@@ -5,6 +5,7 @@ const PhotoProof = require("../models/photoProofModel");
 const { Plant } = require("../models/plantModel");
 const { User, releaseTokens } = require("../models/userModel");
 const { runHealthChecks } = require("../services/plantHealth");
+const { getRequestSteps } = require("../utils/careSteps"); // Care checklist (Carolyn)
 const {
   notifyUser,
   burnSitterPenalty,
@@ -30,7 +31,7 @@ function handleError(err, res) {
 }
 
 // Assemble visits with their request, owner, plants, per-plant proofs, and make-up link.
-async function enrichVisits(visits) {
+async function enrichVisits(visits, includeOwnerAddress = false) {
   if (!visits.length) return [];
   const requestIds = [...new Set(visits.map((visit) => visit.requestId))];
   const visitIds = visits.map((visit) => visit.visitId);
@@ -46,11 +47,12 @@ async function enrichVisits(visits) {
   const ownerIds = [...new Set(requests.map((request) => request.ownerId))];
   const [plants, owners] = await Promise.all([
     Plant.find({ plantId: { $in: plantIds } })
-      .select("plantId plantName photoUrl plantLocation")
+      // Care checklist (Carolyn): wateringInfo.notes so the sitter sees the same steps the server checks
+      .select("plantId plantName photoUrl plantLocation wateringInfo.notes")
       .lean(),
     User.find({ userId: { $in: ownerIds } })
       // Include the public profile photo for the shared UserAvatar component.
-      .select("userId userName photoUrl block postalCode")
+      .select("userId userName photoUrl block unitNumber postalCode")
       .lean(),
   ]);
   const requestById = new Map(requests.map((request) => [request.requestId, request]));
@@ -76,13 +78,17 @@ async function enrichVisits(visits) {
       };
     });
     const visitPlants = detailedItems.map((item) => item.plant).filter(Boolean);
+    const owner = request ? ownerById.get(request.ownerId) || null : null;
     return {
       ...visit,
       request: request ? { ...request, healthCheck: undefined } : null, // sitters must not see this
       items: detailedItems,
       plants: visitPlants,
       plant: visitPlants[0] || null,
-      owner: request ? ownerById.get(request.ownerId) || null : null,
+      // Reveal the full address only on the signed-in sitter's own visit lists.
+      owner: owner && !includeOwnerAddress
+        ? { userId: owner.userId, userName: owner.userName, photoUrl: owner.photoUrl, block: owner.block, postalCode: owner.postalCode }
+        : owner,
       action: detailedItems[0]?.action || "",
       proofUrl: detailedItems.find((item) => item.proofUrl)?.proofUrl || "",
       // Let owners see when a replacement request has already been made.
@@ -259,19 +265,26 @@ exports.addVisitProof = async (req, res) => {
   const proofDocs = [];
   let itemDocs = [];
   let originalItemStates = [];
+  let plantDocs = [];
+  let originalPlantWateredDates = [];
   let completionCommitted = false;
   try {
     const visitId = Number(req.params.visitId);
     visitDoc = await CareVisit.findOne({ visitId, sitterId: req.userId, status: "accepted" });
     if (!visitDoc) throw fail(404, "Accepted visit not found");
-    // Proof is accepted only through the end of the scheduled Singapore day.
-    if (new Date() > singaporeDayBounds(visitDoc.visitDate).dayEnd)
+    // Require proof to be submitted during this visit's scheduled Singapore day.
+    const scheduledWindow = singaporeDayBounds(visitDoc.visitDate);
+    const submissionStartedAt = new Date();
+    if (submissionStartedAt < scheduledWindow.dayStart)
+      throw fail(409, "This visit can only be completed on its scheduled date");
+    if (submissionStartedAt > scheduledWindow.dayEnd)
       throw fail(409, "The visit period has ended and can no longer be submitted");
     const request = await CareRequest.findOne({ requestId: visitDoc.requestId, status: "in_progress" });
     if (!request) throw fail(404, "Active care request not found");
     itemDocs = await RequestItem.find({ visitId: visitDoc.visitId });
     if (!itemDocs.length) throw fail(404, "Visit plant items not found");
-    originalItemStates = itemDocs.map((item) => ({ action: item.action, status: item.status, dueAt: item.dueAt }));
+    // Care checklist (Carolyn): completedSteps added so a failed upload puts it back too
+    originalItemStates = itemDocs.map((item) => ({ action: item.action, status: item.status, dueAt: item.dueAt, completedSteps: item.completedSteps }));
     const filesByPlant = new Map((req.files || []).map((file) => [
       /^photo_\d+$/.test(file.fieldname) ? Number(file.fieldname.slice(6)) : NaN,
       file,
@@ -291,6 +304,30 @@ exports.addVisitProof = async (req, res) => {
     }
     if (filesByPlant.size !== itemDocs.length)
       throw fail(400, "Upload exactly one proof photo for each plant in this visit");
+
+    // Care checklist (Carolyn): every care step must be ticked before the visit counts.
+    // completedSteps is sent as JSON, e.g. { "5": ["Water the soil", "Wipe the leaves"] }
+    let completedSteps;
+    try {
+      completedSteps = JSON.parse(req.body.completedSteps || "{}");
+    } catch {
+      throw fail(400, "Care checklist was not submitted correctly");
+    }
+    if (!completedSteps || typeof completedSteps !== "object" || Array.isArray(completedSteps))
+      throw fail(400, "Care checklist was not submitted correctly");
+    const checklistPlants = await Plant.find({ plantId: { $in: itemDocs.map((item) => item.plantId) } })
+      .select("plantId plantName wateringInfo.notes")
+      .lean();
+    const checklistPlantById = new Map(checklistPlants.map((plant) => [plant.plantId, plant]));
+    const tickedByPlant = new Map();
+    for (const item of itemDocs) {
+      const plant = checklistPlantById.get(item.plantId);
+      const steps = getRequestSteps(item, plant);
+      const ticked = Array.isArray(completedSteps[item.plantId]) ? completedSteps[item.plantId].map(String) : [];
+      if (steps.some((step) => !ticked.includes(step)))
+        throw fail(400, `Tick every care step for ${plant?.plantName || `plant #${item.plantId}`} first`);
+      tickedByPlant.set(item.plantId, steps); // save only the real steps
+    }
     const visitDate = new Date();
     const { uploadImage, FOLDERS } = require("../config/cloudinary");
     for (const item of itemDocs) {
@@ -305,6 +342,7 @@ exports.addVisitProof = async (req, res) => {
       });
       proofDocs.push(proof);
       item.action = String(actions[item.plantId]).trim();
+      item.completedSteps = tickedByPlant.get(item.plantId) || []; // Care checklist (Carolyn)
       item.status = "completed";
       item.dueAt = visitDate;
       await item.save();
@@ -325,7 +363,10 @@ exports.addVisitProof = async (req, res) => {
       console.warn("Weather check during visit completion skipped:", weatherErr.message);
     }
 
-    if (new Date() > singaporeDayBounds(visitDoc.visitDate).dayEnd)
+    const completionTime = new Date();
+    if (completionTime < scheduledWindow.dayStart)
+      throw fail(409, "This visit can only be completed on its scheduled date");
+    if (completionTime > scheduledWindow.dayEnd)
       throw fail(409, "The visit period ended before proof could be saved");
     // Complete only if the scheduled visit is still accepted; the sweeper may have expired it.
     visitDoc = await CareVisit.findOneAndUpdate(
@@ -335,6 +376,15 @@ exports.addVisitProof = async (req, res) => {
     );
     if (!visitDoc) throw fail(409, "The visit is no longer available to complete");
     completionCommitted = true;
+    // The plant schedule uses lastWateredAt plus frequencyDays for its next due date.
+    plantDocs = await Plant.find({ plantId: { $in: itemDocs.map((item) => item.plantId) } });
+    originalPlantWateredDates = plantDocs.map((plant) => plant.lastWateredAt);
+    const wateringUpdates = await Promise.allSettled(plantDocs.map(async (plant) => {
+      plant.lastWateredAt = visitDate;
+      await plant.save();
+    }));
+    const failedWateringUpdate = wateringUpdates.find((result) => result.status === "rejected");
+    if (failedWateringUpdate) throw failedWateringUpdate.reason;
     const remaining = await CareVisit.exists({ requestId: request.requestId, status: { $in: ["open", "accepted"] } });
     if (!remaining) {
       request.status = "completed";
@@ -368,7 +418,13 @@ exports.addVisitProof = async (req, res) => {
       item.action = original.action;
       item.status = original.status;
       item.dueAt = original.dueAt;
+      item.completedSteps = original.completedSteps; // Care checklist (Carolyn)
       await item.save();
+    }));
+    // Restore plant schedules if any part of visit completion fails.
+    await Promise.allSettled(plantDocs.map(async (plant, index) => {
+      plant.lastWateredAt = originalPlantWateredDates[index];
+      await plant.save();
     }));
     if (completionCommitted && visitDoc) {
       await CareVisit.updateOne(
@@ -388,7 +444,7 @@ exports.addVisitProof = async (req, res) => {
 exports.myVisits = async (req, res) => {
   try {
     const visits = await CareVisit.find({ sitterId: req.userId }).sort({ visitDate: -1 }).lean();
-    res.json({ visits: await enrichVisits(visits) });
+    res.json({ visits: await enrichVisits(visits, true) });
   } catch (err) {
     handleError(err, res);
   }
@@ -399,7 +455,7 @@ exports.myAssignments = async (req, res) => {
     const visits = await CareVisit.find({ sitterId: req.userId, status: "accepted" })
       .sort({ visitDate: 1 })
       .lean();
-    res.json({ visits: await enrichVisits(visits) });
+    res.json({ visits: await enrichVisits(visits, true) });
   } catch (err) {
     handleError(err, res);
   }
@@ -425,6 +481,13 @@ exports.getVisitDetail = async (req, res) => {
       ["open", "in_progress"].includes(detail.request?.status);
     if (!participant && !available) {
       throw fail(404, "Visit not found");
+    }
+    // Include the owner's full address only for a visit participant.
+    if (participant && detail.owner) {
+      const ownerAddress = await User.findOne({ userId: detail.owner.userId })
+        .select("userId userName photoUrl block unitNumber postalCode -_id")
+        .lean();
+      if (ownerAddress) detail.owner = { ...detail.owner, ...ownerAddress };
     }
     // Only public profile fields are needed to identify the sitter.
     detail.sitter = await User.findOne({ userId: visit.sitterId })

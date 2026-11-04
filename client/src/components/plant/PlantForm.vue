@@ -275,7 +275,7 @@ async function onSubmit() {
           Cancel
         </button>
         <button type="submit" class="btn btn-primary save-btn" :disabled="saving">
-          {{ saving ? 'Saving…' : isEdit ? 'Save changes' : '+ Add plant' }}
+          {{ saving ? 'Saving…' : isEdit ? 'Save changes' : 'Confirm' }}
         </button>
       </div>
     </div>

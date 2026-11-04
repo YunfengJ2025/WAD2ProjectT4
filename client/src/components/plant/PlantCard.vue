@@ -44,10 +44,10 @@ watch(
 
 // Overdue / due / upcoming, worked out from last watered date + frequency
 const status = computed(() => getWateringStatus(props.plant))
-// "250 ml · Every 2 days" (older plants may have no amount saved)
+// "250 ml · every 2 days" (older plants may have no amount saved)
 const frequency = computed(() => {
   const { frequencyDays: days, amountMl } = props.plant.wateringInfo
-  const often = days === 1 ? 'Daily' : `Every ${days} days`
+  const often = days === 1 ? 'daily' : `every ${days} days`
   return amountMl ? `${amountMl} ml · ${often}` : often
 })
 
@@ -140,41 +140,25 @@ function onWaterClick() {
         </RouterLink>
       </h3>
 
-      <!-- Where to find it, and watering amount + frequency -->
-      <ul class="meta" aria-label="Plant details">
-        <!-- title shows the full text on hover if it gets cut off -->
-        <li class="where" :title="plant.plantLocation">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
-            <circle cx="12" cy="9.5" r="2.5" />
-          </svg>
-          <span>{{ plant.plantLocation }}</span>
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
-          </svg>
-          {{ frequency }}
-        </li>
+      <!-- Where to find it (title shows the full text on hover if it gets cut off) -->
+      <p class="where" :title="plant.plantLocation">{{ plant.plantLocation }}</p>
+
+      <!-- Small tags: watering, indoor/outdoor, and care progress when due -->
+      <ul class="tags" aria-label="Plant details">
+        <li class="tag water">{{ frequency }}</li>
         <!-- Indoor plants can't be added to a care request, so show which kind it is -->
-        <li>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 11 12 4l8 7M6 10v10h12V10" />
-          </svg>
-          {{ plant.isOutdoor === false ? 'Indoor' : 'Outdoor' }}
-        </li>
+        <li class="tag place">{{ plant.isOutdoor === false ? 'Indoor' : 'Outdoor' }}</li>
         <!-- Care checklist progress, only when the plant is due/overdue -->
-        <li v-if="showChecklistTag" class="checklist-tag" :class="{ done: stepsLeft === 0 }">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 4h16v16H4zM8 12l3 3 5-6" />
-          </svg>
+        <li v-if="showChecklistTag" class="tag checklist-tag" :class="{ done: stepsLeft === 0 }">
           {{ checklistLabel }}
         </li>
       </ul>
 
       <!-- Short summary of the care checklist (the full list is on the plant page).
            Hidden when the plant is due, because the "steps left" tag shows instead. -->
-      <p v-if="careSteps.length && !showChecklistTag" class="care-count">{{ careCountLabel }}</p>
+      <p v-if="careSteps.length && !showChecklistTag" class="care-count">
+        {{ careCountLabel }} <span aria-hidden="true">→</span>
+      </p>
 
       <!-- Mark watered / Edit / Delete -->
       <div class="actions">
@@ -235,7 +219,7 @@ function onWaterClick() {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: 16px;
   background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -349,62 +333,64 @@ h3 {
   color: var(--accent);
 }
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem 0.85rem;
-  padding: 0;
-  list-style: none;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.meta li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.meta li.where {
-  flex-basis: 100%;
-  min-width: 0;
-}
-
-.meta li.where span {
+/* Location: one line, cut off with "…" if too long */
+.where {
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.88rem;
+  color: var(--muted);
 }
 
-/* Checklist tag: amber while steps are left, green when all done */
-.meta li.checklist-tag {
-  padding: 0.1rem 0.55rem;
+/* Row of small capsule tags */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  background: #fff4d6;
-  color: #7a5200;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.meta li.checklist-tag.done {
+/* Watering tag: light blue (water) */
+.tag.water {
+  background: #e3f0fb;
+  color: #1d4f7a;
+}
+
+/* Indoor / outdoor tag: light green */
+.tag.place {
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-.meta svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* Checklist tag: amber while steps are left, green when all done */
+.tag.checklist-tag {
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-weight: 600;
 }
 
+.tag.checklist-tag.done {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* "2 care steps →" in green, like a link (the whole card opens the plant page) */
 .care-count {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--muted);
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .actions {
@@ -415,7 +401,8 @@ h3 {
   justify-content: flex-end;
   gap: 0.25rem;
   margin-top: auto;
-  padding-top: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border); /* thin line above the buttons */
 }
 
 /* margin-right: auto pushes Edit and Delete to the right-hand side */
@@ -425,20 +412,24 @@ h3 {
   transform: scale(0.94);
 }
 
+/* Small capsule button */
 .water-btn {
   margin-right: auto;
-  padding: 0.35rem 0.8rem;
-  font-size: 0.85rem;
+  min-height: 34px;
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
 }
 
+/* Round icon buttons */
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 50%;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -449,8 +440,8 @@ h3 {
 }
 
 .icon-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
