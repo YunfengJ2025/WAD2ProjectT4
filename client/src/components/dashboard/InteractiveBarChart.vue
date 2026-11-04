@@ -124,15 +124,22 @@ const chartOptions = computed(() => ({
   font-size: 0.9rem;
 }
 
-@media (max-width: 640px) {
+/* Bootstrap responsive chart breakpoints */
+@media (max-width: 767.98px) {
   .chart-container {
-    height: 220px;
+    height: 240px;
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 575.98px) {
   .chart-container {
-    height: 190px;
+    height: 210px;
+  }
+}
+
+@media (max-width: 379.98px) {
+  .chart-container {
+    height: 185px;
   }
 }
 </style>
