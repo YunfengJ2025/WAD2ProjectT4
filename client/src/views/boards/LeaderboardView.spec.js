@@ -1,11 +1,3 @@
-/* LeaderboardView.spec.js
- * Component & Integration tests for LeaderboardView.vue (Week 10 Slides 25, 31–32 & Ex2a).
- * Verifies that LeaderboardView:
- *   1. Renders Top 3 Podium (Gold #1, Silver #2, Bronze #3), full rankings list, and highlights current user
- *   2. Hides current user and recalculates ranks when privacy opt-out checkbox is toggled
- *   3. Displays empty state message when leaderboard is empty
- */
-
 import { mount } from '@vue/test-utils'
 import { describe, it, expect } from 'vitest'
 import { createPinia } from 'pinia'
@@ -35,7 +27,6 @@ function mountLeaderboard() {
 }
 
 describe('LeaderboardView', () => {
-  // Test case (1): Renders Top 3 Podium, rankings list, and current user highlight (Week 10 Slide 25 & 31)
   it('displays Top 3 Podium, rank medals, and highlights the logged-in user row', async () => {
     const wrapper = mountLeaderboard()
 
@@ -54,7 +45,6 @@ describe('LeaderboardView', () => {
     expect(rows[3].text()).toContain('#4')
   })
 
-  // Test case (2): User interaction — toggling opt-out hides user and recalculates ranks (Week 10 Slide 25 & Ex2a)
   it('hides the current user and recalculates remaining ranks when opt-out is enabled', async () => {
     const wrapper = mountLeaderboard()
 
@@ -71,7 +61,6 @@ describe('LeaderboardView', () => {
     expect(rows[2].text()).toContain('🥉')
   })
 
-  // Test case (3): Conditional rendering — empty state when 0 neighbours exist (Week 10 Slide 25)
   it('displays empty state message when leaderboard has no neighbours', async () => {
     const wrapper = mountLeaderboard()
 
