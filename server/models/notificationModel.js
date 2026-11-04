@@ -6,6 +6,7 @@ const notificationSchema = new mongoose.Schema({
   type: { type: String, required: true, trim: true },
   message: { type: String, required: true, trim: true, maxlength: 500 },
   visitId: { type: Number, default: null },
+  requestId: { type: Number, default: null },
   readAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 });

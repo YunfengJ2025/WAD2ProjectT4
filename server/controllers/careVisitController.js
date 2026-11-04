@@ -97,9 +97,9 @@ exports.makeUpRequest = async (req, res) => {
     const visitId = Number(req.params.visitId);
     const visit = await CareVisit.findOne({
       visitId,
-      status: { $in: ["missed", "expired"] },
+      status: "missed",
     }).lean();
-    if (!visit) throw fail(404, "Missed or expired visit not found");
+    if (!visit) throw fail(404, "Missed visit not found");
     const sourceRequest = await CareRequest.findOne({
       requestId: visit.requestId,
       ownerId: req.userId,

@@ -1,4 +1,5 @@
 const Notification = require("../models/notificationModel");
+const CareVisit = require("../models/careVisitModel");
 
 // Return only the signed-in user's most recent notices.
 exports.listMine = async (req, res) => {
@@ -7,7 +8,22 @@ exports.listMine = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
-    res.json({ notifications });
+    // Resolve request ids for older notices that stored only a visit id.
+    const visitIds = notifications.map((item) => item.visitId).filter(Number.isSafeInteger);
+    const visits = await CareVisit.find({ visitId: { $in: visitIds } })
+      .select("visitId requestId")
+      .lean();
+    const requestByVisitId = new Map(visits.map((visit) => [visit.visitId, visit.requestId]));
+    res.json({
+      notifications: notifications.map((item) => ({
+        ...item,
+        // Remove the old make-up offer from notifications created before this policy change.
+        message: item.type === "visit_expired"
+          ? item.message.replace(/\s*You can request a make-up visit\.?$/i, "")
+          : item.message,
+        requestId: item.requestId || requestByVisitId.get(item.visitId) || null,
+      })),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Could not load notifications" });

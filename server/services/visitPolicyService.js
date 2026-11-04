@@ -3,8 +3,8 @@ const tokenModel = require("../models/tokenModel");
 const userModel = require("../models/userModel");
 
 // Create an in-app notification for a single account.
-function notifyUser(userId, type, message, visitId) {
-  return Notification.create({ userId, type, message, visitId });
+function notifyUser(userId, type, message, visitId, requestId = null) {
+  return Notification.create({ userId, type, message, visitId, requestId });
 }
 
 // Burn up to the visit reward, capped by the sitter's available token balance.
