@@ -28,6 +28,7 @@ const plant = computed(() => plantsStore.findPlant(route.params.plantId))
 const loading = ref(true)
 const loadError = ref('')
 const confirmingDelete = ref(false) // "Delete plant?" pop-up open?
+const inActiveRequest = ref(false) // true = in a care request still going, so no Delete
 const deleting = ref(false)
 const watering = ref(false) // true while Mark watered is saving
 // Already watered today: the button is disabled so it can't be pressed twice
@@ -87,7 +88,8 @@ async function load() {
   loadError.value = ''
   photoFailed.value = false
   try {
-    await plantsStore.fetchPlant(route.params.plantId)
+    const result = await plantsStore.fetchPlant(route.params.plantId)
+    inActiveRequest.value = result.inActiveRequest
   } catch (err) {
     loadError.value = err.message
   } finally {
@@ -240,11 +242,22 @@ async function onDelete() {
         </div>
         <div class="head-actions">
           <RouterLink :to="`/plants/${plant.plantId}/edit`" class="btn edit-btn">Edit</RouterLink>
-          <button type="button" class="btn delete-btn" @click="confirmingDelete = true">
+          <!-- Disabled while the plant is in an active care request -->
+          <button
+            type="button"
+            class="btn delete-btn"
+            :disabled="inActiveRequest"
+            :aria-describedby="inActiveRequest ? 'delete-locked' : undefined"
+            @click="confirmingDelete = true"
+          >
             Delete
           </button>
         </div>
       </header>
+      <p v-if="inActiveRequest" id="delete-locked" class="delete-locked">
+        🔒 This plant is in an active care request, so it can't be deleted. Cancel or finish the
+        request first.
+      </p>
 
       <!-- One status banner with the main action -->
       <div class="banner" :class="banner.tone" role="status">
@@ -473,9 +486,23 @@ h1 {
   font-weight: 600;
 }
 
-.delete-btn:hover {
+.delete-btn:hover:not(:disabled) {
   background: var(--danger);
   color: #fff;
+}
+
+/* Greyed out when the plant is in an active request */
+.delete-btn:disabled {
+  border-color: var(--line);
+  color: var(--text-soft);
+  cursor: not-allowed;
+}
+
+.delete-locked {
+  margin: -8px 0 16px;
+  color: var(--text-soft);
+  font-size: 13px;
+  text-align: right;
 }
 
 .water-btn,
