@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
+import { useRoute } from 'vue-router'
 import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
@@ -12,6 +13,7 @@ const props = defineProps({
 })
 
 const auth = useAuthStore()
+const route = useRoute()
 const plantsStore = usePlantsStore()
 const plants = computed(() => plantsStore.plants)
 const owned = ref([])
@@ -22,6 +24,16 @@ const makeupBusyVisitId = ref(0)
 const formVersion = ref(0)
 const error = ref('')
 const notice = ref('')
+
+// Scroll the linked owner request into view after its cards have rendered.
+async function focusRequestedCard() {
+  const requestId = Number(route.query.requestId)
+  if (!Number.isSafeInteger(requestId)) return
+  await nextTick()
+  document.getElementById(`care-request-${requestId}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+}
+
+watch(() => route.query.requestId, focusRequestedCard)
 
 async function load() {
   loading.value = true
@@ -35,6 +47,7 @@ async function load() {
   } finally {
     loading.value = false
   }
+  await focusRequestedCard()
 }
 
 onMounted(load)
@@ -150,6 +163,7 @@ async function requestMakeup({ request, visit }) {
         v-for="request in owned"
         :key="request.requestId"
         :request="request"
+        :highlighted="String(route.query.requestId) === String(request.requestId)"
         :busy="cancellingRequestId === request.requestId"
         :makeup-busy-visit-id="makeupBusyVisitId"
         @cancel-request="cancelRequest"

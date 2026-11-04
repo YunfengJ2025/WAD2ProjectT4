@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Collapse } from 'bootstrap'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
@@ -9,6 +9,7 @@ defineProps({ navigationitems: { type: Array, default: () => [] } })
 defineEmits(['logout'])
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const notifications = ref([])
 const notificationError = ref('')
 const unreadCount = ref(0)
@@ -39,6 +40,22 @@ async function markNotificationRead(notification) {
     unreadCount.value = Math.max(0, unreadCount.value - 1)
   } catch (err) {
     notificationError.value = err.message
+  }
+}
+
+function hasMakeupAction(notification) {
+  return notification.type === 'visit_missed' && /make-up visit/i.test(notification.message)
+}
+
+// Open the matching request from missed or expired visit alerts.
+async function openNotification(notification) {
+  await markNotificationRead(notification)
+  const opensRequest = notification.type === 'visit_expired' || hasMakeupAction(notification)
+  if (notification.requestId && opensRequest) {
+    await router.push({
+      path: '/requests',
+      query: { tab: 'requests', requestId: notification.requestId },
+    })
   }
 }
 
@@ -96,17 +113,23 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
             </div>
             <p v-if="notificationError" class="small text-danger px-2 mb-1" role="alert">{{ notificationError }}</p>
             <p v-else-if="!notifications.length" class="small text-secondary px-2 mb-1">You’re all caught up.</p>
-            <button
+            <div
               v-for="item in notifications"
               :key="item._id"
-              type="button"
               class="notification-item"
               :class="{ unread: !item.readAt }"
-              @click="markNotificationRead(item)"
             >
-              <span>{{ item.message }}</span>
-              <small>{{ new Date(item.createdAt).toLocaleString('en-GB') }}</small>
-            </button>
+              <button type="button" class="notification-message" @click="openNotification(item)">
+                <span>{{ item.message }}</span>
+                <small>{{ new Date(item.createdAt).toLocaleString('en-GB') }}</small>
+              </button>
+              <button
+                v-if="hasMakeupAction(item)"
+                type="button"
+                class="notification-action"
+                @click="openNotification(item)"
+              >Request make-up visit</button>
+            </div>
           </div>
         </div>
         <div v-if="auth.isAuthenticated" class="dropdown">
@@ -160,8 +183,11 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
 .notification-toggle { font-size: 1.35rem; line-height: 1; }
 .unread-count { position: absolute; top: 0; right: 0; min-width: 1.05rem; padding: 0.05rem 0.2rem; border-radius: 999px; background: #b42318; color: #fff; font-size: 0.65rem; font-weight: 700; }
 .notification-menu { width: min(360px, calc(100vw - 1rem)); max-height: 65vh; overflow-y: auto; }
-.notification-item { display: grid; width: 100%; gap: 0.25rem; padding: 0.65rem; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; white-space: normal; }
+.notification-item { display: grid; width: 100%; gap: 0.4rem; padding: 0.65rem; border-radius: 8px; background: transparent; color: inherit; white-space: normal; }
 .notification-item:hover { background: #f2f6f2; }
 .notification-item.unread { background: #edf6ee; }
-.notification-item small { color: #68766b; }
+.notification-message { display: grid; gap: 0.25rem; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.notification-message small { color: #68766b; }
+.notification-action { justify-self: start; padding: 0.3rem 0.55rem; border: 1px solid #34834c; border-radius: 6px; background: #fff; color: #245b34; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.notification-action:hover { background: #e7f3e9; }
 </style>

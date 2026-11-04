@@ -1,8 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
 import { buildRequestPlan } from '@/composables/schedule/buildRequestPlan'
-import { toDateInputValue } from '@/utils/wateringStatus'
+import { startOfDay, toDateInputValue } from '@/utils/wateringStatus'
 
 const props = defineProps({
   plants: { type: Array, default: () => [] },
@@ -28,6 +28,25 @@ let calendarAnimationTimer
 const selectedPlants = computed(() => props.plants.filter((plant) => form.value.plantIds.includes(plant.plantId)))
 const plantById = computed(() => Object.fromEntries(props.plants.map((plant) => [plant.plantId, plant])))
 const todayISO = toDateInputValue(new Date()) // local date, so no UTC off-by-one in Singapore
+// Only allow a request to begin on or after the first selected plant is due.
+const earliestStartDate = computed(() => {
+  if (!selectedPlants.value.length) return todayISO
+  const today = startOfDay(new Date())
+  return selectedPlants.value.map((plant) => {
+    if (!plant.lastWateredAt) return todayISO
+    const nextDue = startOfDay(plant.lastWateredAt)
+    nextDue.setDate(nextDue.getDate() + Number(plant.wateringInfo.frequencyDays || 1))
+    return toDateInputValue(nextDue < today ? today : nextDue)
+  }).sort()[0]
+})
+
+// Keep the chosen range valid when selected plants change.
+watch(earliestStartDate, (earliest) => {
+  if (form.value.startDate && form.value.startDate < earliest) {
+    form.value.startDate = earliest
+    if (form.value.endDate && form.value.endDate < earliest) form.value.endDate = earliest
+  }
+})
 
 // is there enough input to work out a plan?
 const planReady = computed(() =>
@@ -61,6 +80,14 @@ function animateCalendar(field) {
   }, 500)
 }
 
+function clampStartDate() {
+  if (form.value.startDate && form.value.startDate < earliestStartDate.value) {
+    form.value.startDate = earliestStartDate.value
+    if (form.value.endDate && form.value.endDate < form.value.startDate)
+      form.value.endDate = form.value.startDate
+  }
+}
+
 function submit() {
   if (!visitCount.value) {
     return
@@ -81,7 +108,12 @@ function submit() {
   })
 }
 
-function togglePlant(plantId) {
+function togglePlant(plant) {
+  const plantId = plant.plantId
+  if (plant.isOutdoor === false) {
+    selectionError.value = `${plant.plantName} is an indoor plant and cannot be requested.`
+    return
+  }
   if (form.value.plantIds.includes(plantId)) {
     form.value.plantIds = form.value.plantIds.filter((id) => id !== plantId)
   } else {
@@ -122,9 +154,10 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
             :key="plant.plantId"
             type="button"
             class="plant-option"
-            :class="{ selected: form.plantIds.includes(plant.plantId) }"
+            :class="{ selected: form.plantIds.includes(plant.plantId), 'indoor-plant': plant.isOutdoor === false }"
             :aria-pressed="form.plantIds.includes(plant.plantId)"
-            @click="togglePlant(plant.plantId)"
+            :aria-disabled="plant.isOutdoor === false"
+            @click="togglePlant(plant)"
           >
             <span class="plant-photo">
               <img
@@ -138,10 +171,14 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
             </span>
             <span class="plant-name">{{ plant.plantName }}</span>
             <span class="plant-location">{{ plant.plantLocation }}</span>
+            <!-- <span v-if="plant.isOutdoor === false" class="indoor-label">Indoor plant</span> -->
           </button>
         </div>
-        <p v-if="selectionError" class="selection-error" role="alert">{{ selectionError }}</p>
+        <p v-if="selectionError" class="selection-error" role="alert">
+          <span class="warning-icon" aria-hidden="true">⚠</span>{{ selectionError }}
+        </p>
       </fieldset>
+      <template v-if="selectedPlants.length">
       <fieldset v-for="plant in selectedPlants" :key="`care-${plant.plantId}`" class="wide plant-care">
         <!-- Care checklist (Carolyn): small photo + name as the card title -->
         <legend>
@@ -168,7 +205,8 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
           v-model="form.startDate"
           type="date"
           lang="en-GB"
-          :min="todayISO"
+          :min="earliestStartDate"
+          @change="clampStartDate"
           required
           :class="{ 'calendar-bounce': animatedCalendar === 'start' }"
           @click="animateCalendar('start')"
@@ -219,6 +257,7 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
             {{ visitCount }} × {{ form.tokenReward }} = <strong>{{ totalReward }} tokens</strong> will be frozen for this request.
           </p>
           <p v-if="totalReward > availableBalance" class="selection-error" role="alert">
+            <span class="warning-icon" aria-hidden="true">⚠</span>
             You only have {{ availableBalance }} tokens available.
           </p>
         </template>
@@ -249,6 +288,7 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
       <button class="btn btn-primary" :disabled="saving || !visitCount || totalReward > availableBalance">
         {{ saving ? 'Posting…' : 'Post request' }}
       </button>
+      </template>
     </form>
   </section>
 </template>
@@ -305,7 +345,11 @@ h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .plant-selection legend span { margin-left: 0.45rem; color: #637466; font-size: 0.85rem; font-weight: 500; }
 .plant-selection > p { margin: 0 0 0.75rem; color: #637466; font-size: 0.9rem; }
 .plant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 0.75rem; }
+.plant-selection .selection-error { margin-top: 1rem; }
 .plant-option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   min-width: 0;
   padding: 0.45rem;
   overflow: hidden;
@@ -319,15 +363,18 @@ h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 }
 .plant-option:hover { transform: translateY(-3px); border-color: #75a781; box-shadow: 0 8px 18px #183c241a; color: #245b34; }
 .plant-option.selected { border: 2px solid #34834c; padding: calc(0.45rem - 1px); background: #f0f8f1; }
+.plant-option.indoor-plant { border-style: dashed; }
 .plant-option:focus-visible { outline: 3px solid #34834c; outline-offset: 2px; }
-.plant-photo { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; background: #edf3ed; }
+.plant-photo { position: relative; display: block; width: 100%; height: 150px; flex: 0 0 150px; overflow: hidden; border-radius: 8px; background: #edf3ed; }
 .plant-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
 .plant-option:hover .plant-photo img { transform: scale(1.04); }
 .selection-check { position: absolute; right: 0.45rem; bottom: 0.45rem; display: grid; place-items: center; width: 27px; height: 27px; border: 2px solid #fff; border-radius: 7px; background: #ffffffd9; color: transparent; font-size: 1.1rem; font-weight: 700; box-shadow: 0 1px 5px #0003; }
 .plant-option.selected .selection-check { background: #287de2; color: #fff; }
 .plant-name { display: block; margin: 0.5rem 0 0.15rem; color: inherit; font-weight: 700; }
 .plant-location { display: block; overflow: hidden; color: #637466; font-size: 0.8rem; text-overflow: ellipsis; white-space: nowrap; }
-.selection-error { margin: 0.65rem 0 0; color: #b42318; font-size: 0.9rem; }
+.indoor-label { display: inline-block; margin-top: 0.35rem; color: #8b3a32; font-size: 0.78rem; font-weight: 700; }
+.selection-error { display: flex; align-items: flex-start; gap: 0.45rem; margin: 0.65rem 0 0; padding: 0.6rem 0.75rem; border: 1px solid #f1b7b1; border-radius: 8px; background: #fff3f1; color: #b42318; font-size: 0.9rem; font-weight: 600; }
+.warning-icon { flex: 0 0 auto; font-size: 1rem; line-height: 1.2; }
 
 .visit-plan { padding: 0.9rem; border: 1px solid #d7e1d8; border-radius: 10px; background: #f8fbf8; }
 .visit-plan h3 { margin: 0 0 0.35rem; font-size: 1rem; font-weight: 700; }
