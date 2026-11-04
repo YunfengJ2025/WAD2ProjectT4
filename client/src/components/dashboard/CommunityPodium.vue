@@ -28,11 +28,13 @@
       <!-- 2nd Place -->
       <div class="podium-card silver">
         <span class="medal">🥈</span>
-        <img
-          :src="leaders[1].avatarUrl"
-          :alt="`${leaders[1].name}'s avatar`"
-          class="podium-avatar"
-        />
+        <div class="podium-avatar-container">
+          <UserAvatar
+            :user="{ photoUrl: leaders[1].photoUrl, userName: leaders[1].name }"
+            :size="52"
+            class="podium-avatar"
+          />
+        </div>
         <h4>{{ leaders[1].name }}</h4>
         <div class="token-pill">🪙 {{ leaders[1].availableTokens }}</div>
       </div>
@@ -41,11 +43,13 @@
       <div class="podium-card gold">
         <span class="crown">👑</span>
         <span class="medal">🥇</span>
-        <img
-          :src="leaders[0].avatarUrl"
-          :alt="`${leaders[0].name}'s avatar`"
-          class="podium-avatar top"
-        />
+        <div class="podium-avatar-container">
+          <UserAvatar
+            :user="{ photoUrl: leaders[0].photoUrl, userName: leaders[0].name }"
+            :size="66"
+            class="podium-avatar top"
+          />
+        </div>
         <h4>{{ leaders[0].name }}</h4>
         <div class="token-pill gold-pill">🪙 {{ leaders[0].availableTokens }}</div>
       </div>
@@ -53,11 +57,13 @@
       <!-- 3rd Place -->
       <div class="podium-card bronze">
         <span class="medal">🥉</span>
-        <img
-          :src="leaders[2].avatarUrl"
-          :alt="`${leaders[2].name}'s avatar`"
-          class="podium-avatar"
-        />
+        <div class="podium-avatar-container">
+          <UserAvatar
+            :user="{ photoUrl: leaders[2].photoUrl, userName: leaders[2].name }"
+            :size="52"
+            class="podium-avatar"
+          />
+        </div>
         <h4>{{ leaders[2].name }}</h4>
         <div class="token-pill">🪙 {{ leaders[2].availableTokens }}</div>
       </div>
@@ -68,6 +74,7 @@
 <script setup>
 // RouterLink component from Vue Router — covered in WAD2 wk6
 import { RouterLink } from 'vue-router'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 
 // defineProps is a Vue 3 Composition API macro — covered in WAD2 wk5
 // Receives the array of top 3 users from CommunityView
@@ -211,22 +218,23 @@ defineProps({
   display: block;
 }
 
-.podium-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+.podium-avatar-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin: 0.5rem auto;
-  border: 2px solid rgba(226, 232, 240, 0.9);
-  background: white;
-  object-fit: cover;
-  display: block;
+}
+
+.podium-avatar {
+  border-radius: 50%;
+  border: 2px solid rgba(47, 125, 74, 0.45);
+  background: var(--accent-soft, #e3f1e6);
+  overflow: hidden;
 }
 
 .podium-avatar.top {
-  width: 66px;
-  height: 66px;
-  border: 3px solid #f59e0b;
-  box-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
+  border: 3.5px solid #eab308;
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.45);
 }
 
 .podium-card h4 {
@@ -254,21 +262,32 @@ defineProps({
   color: #b45309;
 }
 
-@media (max-width: 600px) {
+/* Bootstrap responsive podium breakpoints */
+@media (max-width: 767.98px) {
   .podium-section {
-    gap: 0.6rem;
+    gap: 0.8rem;
   }
   .podium-card {
-    width: 105px;
-    padding: 0.85rem 0.4rem;
+    width: 120px;
+    padding: 1rem 0.5rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .podium-section {
+    gap: 0.5rem;
+  }
+  .podium-card {
+    width: 100px;
+    padding: 0.8rem 0.35rem;
   }
   .podium-avatar {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
   }
   .podium-avatar.top {
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
   }
 }
 </style>

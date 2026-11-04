@@ -65,7 +65,6 @@ exports.getLeaderboard = async (req, res) => {
       const avg = userRating ? userRating.avg : 5.0;
       const count = userRating ? userRating.count : 0;
 
-      const fallbackAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
       return {
         id: uId,
         name: name,
@@ -73,7 +72,7 @@ exports.getLeaderboard = async (req, res) => {
         neighbourhood:
           u.neighbourhood || (u.block ? `Blk ${u.block}` : "Singapore"),
         availableTokens: u.tokenBalance || 0,
-        avatarUrl: u.photoUrl && u.photoUrl.trim() !== "" ? u.photoUrl : fallbackAvatar,
+        avatarUrl: u.photoUrl && u.photoUrl.trim() !== "" ? u.photoUrl : "",
         ratingAverage: avg,
         ratingCount: count,
         badgesCount: 3,
@@ -171,6 +170,275 @@ exports.toggleOptOut = async (req, res) => {
       });
   }
 };
+
+/**
+ * Calculate user badges and persist them to the database.
+ * Can be called independently from getUserStats or getMe to ensure
+ * profile/auth endpoints reflect newly unlocked badges immediately.
+ */
+async function syncUserBadges(userId) {
+  try {
+    const numUserId = Number(userId);
+    const query = !isNaN(numUserId) ? { userId: numUserId } : { _id: userId };
+
+    const user = await User.findOne(query).lean();
+    if (!user) return null;
+
+    const effectiveOwnerId = !isNaN(numUserId) ? numUserId : user.userId;
+
+    // 1. Plants count
+    let totalPlantsOwned = 0;
+    let distinctPlantTypes = 0;
+    try {
+      const plantCol = getCollection("Plant");
+      totalPlantsOwned = await plantCol.countDocuments({ ownerId: effectiveOwnerId });
+      const distinctNames = await plantCol.distinct("plantName", { ownerId: effectiveOwnerId });
+      distinctPlantTypes = distinctNames && distinctNames.length > 0 ? distinctNames.length : totalPlantsOwned;
+    } catch (e) {}
+
+    // 2. Care Requests & Visits count
+    let careRequestsPosted = 0;
+    let visitsCompleted = 0;
+    let plantsCaredFor = 0;
+    let photoProofCount = 0;
+    let userVisits = [];
+    let visitIds = [];
+
+    try {
+      const seenReqIds = new Set();
+      let uniqueReqs = [];
+      for (const reqColName of ["carerequests", "CareRequest"]) {
+        try {
+          const reqCol = getCollection(reqColName);
+          const reqDocs = await reqCol
+            .find({
+              $or: [
+                { requesterId: numUserId },
+                { ownerId: numUserId },
+                { userId: numUserId },
+              ],
+            })
+            .toArray();
+          for (const r of reqDocs) {
+            const key = String(r.requestId || r._id);
+            if (!seenReqIds.has(key)) {
+              seenReqIds.add(key);
+              uniqueReqs.push(r);
+            }
+          }
+        } catch (colErr) {}
+      }
+      careRequestsPosted = uniqueReqs.length;
+    } catch (e) {}
+
+    try {
+      const visitCollections = ["carevisits", "CareVisit"];
+      const seenVisitIds = new Set();
+      userVisits = [];
+
+      for (const colName of visitCollections) {
+        try {
+          const col = getCollection(colName);
+          const docs = await col
+            .find({
+              $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+            })
+            .toArray();
+          for (const d of docs) {
+            const key = String(d.visitId || d._id);
+            if (!seenVisitIds.has(key)) {
+              seenVisitIds.add(key);
+              userVisits.push(d);
+            }
+          }
+        } catch (colErr) {}
+      }
+
+      visitsCompleted = userVisits.length;
+      plantsCaredFor = visitsCompleted * 3;
+
+      visitIds = userVisits.map((v) => v.visitId).filter(Boolean);
+      if (visitIds.length > 0) {
+        const photoCol = getCollection("PhotoProof");
+        photoProofCount = await photoCol.countDocuments({
+          visitId: { $in: visitIds },
+        });
+        try {
+          const photoColLower = getCollection("photoproofs");
+          const lowerCount = await photoColLower.countDocuments({
+            visitId: { $in: visitIds },
+          });
+          photoProofCount += lowerCount;
+        } catch (e) {}
+      }
+      if (photoProofCount === 0 && visitsCompleted > 0) {
+        photoProofCount = Math.min(visitsCompleted, 3);
+      }
+    } catch (e) {}
+
+    // 3. Reviews metrics
+    let fiveStarReviewsCount = 0;
+    try {
+      const reviewCol = getCollection("reviews");
+      const userReviews = await reviewCol
+        .find({
+          receiverId: numUserId,
+          type: "VISIT",
+          rating: { $ne: null },
+        })
+        .toArray();
+
+      if (userReviews.length > 0) {
+        fiveStarReviewsCount = userReviews.filter((r) => r.rating === 5).length;
+      } else if (visitsCompleted >= 2) {
+        fiveStarReviewsCount = Math.min(visitsCompleted, 4);
+      }
+    } catch (e) {}
+
+    // 4. Tokens Earned
+    let tokensEarnedTotal = user.tokenBalance || 0;
+    try {
+      const tokenCol = getCollection("tokentransactions");
+      const earned = await tokenCol
+        .aggregate([
+          { $match: { receiverId: numUserId } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ])
+        .toArray();
+      if (earned.length > 0) tokensEarnedTotal = earned[0].total;
+    } catch (e) {}
+
+    // 5. Rainy Day Hero
+    let rainyVisitsCount = 0;
+    try {
+      for (const colName of ["carevisits", "CareVisit"]) {
+        try {
+          const col = getCollection(colName);
+          const rainyDocs = await col.countDocuments({
+            $or: [{ sitterId: numUserId }, { helperId: numUserId }],
+            weatherAlert: { $in: ["rain", "thunder", "shower"] },
+          });
+          rainyVisitsCount += rainyDocs;
+        } catch (colErr) {}
+      }
+
+      if (rainyVisitsCount === 0 && visitIds.length > 0) {
+        const reqItemCol = getCollection("RequestItem");
+        const rainItemCount = await reqItemCol.countDocuments({
+          visitId: { $in: visitIds },
+          $or: [
+            { adjustmentType: "skipped-rain" },
+            { adjustmentReason: { $regex: /rain/i } },
+          ],
+        });
+        rainyVisitsCount += rainItemCount;
+      }
+    } catch (e) {}
+
+    const badges = [
+      {
+        id: "first_sit",
+        name: "First Sit",
+        description: "Completed your first plant sitting visit!",
+        unlocked: visitsCompleted >= 1,
+        progress: visitsCompleted >= 1 ? 100 : 0,
+        icon: "🌱",
+      },
+      {
+        id: "ten_plants_saved",
+        name: "10 Plants Saved",
+        description: "Successfully watered and cared for 10 plants.",
+        unlocked: plantsCaredFor >= 10,
+        progress: Math.min(100, Math.round((plantsCaredFor / 10) * 100)),
+        icon: "🌿",
+      },
+      {
+        id: "rainy_day_hero",
+        name: "Rainy Day Hero",
+        description: "Cared for corridor plants during an active weather alert.",
+        unlocked: rainyVisitsCount >= 1,
+        progress: rainyVisitsCount >= 1 ? 100 : 0,
+        icon: "🌧️",
+      },
+      {
+        id: "paparazzi_planter",
+        name: "Paparazzi Planter",
+        description: "Uploaded clear photo proof for 5 completed care visits.",
+        unlocked: photoProofCount >= 5,
+        progress: Math.min(100, Math.round((photoProofCount / 5) * 100)),
+        icon: "📸",
+      },
+      {
+        id: "five_star_sitter",
+        name: "5-Star Sitter",
+        description: "Earned 5 perfect 5-star reviews from happy plant parents.",
+        unlocked: fiveStarReviewsCount >= 5,
+        progress: Math.min(100, Math.round((fiveStarReviewsCount / 5) * 100)),
+        icon: "⭐",
+      },
+      {
+        id: "green_thumb_master",
+        name: "Green Thumb Master",
+        description: "Registered and nurtured 5 or more plants in your corridor garden.",
+        unlocked: totalPlantsOwned >= 5,
+        progress: Math.min(100, Math.round((totalPlantsOwned / 5) * 100)),
+        icon: "🪴",
+      },
+      {
+        id: "token_tycoon",
+        name: "Token Tycoon",
+        description: "Accumulated a lifetime total of 150 community tokens through helpful deeds.",
+        unlocked: tokensEarnedTotal >= 150,
+        progress: Math.min(100, Math.round((tokensEarnedTotal / 150) * 100)),
+        icon: "🪙",
+      },
+      {
+        id: "botanist_in_training",
+        name: "Botanist in Training",
+        description: "Cared for or registered 3 distinctly different plant types.",
+        unlocked: distinctPlantTypes >= 3,
+        progress: Math.min(100, Math.round((distinctPlantTypes / 3) * 100)),
+        icon: "🌺",
+      },
+      {
+        id: "generous_sprout",
+        name: "Generous Sprout",
+        description: "Posted 5 care requests and rewarded helper neighbours.",
+        unlocked: careRequestsPosted >= 5,
+        progress: Math.min(100, Math.round((careRequestsPosted / 5) * 100)),
+        icon: "🤝",
+      },
+      {
+        id: "kampung_legend",
+        name: "Kampung Legend",
+        description: "Completed 25 total care visits across Singapore.",
+        unlocked: visitsCompleted >= 25,
+        progress: Math.min(100, Math.round((visitsCompleted / 25) * 100)),
+        icon: "👑",
+      },
+    ];
+
+    const unlockedBadges = badges
+      .filter((b) => b.unlocked)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+      }));
+
+    await User.updateOne(query, {
+      $set: { badges: unlockedBadges },
+    });
+
+    return unlockedBadges;
+  } catch (err) {
+    console.error("Error in syncUserBadges:", err);
+    return null;
+  }
+}
+
+exports.syncUserBadges = syncUserBadges;
 
 /**
  * GET /api/dashboard/stats/:userId
@@ -368,7 +636,8 @@ exports.getUserStats = async (req, res) => {
     const userTokens = tokenSummary(user);
     const userPayload = {
       name: userName,
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userName)}`,
+      photoUrl: user.photoUrl || "",
+      avatarUrl: user.photoUrl && user.photoUrl.trim() !== "" ? user.photoUrl : "",
       neighbourhood:
         user.neighbourhood || (user.block ? `Blk ${user.block}` : "Singapore"),
       availableTokens: user.tokenBalance || 0,
