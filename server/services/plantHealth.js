@@ -1,7 +1,8 @@
 const crypto = require("node:crypto");
 const HealthCheck = require("../models/healthCheckModel");
+const { Plant } = require("../models/plantModel");
+const { notifyUser } = require("./visitPolicyService");
 
-// UNCONFIRMED: confirm this URL and the request shape in your Kindwise dashboard docs
 // before using live mode. It is the only place that needs to change.
 const API_URL = "https://plant.id/api/v3/health_assessment";
 const DETAILS = "description,treatment,cause";
@@ -97,6 +98,24 @@ async function analysePhoto({ buffer, mimetype, plantId }) {
   return { provider: "plant.id", ...cache.get(key) };
 }
 
+// Tells the owner a plant may be unhealthy. Never throws, so a failed
+// notification can't stop the health check from being saved.
+async function tellOwner(ownerId, plantId, visitId, outcome) {
+  try {
+    const plant = await Plant.findOne({ plantId }).lean();
+    const name = plant?.plantName || "Your plant";
+    const issue = outcome.issues?.[0]?.name || "an issue";
+    await notifyUser(
+      ownerId,
+      "plant_health",
+      `${name} may be unhealthy: ${issue}. See Plant health in My requests.`,
+      visitId
+    );
+  } catch (err) {
+    console.warn("Could not notify owner about plant health:", err.message);
+  }
+}
+
 // Runs one check per plant, one after another. Never throws: a failure is saved as "failed".
 async function runHealthChecks({ items, filesByPlant, ownerId, visitId }) {
   for (const item of items) {
@@ -108,6 +127,7 @@ async function runHealthChecks({ items, filesByPlant, ownerId, visitId }) {
     } catch (err) {
       console.warn(`Health check failed for plant ${item.plantId}:`, err.message);
       await HealthCheck.create({ ...base, status: "failed", error: err.message }).catch(() => {});
+      if (outcome.isHealthy === false) await tellOwner(ownerId, item.plantId, visitId, outcome);
     }
   }
 }
