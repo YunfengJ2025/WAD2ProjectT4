@@ -197,29 +197,33 @@ async function submitVisitProof(details) {
       <p v-else-if="!assignments.length">
         You have no accepted visits yet. Use “Available Sits” to find one nearby.
       </p>
-      <AssignedVisitCard
-        v-for="visit in assignments"
-        :key="visit.visitId"
-        :visit="visit"
-        :busy="submittingVisitId === visit.visitId"
-        :opting-out="optingOutVisitId === visit.visitId"
-        @submit-proof="submitVisitProof"
-        @opt-out="optOutVisit"
-      />
+      <div v-if="assignments.length" class="visit-card-grid">
+        <AssignedVisitCard
+          v-for="visit in assignments"
+          :key="visit.visitId"
+          :visit="visit"
+          :busy="submittingVisitId === visit.visitId"
+          :opting-out="optingOutVisitId === visit.visitId"
+          @submit-proof="submitVisitProof"
+          @opt-out="optOutVisit"
+        />
+      </div>
     </section>
 
     <section v-if="props.section !== 'available'" class="panel">
       <h2>Visit history</h2>
       <Loading v-if="loading" label="Loading history…" />
       <p v-else-if="!history.length">No visits submitted yet.</p>
-      <VisitHistoryCard
-        v-for="visit in history"
-        :key="visit.visitId"
-        :visit="visit"
-        :paid="paidVisitIds.includes(visit.visitId)"
-        :busy="submittingVisitId === visit.visitId"
-        @claim-reward="claimReward"
-      />
+      <div v-if="history.length" class="visit-card-grid">
+        <VisitHistoryCard
+          v-for="visit in history"
+          :key="visit.visitId"
+          :visit="visit"
+          :paid="paidVisitIds.includes(visit.visitId)"
+          :busy="submittingVisitId === visit.visitId"
+          @claim-reward="claimReward"
+        />
+      </div>
     </section>
   </main>
 </template>
@@ -286,5 +290,11 @@ h1 {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 0.85rem;
   margin-top: 1rem;
+}
+.visit-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  align-items: stretch;
+  gap: 1rem;
 }
 </style>
