@@ -20,7 +20,14 @@ const loadError = ref('')
 
 const pinSelected = ref(null) // the visit chosen from the list or the map
 const radiusKm = ref(1)
-const selectedDate = ref('')
+const todayYmd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }) // "2026-11-03"
+const selectedDate = ref(todayYmd)
+
+// "See all requests" mode: requests grouped by owner for their whole request period
+// it is simply "no date picked", so clearing the date input also switches to this view
+const showAll = computed(() => !selectedDate.value)
+const activeGroupKey = ref('') // the grouped request opened from the list ('' = show the list)
+
 
 const acceptingId = ref(0) // visitId being accepted right now, so the button can't be double-clicked
 const acceptedNote = ref('') // shown after a successful accept
@@ -53,6 +60,26 @@ const filteredRequests = computed(() =>
     (v) => (!selectedDate.value || v.date === selectedDate.value) && v.distanceKm <= radiusKm.value,
   ),
 )
+
+// ---- "See all requests": group the visits by owner and request period (no date picked, so every date is in) ----
+const requestGroups = computed(() => {
+  const groups = new Map()
+  for (const v of filteredRequests.value) {
+    const key = `${v.ownerId}|${v.startDate}|${v.endDate}`
+    if (!groups.has(key)) groups.set(key, { ...v, key, visits: [] }) // the first visit supplies the owner, address and period
+    groups.get(key).visits.push(v)
+  }
+  for (const g of groups.values()) g.visits.sort((a, b) => a.date.localeCompare(b.date))
+  return [...groups.values()] // still nearest first
+})
+
+const activeGroup = computed(() => requestGroups.value.find((g) => g.key === activeGroupKey.value))
+
+// up to 3 plant photos for the strip at the top of a grouped request
+function groupPhotos(g) {
+  const photos = g.visits.flatMap((v) => v.plants.map((p) => p.photoUrl)).filter(Boolean)
+  return photos.length ? photos.slice(0, 3) : [plantPlaceholder]
+}
 
 // 0.45 km shows as "450 m", 1.2 km as "1.2 km"
 // rounding to whole metres first avoids float noise like 0.30000000000000004 or 0.9999 showing as "1000 m"
@@ -129,7 +156,7 @@ async function acceptVisit(visit) {
 <template>
   <h1>Find nearby</h1>
   <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
-
+  <!-- filter bar section -->
   <div class="filterBar">
     <label class="distanceLabel">
       <span class="distanceText">Distance: {{ formatDistance(radiusKm) }}</span>
@@ -160,6 +187,15 @@ async function acceptVisit(visit) {
         aria-label="Filter requests by date"
       />
     </label>
+    <button
+      type="button"
+      class="allRequests"
+      :class="{ isActive: showAll }"
+      :aria-pressed="showAll"
+      @click="selectedDate = showAll ? todayYmd : ''; activeGroupKey = ''"
+    >
+      {{ showAll ? 'Back to date view' : 'See all requests' }}
+    </button>
   </div>
 
   <p v-if="loading" role="status">Finding plants near you…</p>
@@ -189,39 +225,155 @@ async function acceptVisit(visit) {
           <RouterLink :to="{ path: '/requests', query: { tab: 'sits' } }">View in My Sits →</RouterLink>
         </p>
 
-        <p v-if="filteredRequests.length === 0">
-          No requests within {{formatDistance(radiusKm)}}. Try widening the distance or changing the date.
-        </p>
+        <!-- ===== See all requests: grouped by owner, whole request period ===== -->
+        <template v-if="showAll">
+          <!-- one grouped request opened: its owner, period and one card per open day -->
+          <div v-if="activeGroup" class="detail">
+            <button type="button" class="btn btn-sm btn-outline-secondary backBtn" @click="activeGroupKey = ''">
+              ← Back to all requests
+            </button>
 
-        <ul v-else class="requestList">
-          <li
-            v-for="(v, i) in filteredRequests"
-            :key="v.visitId"
-            class="requestCard"
-            :style="{ animationDelay: `${Math.min(i, 8) * 60}ms` }"
-            tabindex="0"
-            @click="pinSelected = v"
-            @keydown.enter="pinSelected = v"
-          >
-            <img
-              :src="v.photoUrl || plantPlaceholder"
-              :alt="v.plants[0]?.plantName || 'Plant'"
-              class="plantPhoto"
-              @error="$event.target.src = plantPlaceholder"
-            />
-            <div class="cardText">
-              <h3>{{ v.address }}</h3>
-              <p>{{ formatDistance(v.distanceKm) }} away · {{ formatDate(v.visitDate) }}</p>
-              <p>{{ plantCountLabel(v) }} · {{ v.tokenReward }} tokens</p>
+            <div class="photoStrip">
+              <img
+                v-for="(src, i) in groupPhotos(activeGroup)"
+                :key="i"
+                :src="src"
+                :alt="`${activeGroup.ownerName}'s plants`"
+                @error="$event.target.src = plantPlaceholder"
+              />
             </div>
-          </li>
-        </ul>
+
+            <header class="detailHead">
+              <h2>{{ activeGroup.address }}</h2>
+              <div class="chips">
+                <span class="chip">{{ formatDistance(activeGroup.distanceKm) }} away</span>
+                <span v-if="formatPeriod(activeGroup)" class="chip">{{ formatPeriod(activeGroup) }}</span>
+                <span class="chip chipReward">
+                  {{ activeGroup.visits.length }} day{{ activeGroup.visits.length === 1 ? '' : 's' }} open
+                </span>
+              </div>
+            </header>
+
+            <RouterLink
+              class="ownerBtn"
+              :to="{ name: 'public-profile', params: { userId: activeGroup.ownerId } }"
+              :aria-label="`View ${activeGroup.ownerName}'s profile`"
+            >
+              <UserAvatar :user="{ userName: activeGroup.ownerName, photoUrl: activeGroup.ownerPhotoUrl }" :size="46" />
+              <span class="ownerText">
+                <small>Posted by</small>
+                <strong>{{ activeGroup.ownerName }}</strong>
+              </span>
+              <span class="ownerGo">View profile ›</span>
+            </RouterLink>
+
+            <section>
+              <h3 class="sectionTitle">Choose a visit</h3>
+              <p class="groupNote">Each day is a separate visit. You only commit to the day you pick.</p>
+              <ul class="requestList">
+                <li
+                  v-for="v in activeGroup.visits"
+                  :key="v.visitId"
+                  class="requestCard"
+                  tabindex="0"
+                  @click="pinSelected = v"
+                  @keydown.enter="pinSelected = v"
+                >
+                  <img
+                    :src="v.photoUrl || plantPlaceholder"
+                    :alt="v.plants[0]?.plantName || 'Plant'"
+                    class="plantPhoto"
+                    @error="$event.target.src = plantPlaceholder"
+                  />
+                  <div class="cardText">
+                    <h3>{{ formatDate(v.visitDate) }}</h3>
+                    <p>{{ v.plants.map((p) => p.plantName).join(', ') }}</p>
+                    <div class="chips cardChips">
+                      <span class="chip">{{ plantCountLabel(v) }}</span>
+                      <span class="chip chipReward">{{ v.tokenReward }} tokens</span>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <!-- the list of grouped requests, nearest first -->
+          <template v-else>
+            <p v-if="requestGroups.length === 0">
+              No requests within {{ formatDistance(radiusKm) }}. Try widening the distance.
+            </p>
+
+            <ul v-else class="requestList">
+              <li
+                v-for="(g, i) in requestGroups"
+                :key="g.key"
+                class="requestCard"
+                :style="{ animationDelay: `${Math.min(i, 8) * 60}ms` }"
+                tabindex="0"
+                @click="activeGroupKey = g.key"
+                @keydown.enter="activeGroupKey = g.key"
+              >
+                <img
+                  :src="g.photoUrl || plantPlaceholder"
+                  :alt="`${g.ownerName}'s plants`"
+                  class="plantPhoto"
+                  @error="$event.target.src = plantPlaceholder"
+                />
+                <div class="cardText">
+                  <h3>{{ g.address }}</h3>
+                  <p>{{ g.ownerName }}</p>
+                  <div class="chips cardChips">
+                    <span class="chip">{{ formatDistance(g.distanceKm) }} away</span>
+                    <span v-if="formatPeriod(g)" class="chip">{{ formatPeriod(g) }}</span>
+                    <span class="chip chipReward">{{ g.visits.length }} day{{ g.visits.length === 1 ? '' : 's' }} open</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </template>
+        </template>
+
+        <!-- ===== Normal view: the chosen day only ===== -->
+        <template v-else>
+          <p v-if="filteredRequests.length === 0">
+            No requests within {{formatDistance(radiusKm)}}. Try widening the distance or changing the date.
+          </p>
+
+          <ul v-else class="requestList">
+            <li
+              v-for="(v, i) in filteredRequests"
+              :key="v.visitId"
+              class="requestCard"
+              :style="{ animationDelay: `${Math.min(i, 8) * 60}ms` }"
+              tabindex="0"
+              @click="pinSelected = v"
+              @keydown.enter="pinSelected = v"
+            >
+              <img
+                :src="v.photoUrl || plantPlaceholder"
+                :alt="v.plants[0]?.plantName || 'Plant'"
+                class="plantPhoto"
+                @error="$event.target.src = plantPlaceholder"
+              />
+              <div class="cardText">
+                <h3>{{ v.address }}</h3>
+                <p>{{ v.ownerName }} · {{ plantCountLabel(v) }}</p>
+                <div class="chips cardChips">
+                  <span class="chip">{{ formatDistance(v.distanceKm) }} away</span>
+                  <span class="chip">{{ formatDate(v.visitDate) }}</span>
+                  <span class="chip chipReward">{{ v.tokenReward }} tokens</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </template>
       </div>
 
       <!-- pin selected: details and the accept button -->
       <div v-else class="detail">
         <button type="button" class="btn btn-sm btn-outline-secondary backBtn" @click="pinSelected = null">
-          ← Back to list
+          {{ showAll ? '← Back' : '← Back to list' }}
         </button>
 
         <header class="detailHead">
@@ -332,6 +484,33 @@ h1 {
   display: flex;
   gap: 1.5rem;
   margin: 1rem 0;
+}
+
+/* ---------- see all requests button ---------- */
+.allRequests {
+  align-self: flex-end;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #d5ded8;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #46584c;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.25s ease, background 0.2s, color 0.2s;
+}
+
+.allRequests:hover,
+.allRequests:focus-visible {
+  border-color: var(--accent, #2f7d4f);
+  box-shadow: 0 0 0 3px rgba(47, 125, 79, 0.18);
+  outline: none;
+}
+
+.allRequests.isActive {
+  background: var(--accent, #2f7d4f);
+  border-color: var(--accent, #2f7d4f);
+  color: #fff;
 }
 
 /* ---------- distance slider (green fill, plant thumb, bubble) ---------- */
@@ -543,6 +722,7 @@ h1 {
 /* same lift-on-hover as the cards on the schedule page */
 .requestCard {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.6rem;
   border: 1px solid #ddd;
@@ -587,14 +767,37 @@ h1 {
   flex-shrink: 0;
 }
 
+/* every request card: title, one muted line, then the same small chips */
+.cardText {
+  min-width: 0;
+  flex: 1;
+}
+
 .cardText h3 {
-  margin: 0 0 0.25rem;
+  margin: 0;
   font-size: 1rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardText p {
-  margin: 0;
-  font-size: 0.85rem;
+  margin: 0.1rem 0 0.4rem;
+  color: #637466;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardChips {
+  gap: 0.3rem;
+}
+
+.cardChips .chip {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
 }
 
 .acceptedNote {
@@ -639,6 +842,7 @@ h1 {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid #d5ded8;
   color: #46584c;
+  white-space: nowrap;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -647,6 +851,27 @@ h1 {
   background: var(--accent, #2f7d4f);
   border-color: var(--accent, #2f7d4f);
   color: #fff;
+}
+
+/* ---------- grouped request (see all requests) ---------- */
+.photoStrip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0.4rem;
+}
+
+.photoStrip img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.groupNote {
+  margin: 0 0 0.5rem;
+  color: #637466;
+  font-size: 0.82rem;
 }
 
 /* owner button */
