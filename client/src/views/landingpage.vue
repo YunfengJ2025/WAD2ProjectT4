@@ -13,6 +13,16 @@ function scrollToSky() {
   document.getElementById('welcome-title')?.focus({ preventScroll: true })
 }
 
+// second "Scroll down": sky section -> how it works
+const featuresSection = ref(null)
+function scrollToFeatures() {
+  featuresSection.value?.scrollIntoView({
+    behavior: reducedMotion.value ? 'auto' : 'smooth',
+    block: 'start',
+  })
+  document.getElementById('features-title')?.focus({ preventScroll: true })
+}
+
 const canvas = ref(null)
 const treeButton = ref(null)
 const orbitRadius = ref(320)
@@ -403,13 +413,32 @@ onUnmounted(() => {
               </div>
             </div>
           </section>
+
+          <!-- same scroll cue as the galaxy intro, in the theme green -->
+          <a class="scroll-cue sky-cue" href="#how-it-works" @click.prevent="scrollToFeatures">
+            <span>Scroll down</span>
+            <svg viewBox="0 0 24 40" width="24" height="40" fill="none" aria-hidden="true">
+              <path
+                d="M12 2v32m-7-7 7 7 7-7"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
         </section>
 
-        <section id="how-it-works" class="tree-section" aria-labelledby="features-title">
+        <section
+          id="how-it-works"
+          ref="featuresSection"
+          class="tree-section"
+          aria-labelledby="features-title"
+        >
           <div class="tree-sticky">
             <div class="section-intro">
               <p class="eyebrow">ROOTED IN COMMUNITY</p>
-              <h2 id="features-title">
+              <h2 id="features-title" tabindex="-1">
                 Everything you need.<br /><span>One growing community.</span>
               </h2>
               <p class="tree-hint">Click the tree to explore the next feature.</p>
@@ -468,11 +497,19 @@ onUnmounted(() => {
   isolation: isolate;
   width: 100vw;
   margin-left: calc(50% - 50vw);
+  /* cancel #app's 1.5rem bottom padding (main.css), so no pale strip under the footer */
+  margin-bottom: -1.5rem;
   --descent-height: clamp(240px, 38svh, 420px);
   color: var(--ink);
   overflow: clip;
   font-family: var(--font-body);
   background: #9fd6f2;
+}
+/* (Carolyn) from 1024px, #app's bottom padding is 2rem instead (main.css) */
+@media (min-width: 1024px) {
+  .landing {
+    margin-bottom: -2rem;
+  }
 }
 .galaxy-intro {
   position: relative;
@@ -579,12 +616,22 @@ onUnmounted(() => {
   margin-inline: auto;
 }
 .hero {
+  position: relative; /* so the scroll cue sits at its bottom */
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 100px;
   min-height: 94svh;
   padding-block: 60px;
+}
+/* sky scroll cue: green text on the light sky, below the content */
+.scroll-cue.sky-cue {
+  bottom: 8px;
+  color: var(--primary);
+  font-weight: 600;
+}
+.scroll-cue.sky-cue:hover {
+  color: var(--primary-deep, var(--primary));
 }
 .eyebrow {
   display: block;
@@ -972,7 +1019,7 @@ h2 span {
   .hero {
     grid-template-columns: 1fr;
     gap: 45px;
-    padding-block: 30px 40px;
+    padding-block: 30px 120px; /* was 30px 40px; room for the scroll cue */
     min-height: auto;
   }
   .hero-title {

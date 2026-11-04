@@ -46,6 +46,14 @@ function submit() {
     error.value = 'Choose a proof photo for each plant.'
     return
   }
+  // Care checklist (Carolyn): every step must be ticked before submitting
+  const unfinished = items.find(
+    (item) => ticked[item.plantId].length < careSteps[item.plantId].length,
+  )
+  if (unfinished) {
+    error.value = `Tick every care step for ${unfinished.plant?.plantName || 'each plant'} first.`
+    return
+  }
   emit('submit-proof', {
     visit: props.visit,
     // Care checklist (Carolyn): the note is optional now (the checklist shows what was done).
@@ -94,7 +102,7 @@ function date(value) {
           <p v-if="item.careInstructions && !careSteps[item.plantId].length">
             {{ item.careInstructions }}
           </p>
-          <!-- Care checklist (Carolyn): the owner's instructions as tick boxes (optional) -->
+          <!-- Care checklist (Carolyn): the owner's instructions as tick boxes (all required to submit) -->
           <fieldset v-if="careSteps[item.plantId].length" class="care-checklist">
             <legend>
               Care checklist
