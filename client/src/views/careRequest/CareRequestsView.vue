@@ -6,6 +6,8 @@ import { useRoute } from 'vue-router'
 import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
+import PlantHealthPanel from '@/components/careRequest/PlantHealthPanel.vue'
+import plantPlaceholder from '@/assets/plant.png'
 
 // Let the parent tabs show request creation and the owner's request list separately.
 const props = defineProps({
@@ -125,14 +127,54 @@ async function requestMakeup({ request, visit }) {
     makeupBusyVisitId.value = 0
   }
 }
+
+// ---------- filter pills: Active / Completed / Cancelled ----------
+const GROUPS = [
+  { key: 'active', label: 'Active' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+]
+const filter = ref('active')
+
+// anything that is not finished or cancelled counts as active (funding, open, in progress)
+const groupOf = (request) => (['completed', 'cancelled'].includes(request.status) ? request.status : 'active')
+const groups = computed(() =>
+  GROUPS.map((group) => ({ ...group, requests: owned.value.filter((request) => groupOf(request) === group.key) })),
+)
+const shown = computed(() => groups.value.find((group) => group.key === filter.value)?.requests ?? [])
+// the other groups that have something in them, shown as folded strips under the list
+const others = computed(() => groups.value.filter((group) => group.key !== filter.value && group.requests.length))
+
+// the owner opened a health result: save that it has been seen (if this fails it simply stays marked new)
+async function markHealthSeen(check) {
+  try {
+    const result = await auth.authorizedRequest(`/care-requests/health/${check.healthCheckId}/seen`, { method: 'PATCH' })
+    check.ownerSeenAt = result.healthCheck.ownerSeenAt
+  } catch {
+    // leave it as new
+  }
+}
 </script>
 
 <template>
   <main class="care-page">
     <header class="page-heading">
-      <h1>{{ props.section === 'mine' ? 'My requests' : 'Care requests' }}</h1>
-      <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
-      <p v-else>View and manage the care requests you have posted.</p>
+      <div>
+        <h1>{{ props.section === 'mine' ? 'My requests' : 'Care requests' }}</h1>
+        <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
+        <p v-else>View and manage the care requests you have posted.</p>
+      </div>
+      <div v-if="props.section !== 'create' && owned.length" class="pills" role="group" aria-label="Filter requests">
+        <button
+          v-for="group in groups"
+          :key="group.key"
+          type="button"
+          class="pill"
+          :class="{ on: filter === group.key }"
+          :aria-pressed="filter === group.key"
+          @click="filter = group.key"
+        >{{ group.label }}<b>{{ group.requests.length }}</b></button>
+      </div>
     </header>
 
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
@@ -155,29 +197,76 @@ async function requestMakeup({ request, visit }) {
       />
     </template>
 
-    <section v-if="props.section !== 'create'" class="panel requests-list">
-      <h2>My requests</h2>
+    <section v-if="props.section !== 'create'" class="requests-list">
+      <h2 v-if="props.section === 'all'">My requests</h2>
       <p v-if="loading" role="status">Loading requests…</p>
       <p v-else-if="!owned.length">You haven’t posted a request yet.</p>
-      <CareRequestCard
-        v-for="request in owned"
-        :key="request.requestId"
-        :request="request"
-        :highlighted="String(route.query.requestId) === String(request.requestId)"
-        :busy="cancellingRequestId === request.requestId"
-        :makeup-busy-visit-id="makeupBusyVisitId"
-        @cancel-request="cancelRequest"
-        @makeup-request="requestMakeup"
-      />
+      <template v-else>
+        <PlantHealthPanel :requests="owned" @seen="markHealthSeen" />
+
+        <p v-if="!shown.length" class="empty">No {{ filter }} requests.</p>
+        <CareRequestCard
+          v-for="request in shown"
+          :key="request.requestId"
+          :request="request"
+          :busy="cancellingRequestId === request.requestId"
+          :makeup-busy-visit-id="makeupBusyVisitId"
+          @cancel-request="cancelRequest"
+          @makeup-request="requestMakeup"
+        />
+
+        <!-- the other groups, folded: click one to switch to it -->
+        <button
+          v-for="group in others"
+          :key="group.key"
+          type="button"
+          class="fold"
+          :class="`fold-${group.key}`"
+          @click="filter = group.key"
+        >
+          <span>▸ {{ group.label }} · {{ group.requests.length }}</span>
+          <span class="thumbs" aria-hidden="true">
+            <img
+              v-for="request in group.requests.slice(0, 4)"
+              :key="request.requestId"
+              :src="request.plants?.[0]?.photoUrl || plantPlaceholder"
+              alt=""
+              @error="$event.target.src = plantPlaceholder"
+            />
+            <span v-if="group.requests.length > 4" class="more">+{{ group.requests.length - 4 }}</span>
+          </span>
+        </button>
+      </template>
     </section>
   </main>
 </template>
 
 <style scoped>
 .care-page { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
-.page-heading { margin-bottom: 1.25rem; }
+.page-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.75rem 1rem; margin-bottom: 1.25rem; }
 h1 { font-weight: 700; }
 .panel { padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--color-border, #dce5dc); border-radius: 12px; background: var(--surface, #fff); }
 .panel h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+.requests-list h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .requests-list { margin-top: 1rem; }
+.empty { color: #59665c; }
+
+/* filter pills */
+.pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pill { padding: 0.35rem 0.9rem; border: 1px solid #dce5dc; border-radius: 999px; background: #fff; color: #59665c; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background-color 0.18s ease, color 0.18s ease; }
+.pill b { margin-left: 0.35rem; color: #1f2d24; }
+.pill:hover { background: #f0f8f1; }
+.pill.on { border-color: #245b34; background: #245b34; color: #fff; }
+.pill.on b { color: #fff; }
+.pill:focus-visible, .fold:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+/* folded strips for the other groups */
+.fold { --tone: #6c757d; --tone-bg: rgba(108, 117, 125, 0.08); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; margin-bottom: 0.6rem; padding: 0.55rem 0.9rem; border: 1px dashed var(--tone); border-radius: 12px; background: var(--tone-bg); color: var(--tone); font-size: 0.9rem; font-weight: 600; text-align: left; cursor: pointer; }
+.fold:hover { filter: brightness(0.97); }
+.fold-completed { --tone: #198754; --tone-bg: rgba(22, 163, 74, 0.08); }
+.thumbs { display: flex; align-items: center; }
+.thumbs img, .thumbs .more { width: 30px; height: 30px; margin-left: -8px; border: 2px solid #fff; border-radius: 50%; object-fit: cover; background: #fff; }
+.thumbs .more { display: grid; place-items: center; color: #4d5650; font-size: 0.7rem; }
+
+@media (prefers-reduced-motion: reduce) { .pill { transition: none; } }
 </style>

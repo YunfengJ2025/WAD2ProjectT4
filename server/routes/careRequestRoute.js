@@ -6,4 +6,5 @@ router.use(requireUser);
 router.get("/", controller.mine);
 router.post("/", controller.create);
 router.post("/:requestId/cancel", controller.cancel);
+router.patch("/health/:healthCheckId/seen", controller.markHealthSeen);
 module.exports = router;
