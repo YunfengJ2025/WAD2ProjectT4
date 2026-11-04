@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -216,14 +217,8 @@ async function onDelete() {
 <template>
   <main class="detail-page">
 
-    <div v-if="loading" aria-busy="true">
-      <div class="skeleton line wide"></div>
-      <div class="skeleton banner-skeleton"></div>
-      <div class="grid">
-        <div class="skeleton card-skeleton"></div>
-        <div class="skeleton card-skeleton"></div>
-      </div>
-    </div>
+    <!-- Keep plant detail loading consistent with the rest of the app. -->
+    <Loading v-if="loading" label="Loading plant details…" />
 
     <div v-else-if="loadError" class="state" role="alert">
       <h1>Couldn't load this plant</h1>

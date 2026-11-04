@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -120,9 +121,8 @@ onMounted(async () => {
 
     <ScheduleViewToggle v-model="view" :badge="sittingTodo" />
 
-    <div v-if="busy" class="text-center my-3">
-      <div class="spinner-border" role="status"><span class="visually-hidden">Loading…</span></div>
-    </div>
+    <!-- Use the shared tree for both owner and sitter schedule requests. -->
+    <Loading v-if="busy" label="Loading schedule…" />
     <div v-else-if="failure" class="alert alert-danger">
       Could not load {{ view === 'sitting' ? 'the plants you are sitting' : 'your schedule' }}: {{ failure }}
     </div>

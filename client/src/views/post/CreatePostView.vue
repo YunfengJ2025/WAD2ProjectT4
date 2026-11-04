@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -153,9 +154,8 @@ async function publish() {
         ><span aria-hidden="true">✎</span> {{ editing ? 'Editing post' : 'New post' }}</span
       >
     </header>
-    <p v-if="loading" class="composer-loading" role="status">
-      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading your post…
-    </p>
+    <!-- Editing loads the existing post before displaying its form. -->
+    <Loading v-if="loading" label="Loading your post…" />
     <div v-else-if="loadError" class="community-error" role="alert">
       <p>{{ loadError }}</p>
       <button type="button" class="btn" @click="loadPost">Try again</button>
