@@ -216,7 +216,6 @@ async function onDelete() {
 
 <template>
   <main class="detail-page">
-    <RouterLink to="/plants" class="back"><span class="arrow">←</span> My Plants</RouterLink>
 
     <!-- Keep plant detail loading consistent with the rest of the app. -->
     <Loading v-if="loading" label="Loading plant details…" />
@@ -398,32 +397,6 @@ async function onDelete() {
   --line: #e1e8e3;
   font-size: 15px;
   color: var(--text-dark);
-}
-
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 0;
-  color: var(--text-soft);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.back:hover {
-  background: transparent;
-  color: var(--accent);
-}
-
-.back .arrow {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-
-.back:hover .arrow {
-  transform: translateX(-3px);
 }
 
 /* Header */

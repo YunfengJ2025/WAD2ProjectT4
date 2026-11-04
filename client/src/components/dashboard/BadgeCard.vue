@@ -175,7 +175,8 @@ defineProps({ badge: { type: Object, required: true } })
   font-weight: 700;
 }
 
-@media (max-width: 480px) {
+/* Bootstrap responsive badge card breakpoints */
+@media (max-width: 575.98px) {
   .badge-card {
     padding: var(--space-sm);
     gap: var(--space-xs);

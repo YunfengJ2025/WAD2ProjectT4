@@ -1,6 +1,7 @@
 <script setup>
 import Loading from '@/components/Loading.vue'
 import { onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AssignedVisitCard from '@/components/careVisit/AssignedVisitCard.vue'
 import AvailableVisitCard from '@/components/careVisit/AvailableVisitCard.vue'
@@ -154,11 +155,16 @@ async function submitVisitProof(details) {
 <template>
   <main class="visits-page">
     <header class="page-heading">
-      <h1>{{ props.section === 'available' ? 'Available sits' : 'My sits' }}</h1>
-      <p v-if="props.section === 'available'">
-        Browse open visits and accept ones that fit your schedule.
-      </p>
-      <p v-else>Complete the visits you accepted and review your visit history.</p>
+      <div>
+        <h1>{{ props.section === 'available' ? 'Available sits' : 'My sits' }}</h1>
+        <p v-if="props.section === 'available'">
+          Browse open visits and accept ones that fit your schedule.
+        </p>
+        <p v-else>Complete the visits you accepted and review your visit history.</p>
+      </div>
+      <RouterLink v-if="props.section === 'mine'" to="/find-nearby" class="btn btn-primary">
+        Available sits
+      </RouterLink>
     </header>
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="message" class="alert alert-success" role="status">{{ message }}</p>
@@ -189,7 +195,7 @@ async function submitVisitProof(details) {
       <h2>Accepted visits</h2>
       <Loading v-if="loading" label="Loading visits…" />
       <p v-else-if="!assignments.length">
-        You have no accepted visits yet. Browse the available visits above.
+        You have no accepted visits yet. Use “Available sits” to find one nearby.
       </p>
       <AssignedVisitCard
         v-for="visit in assignments"
@@ -224,8 +230,20 @@ async function submitVisitProof(details) {
   margin: 0 auto;
   padding: 0 1rem 3rem;
 }
+/* Same layout as My Plants: title on the left, action button top right. */
 .page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1.25rem;
+}
+.page-heading p {
+  margin: 0;
+}
+.page-heading .btn:active {
+  transform: scale(0.96);
 }
 h1 {
   font-weight: 700;

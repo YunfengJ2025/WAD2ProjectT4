@@ -23,7 +23,10 @@
             </span>
           </div>
           <!-- <router-link> — covered in WAD2 wk6 (Vue Router) -->
-          <router-link to="/leaderboard" class="btn btn-primary btn-sm">🏆 View Leaderboard</router-link>
+          <router-link to="/leaderboard" class="btn btn-primary btn-sm btn-nav-action">
+            <span class="btn-icon">🏆</span>
+            <span class="btn-text">View Leaderboard</span>
+          </router-link>
         </div>
       </header>
 
@@ -210,14 +213,45 @@ onMounted(() => {
 /* scoped styles — Vue SFC structure shown in WAD2 wk6 */
 
 .dashboard-page {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   padding-bottom: var(--space-2xl); /* CSS custom property [NOT IN WAD2 CONTENT] */
+  box-sizing: border-box;
 }
 
 .content {
-  padding: 0 var(--space-xl);
-  max-width: 1280px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0 1rem;
+}
+
+@media (min-width: 576px) {
+  .content {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .content {
+    max-width: 1280px;
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .content {
+    max-width: 1360px;
+    padding: 0 2.5rem;
+  }
 }
 
 .page-header {
@@ -227,6 +261,7 @@ onMounted(() => {
   margin-bottom: var(--space-xl);
   flex-wrap: wrap;
   gap: var(--space-md);
+  width: 100%;
 }
 
 .greeting {
@@ -253,6 +288,30 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+}
+
+.btn-nav-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1 !important;
+  vertical-align: middle;
+  padding: 8px 16px !important;
+}
+
+.btn-nav-action .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.btn-nav-action .btn-text {
+  display: inline-block;
+  line-height: 1;
 }
 
 .token-pill {
@@ -285,12 +344,13 @@ onMounted(() => {
   margin-left: 4px;
 }
 
-/* CSS Grid — [NOT IN WAD2 CONTENT] WAD2 wk3 teaches Bootstrap grid, not CSS Grid */
+/* CSS Grid with Bootstrap 5 Breakpoints */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
+  width: 100%;
 }
 
 .stat-card {
@@ -300,6 +360,8 @@ onMounted(() => {
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-xl);
   border: 1px solid var(--glass-border);
+  min-width: 0;
+  box-sizing: border-box;
   transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
 }
 
@@ -337,18 +399,22 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-/* CSS Grid — [NOT IN WAD2 CONTENT] */
+/* CSS Grid with responsive columns */
 .charts-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xl);
   margin-bottom: var(--space-xl);
+  width: 100%;
 }
 
 .chart-card {
   padding: var(--space-xl);
   border-radius: var(--radius-xl);
   border: 1px solid var(--glass-border);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base); /* [NOT IN WAD2 CONTENT] */
 }
 
@@ -375,6 +441,8 @@ onMounted(() => {
 .section.glass-card {
   padding: var(--space-xl);
   border-radius: var(--radius-xl);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -401,12 +469,24 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--space-md);
+  width: 100%;
 }
 
-/* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */
-@media (max-width: 1400px) {
+/* ============================================================
+   RESPONSIVE DESIGN — BOOTSTRAP 5 BREAKPOINTS
+   WAD2 Week 3 Bootstrap Grid System:
+   - xxl: ≥1400px (desktop wide)
+   - xl:  ≥1200px (standard desktop)
+   - lg:  ≥992px  (laptops/desktops)
+   - md:  ≥768px  (tablets)
+   - sm:  ≥576px  (landscape phones)
+   - xs:  <576px  (portrait mobile phones)
+   ============================================================ */
+
+/* Bootstrap XXL -> XL (<1400px) */
+@media (max-width: 1399.98px) {
   .stats-row {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-sm);
   }
   .stat-card {
@@ -414,9 +494,11 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 1200px) {
+/* Bootstrap XL -> LG (<1200px) */
+@media (max-width: 1199.98px) {
   .stats-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
   }
   .charts-row {
     grid-template-columns: 1fr;
@@ -424,22 +506,21 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 1024px) {
+/* Bootstrap LG -> MD (<992px) */
+@media (max-width: 991.98px) {
   .stats-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .charts-row {
     grid-template-columns: 1fr;
   }
   .badges-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
 }
 
-@media (max-width: 768px) {
-  .content {
-    padding: 0 var(--space-md);
-  }
+/* Bootstrap MD -> SM (<768px - tablets and mobile) */
+@media (max-width: 767.98px) {
   .page-header {
     flex-direction: column;
     align-items: stretch;
@@ -474,12 +555,10 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 640px) {
-  .content {
-    padding: 0 var(--space-sm);
-  }
+/* Bootstrap SM -> XS (<576px - small phones) */
+@media (max-width: 575.98px) {
   .page-header h1 {
-    font-size: 1.65rem;
+    font-size: 1.6rem;
   }
   .subtitle {
     font-size: 0.8rem;
@@ -519,7 +598,8 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 380px) {
+/* Extra small mobile (<380px) */
+@media (max-width: 379.98px) {
   .stat-card {
     padding: var(--space-xs) var(--space-sm);
   }

@@ -18,7 +18,10 @@
           <router-link> — covered in WAD2 wk6 (Vue Router)
         -->
         <div class="header-actions">
-          <router-link to="/dashboard" class="btn btn-primary btn-sm">🌱 View Dashboard</router-link>
+          <router-link to="/dashboard" class="btn btn-primary btn-sm btn-nav-action">
+            <span class="btn-icon">🌱</span>
+            <span class="btn-text">View Dashboard</span>
+          </router-link>
           <div class="opt-out-box glass-card">
             <label class="switch-label">
               <input type="checkbox" :checked="isOptedOut" @change="toggleOptOut" class="styled-checkbox" />
@@ -31,13 +34,19 @@
       <!--
         TOP 3 PODIUM
         v-if — covered in WAD2 wk4 (Vue Basics I)
-        :src prop binding for <img> — covered in WAD2 wk4
+        UserAvatar component renders user photo or clean initials fallback
       -->
       <div v-if="filteredLeaderboard.length >= 3" class="podium-section anim-slide-up anim-delay-1">
         <!-- 2nd Place -->
         <div class="podium-card glass-card silver">
           <span class="medal">🥈</span>
-          <img :src="filteredLeaderboard[1].avatarUrl" alt="Avatar" class="podium-avatar" />
+          <div class="podium-avatar-container">
+            <UserAvatar
+              :user="{ photoUrl: filteredLeaderboard[1].photoUrl, userName: filteredLeaderboard[1].name }"
+              :size="60"
+              class="podium-avatar"
+            />
+          </div>
           <h4>{{ filteredLeaderboard[1].name }}</h4>
           <div class="token-pill">🪙 {{ filteredLeaderboard[1].availableTokens }}</div>
         </div>
@@ -46,7 +55,13 @@
         <div class="podium-card glass-card gold">
           <span class="crown">👑</span>
           <span class="medal">🥇</span>
-          <img :src="filteredLeaderboard[0].avatarUrl" alt="Avatar" class="podium-avatar top" />
+          <div class="podium-avatar-container">
+            <UserAvatar
+              :user="{ photoUrl: filteredLeaderboard[0].photoUrl, userName: filteredLeaderboard[0].name }"
+              :size="76"
+              class="podium-avatar top"
+            />
+          </div>
           <h4>{{ filteredLeaderboard[0].name }}</h4>
           <div class="token-pill gold-pill">🪙 {{ filteredLeaderboard[0].availableTokens }}</div>
         </div>
@@ -54,7 +69,13 @@
         <!-- 3rd Place -->
         <div class="podium-card glass-card bronze">
           <span class="medal">🥉</span>
-          <img :src="filteredLeaderboard[2].avatarUrl" alt="Avatar" class="podium-avatar" />
+          <div class="podium-avatar-container">
+            <UserAvatar
+              :user="{ photoUrl: filteredLeaderboard[2].photoUrl, userName: filteredLeaderboard[2].name }"
+              :size="60"
+              class="podium-avatar"
+            />
+          </div>
           <h4>{{ filteredLeaderboard[2].name }}</h4>
           <div class="token-pill">🪙 {{ filteredLeaderboard[2].availableTokens }}</div>
         </div>
@@ -81,30 +102,15 @@
           >
             <div class="lb-rank">{{ rankMedal(u.rank) }}</div>
             <!--
-              User Avatar with Profile Photo or Fallback Initial:
-              v-if checks if u.photoUrl exists (uploaded image from Cloudinary).
-              If true, renders <img> with .lb-avatar-img.
-              Otherwise, renders fallback colored circle with the first initial u.name[0].
-              v-if / v-else — covered in WAD2 wk4 (Vue Basics I)
+              User Avatar with UserAvatar component:
+              Uses real photo if available, or clean fallback initials circle.
             -->
             <div class="lb-avatar-wrap">
-              <img
-                v-if="u.photoUrl"
-                :src="u.photoUrl"
-                :alt="`${u.name}'s profile photo`"
+              <UserAvatar
+                :user="{ photoUrl: u.photoUrl, userName: u.name }"
+                :size="36"
                 class="lb-avatar-img"
               />
-              <div
-                v-else
-                class="lb-avatar"
-                :style="{
-                  background: isCurrentUser(u)
-                    ? 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600))'
-                    : 'linear-gradient(135deg, var(--color-neutral-400), var(--color-neutral-600))'
-                }"
-              >
-                {{ u.name ? u.name[0] : '🌱' }}
-              </div>
             </div>
             <div class="lb-name">
               {{ u.name }}
@@ -132,6 +138,7 @@ import { ref, computed, onMounted } from 'vue'
 // axios — covered in WAD2 wk5 (server/client communication)
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 
 // useAuthStore() is a Pinia store — global reactive state for auth [NOT IN WAD2 CONTENT]
 // Holds the logged-in user's data so all components share the same auth state.
@@ -266,14 +273,45 @@ onMounted(async () => {
 /* scoped styles — Vue SFC structure shown in WAD2 wk6 */
 
 .leaderboard-page {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   padding-bottom: var(--space-2xl); /* CSS custom property [NOT IN WAD2 CONTENT] */
+  box-sizing: border-box;
 }
 
 .content {
-  padding: 0 var(--space-xl);
-  max-width: 1280px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0 1rem;
+}
+
+@media (min-width: 576px) {
+  .content {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .content {
+    max-width: 1280px;
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .content {
+    max-width: 1360px;
+    padding: 0 2.5rem;
+  }
 }
 
 .page-header {
@@ -283,6 +321,7 @@ onMounted(async () => {
   margin-bottom: var(--space-xl);
   flex-wrap: wrap;
   gap: var(--space-md);
+  width: 100%;
 }
 
 .greeting {
@@ -310,6 +349,30 @@ onMounted(async () => {
   align-items: center;
   gap: var(--space-md);
   flex-wrap: wrap;
+}
+
+.btn-nav-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1 !important;
+  vertical-align: middle;
+  padding: 8px 16px !important;
+}
+
+.btn-nav-action .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.btn-nav-action .btn-text {
+  display: inline-block;
+  line-height: 1;
 }
 
 .opt-out-box {
@@ -450,14 +513,19 @@ onMounted(async () => {
   display: block;
 }
 
-.podium-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+.podium-avatar-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin: var(--space-xs) auto;
-  border: 2px solid var(--color-neutral-200);
-  background: white;
+}
+
+.podium-avatar {
+  border-radius: 50%;
+  border: 2px solid rgba(47, 125, 74, 0.45);
+  background: var(--accent-soft, #e3f1e6);
   transition: transform var(--transition-bounce);
+  overflow: hidden;
 }
 
 .podium-card:hover .podium-avatar {
@@ -465,10 +533,8 @@ onMounted(async () => {
 }
 
 .podium-avatar.top {
-  width: 76px;
-  height: 76px;
-  border: 3px solid var(--color-accent-400);
-  box-shadow: 0 0 16px rgba(251, 191, 36, 0.4);
+  border: 3.5px solid #eab308;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.45);
 }
 
 .podium-card h4 {
@@ -556,9 +622,8 @@ onMounted(async () => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  object-fit: cover;
   box-shadow: var(--shadow-sm);
-  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  border: 1.5px solid rgba(47, 125, 74, 0.45);
 }
 
 .lb-avatar {
@@ -658,8 +723,19 @@ onMounted(async () => {
   transform: scale(1.08);
 }
 
-/* Responsive media queries — covered in WAD2 wk3 (Bootstrap breakpoints concept) */
-@media (max-width: 1200px) {
+/* ============================================================
+   RESPONSIVE DESIGN — BOOTSTRAP 5 BREAKPOINTS
+   WAD2 Week 3 Bootstrap Grid System:
+   - xxl: ≥1400px (desktop wide)
+   - xl:  ≥1200px (standard desktop)
+   - lg:  ≥992px  (laptops/desktops)
+   - md:  ≥768px  (tablets)
+   - sm:  ≥576px  (landscape phones)
+   - xs:  <576px  (portrait mobile phones)
+   ============================================================ */
+
+/* Bootstrap XL -> LG (<1200px) */
+@media (max-width: 1199.98px) {
   .podium-section {
     gap: var(--space-md);
   }
@@ -668,27 +744,26 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 1024px) {
+/* Bootstrap LG -> MD (<992px) */
+@media (max-width: 991.98px) {
   .podium-section {
     gap: var(--space-md);
   }
   .podium-card {
-    width: 155px;
+    width: 150px;
     padding: var(--space-md) var(--space-sm);
   }
   .podium-avatar.top {
-    width: 68px;
-    height: 68px;
+    width: 66px;
+    height: 66px;
   }
   .lb-name {
-    min-width: 120px;
+    min-width: 115px;
   }
 }
 
-@media (max-width: 768px) {
-  .content {
-    padding: 0 var(--space-md);
-  }
+/* Bootstrap MD -> SM (<768px - tablets and mobile) */
+@media (max-width: 767.98px) {
   .page-header {
     flex-direction: column;
     align-items: stretch;
@@ -735,12 +810,10 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 640px) {
-  .content {
-    padding: 0 var(--space-sm);
-  }
+/* Bootstrap SM -> XS (<576px - phones) */
+@media (max-width: 575.98px) {
   .page-header h1 {
-    font-size: 1.7rem;
+    font-size: 1.65rem;
   }
   .header-actions {
     flex-direction: column;
@@ -796,7 +869,7 @@ onMounted(async () => {
     font-size: 0.8rem;
   }
   .lb-name {
-    min-width: 90px;
+    min-width: 85px;
     font-size: 0.82rem;
   }
   .lb-area {
@@ -812,7 +885,8 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 380px) {
+/* Extra small mobile (<380px) */
+@media (max-width: 379.98px) {
   .podium-section {
     gap: 4px;
   }
@@ -839,11 +913,11 @@ onMounted(async () => {
     gap: 4px;
   }
   .lb-name {
-    min-width: 80px;
-    font-size: 0.78rem;
+    min-width: 76px;
+    font-size: 0.76rem;
   }
   .lb-tokens {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
 }
 </style>

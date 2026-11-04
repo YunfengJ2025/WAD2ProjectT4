@@ -359,7 +359,7 @@ async function acceptVisit(visit) {
       <div v-if="!pinSelected">
         <p v-if="acceptedNote" class="acceptedNote" role="status">
           {{ acceptedNote }}
-          <RouterLink :to="{ path: '/requests', query: { tab: 'sits' } }">View in My Sits →</RouterLink>
+          <RouterLink to="/my-sits">View in My Sits →</RouterLink>
         </p>
 
         <!-- ===== See all requests: grouped by owner, whole request period ===== -->

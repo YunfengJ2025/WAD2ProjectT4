@@ -317,8 +317,8 @@ h1 {
 }
 
 .view-toggle button.active {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--selected); /* was var(--accent-soft) */
+  color: var(--ink); /* was var(--accent) */
 }
 
 .status-tabs {
@@ -364,9 +364,9 @@ h1 {
 }
 
 .tab.active {
-  background: var(--color-heading);
-  border-color: var(--color-heading);
-  color: var(--color-background);
+  background: var(--primary); /* was var(--color-heading) */
+  border-color: var(--primary);
+  color: var(--on-primary);
   font-weight: 600;
 }
 
