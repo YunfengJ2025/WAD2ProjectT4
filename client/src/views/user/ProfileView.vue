@@ -22,7 +22,7 @@ const sections = computed(() => [
   { id: 'address', label: 'My address', icon: '⌂' },
   { id: 'profile-reviews', label: 'My reviews', icon: '☆' },
   { id: 'profile-posts', label: 'My posts', icon: '▧' },
-  ...(user.value?.badges?.length ? [{ id: 'profile-badges', label: 'My badges', icon: '✦' }] : []),
+  { id: 'profile-badges', label: 'My badges', icon: '✦' },
 ])
 let scrollFrame = null
 let resizeObserver
@@ -45,13 +45,20 @@ function updateActiveSection() {
 function scheduleSectionUpdate() {
   if (scrollFrame === null) scrollFrame = requestAnimationFrame(updateActiveSection)
 }
-onMounted(() => {
+onMounted(async () => {
   updateActiveSection()
   window.addEventListener('scroll', scheduleSectionUpdate, { passive: true })
   window.addEventListener('resize', scheduleSectionUpdate)
   if (typeof ResizeObserver !== 'undefined' && profilePage.value) {
     resizeObserver = new ResizeObserver(scheduleSectionUpdate)
     resizeObserver.observe(profilePage.value)
+  }
+
+  // Refresh user profile/badges immediately so newly unlocked badges show up
+  try {
+    await auth.refreshUser()
+  } catch (e) {
+    // silently catch if offline
   }
 })
 onBeforeUnmount(() => {
@@ -437,19 +444,19 @@ async function save() {
         <!--
           Completed Badges in Profile Content Area:
           Positioned in bottom right, below the My Posts section.
-          v-if conditional check — covered in WAD2 wk4.
-          v-for loop rendering cards for each achieved badge — covered in WAD2 wk4.
-          <RouterLink> provides quick access to DashboardView where all 10 badges & progress bars live — covered in WAD2 wk6.
+          Shows unlocked badges or a friendly prompt to complete plant care visits.
+          <RouterLink> provides quick access to DashboardView where all 10 badges & progress bars live.
         -->
-        <section id="profile-badges" v-if="user.badges && user.badges.length" class="profile-badges-content-section">
+        <section id="profile-badges" class="profile-badges-content-section">
           <div class="section-heading">
             <div>
               <h2>Unlocked Milestone Badges</h2>
-              <p>Badges you've earned from your plant care journey.</p>
+              <p v-if="user.badges && user.badges.length">Badges you've earned from your plant care journey.</p>
+              <p v-else class="empty-badges-subtitle">Unlock milestone badges by completing plant care visits</p>
             </div>
             <RouterLink to="/dashboard" class="btn btn-sm">View all on Dashboard ↗</RouterLink>
           </div>
-          <div class="profile-completed-badges-grid">
+          <div v-if="user.badges && user.badges.length" class="profile-completed-badges-grid">
             <div
               v-for="b in user.badges"
               :key="b.id"
@@ -465,6 +472,14 @@ async function save() {
                 <p>{{ b.description }}</p>
               </div>
             </div>
+          </div>
+          <div v-else class="empty-badges-banner">
+            <span class="empty-badges-icon">🌱</span>
+            <div class="empty-badges-info">
+              <h4>No milestone badges unlocked yet</h4>
+              <p>Unlock milestone badges by completing plant care visits and helping your neighbours.</p>
+            </div>
+            <RouterLink to="/dashboard" class="btn btn-sm empty-badges-btn">Explore Badges</RouterLink>
           </div>
         </section>
       </div>
@@ -640,6 +655,58 @@ h1 {
   align-items: center;
   justify-content: center;
   border: 2px solid white;
+}
+
+.empty-badges-subtitle {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+.empty-badges-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(47, 125, 74, 0.05);
+  border: 1.5px dashed rgba(47, 125, 74, 0.3);
+  border-radius: 14px;
+}
+
+.empty-badges-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+
+.empty-badges-info {
+  flex: 1;
+}
+
+.empty-badges-info h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+.empty-badges-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.empty-badges-btn {
+  flex-shrink: 0;
+  background: white;
+  border: 1px solid rgba(47, 125, 74, 0.3);
+  color: var(--color-heading);
+}
+
+.empty-badges-btn:hover {
+  background: var(--accent-soft);
+  color: var(--color-heading);
 }
 
 .profile-badge-meta h4 {

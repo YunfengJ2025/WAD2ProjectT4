@@ -41,7 +41,6 @@
 
 /* Provide the reusable white card surface used by the editor and live preview. */
 
-
 /* Allow the editor to shrink inside its Bootstrap column instead of overflowing on narrow screens. */
 .composer-editor {
   min-width: 0;
@@ -58,7 +57,7 @@
 }
 
 /* Let author details use remaining space and wrap unusually long usernames. */
-.composer-author>div {
+.composer-author > div {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -98,7 +97,7 @@
 }
 
 /* Add a divider only between neighbouring sections, avoiding a line above the first section. */
-.composer-section+.composer-section {
+.composer-section + .composer-section {
   border-top: 1px solid #edf1e8;
 }
 
@@ -111,7 +110,7 @@
 }
 
 /* Allow the heading and description to wrap without pushing the counter outside the card. */
-.composer-section-heading>div {
+.composer-section-heading > div {
   flex: 1;
   min-width: 0;
 }
@@ -171,7 +170,7 @@
 }
 
 /* Give the required-field marker a softer green accent. */
-.composer-fields label>span {
+.composer-fields label > span {
   color: #71875b;
 }
 
@@ -398,7 +397,7 @@
 }
 
 /* Keep the public-audience reminder secondary to the publish action. */
-.composer-ready>span {
+.composer-ready > span {
   font-size: 0.73rem;
   color: var(--composer-muted);
 }
@@ -508,10 +507,59 @@
   position: relative;
   aspect-ratio: 4 / 3;
   background: #eff4e5;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Keep arrow targets visible over any photo and prevent native form submission. */
+.composer-preview-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #d6e0cc;
+  border-radius: 50%;
+  background: #fffffff0;
+  color: #426038;
+  font-size: 1.7rem;
+  box-shadow: 0 2px 8px #29432315;
+  cursor: pointer;
+}
+/* Anchor backward navigation to the left edge of the preview. */
+.composer-preview-previous {
+  left: 0.75rem;
+}
+/* Anchor forward navigation to the right edge of the preview. */
+.composer-preview-next {
+  right: 0.75rem;
+}
+/* Darken controls on hover without shifting their touch targets. */
+.composer-preview-arrow:hover {
+  background: #e9f0dd;
+}
+/* Show keyboard focus even when this preview is embedded outside the composer page. */
+.composer-draft-cover:focus-visible,
+.composer-preview-arrow:focus-visible {
+  outline: 2px solid #6b8c50;
+  outline-offset: -3px;
+}
+/* Let the photo follow horizontal drags while preventing browser image selection. */
+.composer-draft-cover > img {
+  user-select: none;
+  transition: transform 0.18s ease;
+}
+/* Follow the pointer immediately instead of easing behind it during a drag. */
+.composer-preview-dragging > img {
+  transition: none;
+  cursor: grabbing;
 }
 
 /* Crop the active photo to fill the preview cover without stretching it. */
-.composer-draft-cover>img {
+.composer-draft-cover > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -530,7 +578,7 @@
 }
 
 /* Render the decorative plant symbol large enough to anchor the empty preview. */
-.composer-draft-placeholder>span {
+.composer-draft-placeholder > span {
   font-size: 5rem;
   line-height: 1.2;
   color: #a6b88b;
@@ -578,7 +626,7 @@
 }
 
 /* Stack author name and audience information, allowing long names to wrap. */
-.composer-draft-author>div {
+.composer-draft-author > div {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -664,7 +712,7 @@
 }
 
 /* Give the decorative tip icon enough presence without overpowering its message. */
-.composer-tip>span {
+.composer-tip > span {
   font-size: 1.8rem;
   color: #87a068;
 }
@@ -748,7 +796,7 @@
   }
 
   /* Share the available mobile action-row width equally between cancel and publish. */
-  .composer-action-buttons>.btn {
+  .composer-action-buttons > .btn {
     flex: 1;
     padding-left: 0.6rem;
     padding-right: 0.6rem;
@@ -784,6 +832,10 @@
 
 /* Accessibility: respect reduced-motion preferences without changing form behaviour. */
 @media (prefers-reduced-motion: reduce) {
+  /* Keep swipe navigation functional without the snap-back animation. */
+  .composer-draft-cover > img {
+    transition: none;
+  }
 
   /* Remove transitions when the visitor requests reduced motion. */
   .composer-photo-enter-active,

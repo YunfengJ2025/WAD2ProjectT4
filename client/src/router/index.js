@@ -31,12 +31,11 @@ const routes = [
     meta: { requiresAuth: true },
     component: () => import('../views/post/CreatePostView.vue'),
   },
-  // Home is the watering schedule. Logged-out users are sent to sign in.
+  // Public welcome page; the watering schedule remains at /schedule.
   {
     path: '/',
     name: 'home',
-    meta: { requiresAuth: true },
-    component: () => import('../views/WateringSchedView.vue'),
+    component: () => import('../views/landingpage.vue'),
   },
 
   // Sign in / create account
@@ -136,7 +135,7 @@ const router = createRouter({
 })
 
 for (const route of router.getRoutes()) {
-  if (!['sign-in', 'register'].includes(route.name)) route.meta.requiresAuth = true
+  if (!['home', 'sign-in', 'register'].includes(route.name)) route.meta.requiresAuth = true
 }
 
 router.beforeEach(async (to) => {

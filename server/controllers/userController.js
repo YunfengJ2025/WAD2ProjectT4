@@ -8,6 +8,7 @@ const {
   getPublicProfile,
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
+const { syncUserBadges } = require("./boardController");
 const STARTER_TOKENS = 50;
 const { createAccessToken } = require("../config/jwt");
 
@@ -141,7 +142,19 @@ exports.logout = (req, res) => {
   // Stateless JWT logout: the client must discard its access token.
   res.status(204).end();
 };
-exports.getMe = (req, res) => res.json({ user: toAuthJSON(req.user) });
+exports.getMe = async (req, res) => {
+  try {
+    if (typeof syncUserBadges === "function") {
+      const updatedBadges = await syncUserBadges(req.user.userId || req.user._id);
+      if (updatedBadges) {
+        req.user.badges = updatedBadges;
+      }
+    }
+  } catch (err) {
+    console.error("Error auto-syncing badges in getMe:", err);
+  }
+  res.json({ user: toAuthJSON(req.user) });
+};
 
 // PATCH /user/me
 exports.updateMe = async (req, res) => {

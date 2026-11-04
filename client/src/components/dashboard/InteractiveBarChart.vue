@@ -9,19 +9,18 @@
           We check BOTH chartData (not null) AND chartData.labels (array exists).
           If we only checked chartData, an empty {} object would pass the check and
           Chart.js would crash trying to render with no labels.
-        - v-else: shows a spinner and "Loading..." text while the API call is in-flight.
+        - v-else: shows the shared growing tree while the API call is in-flight.
 
       [NOT IN WAD2 CONTENT] — vue-chartjs and Chart.js are third-party libraries.
     -->
     <Bar v-if="chartData && chartData.labels" :data="chartData" :options="chartOptions" />
-    <div v-else class="loading-chart">
-      <div class="spinner"></div>
-      <p>Loading visualisations...</p>
-    </div>
+    <!-- Keep chart loading consistent with the other page sections. -->
+    <Loading v-else label="Loading visualisations…" />
   </div>
 </template>
 
 <script setup>
+import Loading from '@/components/Loading.vue'
 // computed is covered in WAD2 wk4/wk5 (Vue Basics)
 import { computed } from 'vue'
 
@@ -124,15 +123,22 @@ const chartOptions = computed(() => ({
   font-size: 0.9rem;
 }
 
-@media (max-width: 640px) {
+/* Bootstrap responsive chart breakpoints */
+@media (max-width: 767.98px) {
   .chart-container {
-    height: 220px;
+    height: 240px;
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 575.98px) {
   .chart-container {
-    height: 190px;
+    height: 210px;
+  }
+}
+
+@media (max-width: 379.98px) {
+  .chart-container {
+    height: 185px;
   }
 }
 </style>

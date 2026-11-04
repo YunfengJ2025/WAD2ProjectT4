@@ -1,4 +1,5 @@
 <script setup>
+import Loading from '@/components/Loading.vue'
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -53,7 +54,8 @@ function scroll(direction) {
       </div>
     </div>
 
-    <p v-if="store.loading" class="review-state" role="status">Loading your reviews…</p>
+    <!-- Reviews load independently of the rest of the personal profile. -->
+    <Loading v-if="store.loading" label="Loading your reviews…" />
     <div v-else-if="store.error" class="review-state" role="alert">
       <p>{{ store.error }}</p>
       <button type="button" class="retry-button" @click="store.fetchReviews()">Try again</button>
