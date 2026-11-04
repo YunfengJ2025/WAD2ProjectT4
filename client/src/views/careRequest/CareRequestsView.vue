@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import TokenBalance from '@/components/token/TokenBalance.vue'
 import CareRequestForm from '@/components/careRequest/CareRequestForm.vue'
 import CareRequestCard from '@/components/careRequest/CareRequestCard.vue'
@@ -158,24 +158,31 @@ async function markHealthSeen(check) {
 
 <template>
   <main class="care-page">
+    <RouterLink v-if="props.section === 'create'" to="/requests" class="back-link">← My requests</RouterLink>
     <header class="page-heading">
       <div>
-        <h1>{{ props.section === 'mine' ? 'My requests' : 'Care requests' }}</h1>
+        <h1>{{ props.section === 'mine' ? 'My requests' : 'New Requests' }}</h1>
         <p v-if="props.section !== 'mine'">Choose one or more of your plants and create a care request for them.</p>
         <p v-else>View and manage the care requests you have posted.</p>
       </div>
-      <div v-if="props.section !== 'create' && owned.length" class="pills" role="group" aria-label="Filter requests">
-        <button
-          v-for="group in groups"
-          :key="group.key"
-          type="button"
-          class="pill"
-          :class="{ on: filter === group.key }"
-          :aria-pressed="filter === group.key"
-          @click="filter = group.key"
-        >{{ group.label }}<b>{{ group.requests.length }}</b></button>
-      </div>
+      <RouterLink
+        v-if="props.section === 'mine'"
+        :to="{ path: '/requests', query: { tab: 'new' } }"
+        class="btn btn-primary"
+      >+ New Request</RouterLink>
     </header>
+
+    <div v-if="props.section !== 'create' && owned.length" class="pills" role="group" aria-label="Filter requests">
+      <button
+        v-for="group in groups"
+        :key="group.key"
+        type="button"
+        class="pill"
+        :class="{ on: filter === group.key }"
+        :aria-pressed="filter === group.key"
+        @click="filter = group.key"
+      >{{ group.label }}<b>{{ group.requests.length }}</b></button>
+    </div>
 
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="notice" class="alert alert-success" role="status">{{ notice }}</p>
@@ -251,8 +258,13 @@ h1 { font-weight: 700; }
 .requests-list { margin-top: 1rem; }
 .empty { color: #59665c; }
 
+.page-heading p { margin: 0; }
+.page-heading .btn:active { transform: scale(0.96); }
+.back-link { display: inline-block; margin-bottom: 0.5rem; color: #245b34; font-weight: 600; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+
 /* filter pills */
-.pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .pill { padding: 0.35rem 0.9rem; border: 1px solid #dce5dc; border-radius: 999px; background: #fff; color: #59665c; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background-color 0.18s ease, color 0.18s ease; }
 .pill b { margin-left: 0.35rem; color: #1f2d24; }
 .pill:hover { background: #f0f8f1; }
