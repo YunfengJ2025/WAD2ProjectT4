@@ -32,6 +32,8 @@ const activeGroupKey = ref('') // the grouped request opened from the list ('' =
 const acceptingId = ref(0) // visitId being accepted right now, so the button can't be double-clicked
 const acceptedNote = ref('') // shown after a successful accept
 
+const isSignInError = ref(false)
+
 const waterSourceLabels = {
   left_out: 'Water left outside',
   tap_available: 'Tap available',
@@ -42,12 +44,16 @@ const waterSourceLabels = {
 async function load() {
   loading.value = true
   loadError.value = ''
+  isSignInError.value = false
   try {
     const data = await auth.authorizedRequest('/find-nearby')
     origin.value = data.origin
     allVisits.value = data.visits
   } catch (err) {
     loadError.value = err.message
+    if (loadError.value == "Please sign in first."){
+      isSignInError.value = true
+    }
   } finally {
     loading.value = false
   }
@@ -156,8 +162,15 @@ async function acceptVisit(visit) {
 <template>
   <h1>Find nearby</h1>
   <p>Good day helper! Make someone's day by clicking on any plant on the map!</p>
-  <!-- filter bar section -->
-  <div class="filterBar">
+  <!--
+    filter bar section (Bootstrap):
+    d-flex                -> flex container
+    flex-column flex-md-row -> stacked one per line on phones, one row from 768px up (laptop = same row as before)
+    flex-wrap             -> if a tablet is too narrow for one row, items drop to the next line
+    gap-4 / my-3          -> 1.5rem gap and 1rem top/bottom margin, exactly the old values
+  -->
+  <div class="d-flex flex-column flex-md-row flex-wrap gap-4 my-3">
+    <!-- text and slider stay side by side at every screen size; the slider shrinks when space runs out -->
     <label class="distanceLabel">
       <span class="distanceText">Distance: {{ formatDistance(radiusKm) }}</span>
       <span
@@ -187,9 +200,10 @@ async function acceptVisit(visit) {
         aria-label="Filter requests by date"
       />
     </label>
+    <!-- align-self-stretch: full width on phones; align-self-md-end: bottom of the row from 768px up (as before) -->
     <button
       type="button"
-      class="allRequests"
+      class="allRequests align-self-stretch align-self-md-end"
       :class="{ isActive: showAll }"
       :aria-pressed="showAll"
       @click="selectedDate = showAll ? todayYmd : ''; activeGroupKey = ''"
@@ -202,10 +216,11 @@ async function acceptVisit(visit) {
 
   <div v-else-if="loadError" class="alert alert-danger" role="alert">
     {{ loadError }}
-    <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="load">Try again</button>
+    <button v-if="isSignInError==false && loadError" type="button" class="btn btn-sm btn-outline-danger ms-2" @click="load">Try again</button>
   </div>
 
-  <div v-else class="pageContent">
+  <!-- map on top and list underneath on phones/tablets; side by side (70% / 30%) from 992px up -->
+  <div v-else class="d-flex flex-column flex-lg-row">
     <!-- map section, about 70% of the page -->
     <RequestMap
       class="mapArea"
@@ -479,16 +494,8 @@ h1 {
   line-height: 1.2;
 }
 
-
-.filterBar {
-  display: flex;
-  gap: 1.5rem;
-  margin: 1rem 0;
-}
-
 /* ---------- see all requests button ---------- */
 .allRequests {
-  align-self: flex-end;
   padding: 0.4rem 0.9rem;
   border: 1px solid #d5ded8;
   border-radius: 999px;
@@ -533,6 +540,7 @@ h1 {
   position: relative;
   display: block;
   width: 240px;
+  max-width: 100%; /* never wider than the screen */
   padding-top: 34px; /* room for the bubble */
 }
 
@@ -692,19 +700,13 @@ h1 {
   background: rgba(47, 125, 79, 0.12);
 }
 
-.pageContent {
-  display: grid;
-  grid-template-columns: 70% 30%;
-  grid-template-areas: "map requests";
-}
-
+/* phone layout (map on top, list below): the map is shorter, the list scrolls in its own box */
 .mapArea {
-  grid-area: map;
-  height: 70vh;
+  height: 50vh;
 }
 
 .requests {
-  grid-area: requests;
+  min-width: 0; /* lets the column shrink instead of pushing the page wider */
   padding: 1rem;
   overflow-y: auto;
   max-height: 70vh;
@@ -1088,16 +1090,33 @@ h1 {
   }
 }
 
-@media (max-width: 768px) {
-  .pageContent {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "map"
-      "requests";
+/* ---------- responsive, keep these two blocks at the very bottom ---------- */
+
+/* phones (under 768px): the slider takes the space left beside the text (up to 360px), the date input fills its row */
+@media (max-width: 767px) {
+  .sliderWrap {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: 360px;
   }
 
+  .styledDate {
+    flex: 1;
+  }
+}
+
+/* laptops (992px and up): map 70% on the left, list 30% on the right, like the original */
+@media (min-width: 992px) {
   .mapArea {
-    height: 50vh;
+    flex: 0 0 70%;
+    max-width: 70%;
+    height: 70vh;
+  }
+
+  .requests {
+    flex: 0 0 30%;
+    max-width: 30%;
   }
 }
 </style>
