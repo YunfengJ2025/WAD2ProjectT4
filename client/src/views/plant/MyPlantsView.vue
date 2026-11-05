@@ -261,7 +261,7 @@ h1 {
 /* Toolbar */
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -403,10 +403,15 @@ h1 {
 /* Grid: 1 col on phones, 2 on tablets, 3 on laptops, 4 on wide screens */
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   padding: 0;
   list-style: none;
+}
+
+.grid > li,
+.search {
+  min-width: 0;
 }
 
 @media (min-width: 600px) {

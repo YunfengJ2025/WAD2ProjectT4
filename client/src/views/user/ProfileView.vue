@@ -72,7 +72,7 @@ async function deleteAccount() {
 
 function updateActiveSection() {
   scrollFrame = null
-  scrollOffset.value = window.innerWidth <= 600 ? (sidebar.value?.offsetHeight || 0) + 16 : 32
+  scrollOffset.value = 32
   const available = sections.value.map((section) => profilePage.value?.querySelector(`#${section.id}`)).filter(Boolean)
   if (!available.length) return
   let current = available[0].id
@@ -694,7 +694,7 @@ h1 {
 
 .profile-completed-badges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.25rem;
 }
@@ -757,6 +757,7 @@ h1 {
 
 .empty-badges-banner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1.25rem;
   margin-top: 1.25rem;
@@ -772,7 +773,8 @@ h1 {
 }
 
 .empty-badges-info {
-  flex: 1;
+  flex: 1 1 160px;
+  min-width: 0;
 }
 
 .empty-badges-info h4 {
@@ -1091,6 +1093,9 @@ h2 {
     margin-top: 1rem;
   }
   .profile-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
     top: 0;
     z-index: 10;
     padding: .75rem 0;

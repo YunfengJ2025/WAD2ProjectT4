@@ -215,6 +215,7 @@ function onWaterClick() {
 <style scoped>
 .card {
   position: relative;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -283,6 +284,7 @@ function onWaterClick() {
 
 .body {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -397,6 +399,7 @@ h3 {
   position: relative;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.25rem;
@@ -423,6 +426,7 @@ h3 {
 
 /* Round icon buttons */
 .icon-btn {
+  flex-shrink: 0;
   display: inline-grid;
   place-items: center;
   width: 34px;

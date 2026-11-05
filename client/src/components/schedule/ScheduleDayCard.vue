@@ -65,7 +65,7 @@ onBeforeUnmount(() => tip?.dispose())
     </div>
 
     <div class="plant-info">
-        <strong class="plant-name">{{ item.plantName }}</strong>       
+        <strong class="plant-name">{{ item.plantName }}</strong>
         <span class="badge text-capitalize" :class="statusClass">{{ statusLabel }}</span>
     </div>
   </RouterLink>
@@ -74,6 +74,7 @@ onBeforeUnmount(() => tip?.dispose())
 <style scoped>
 .plant-card {
   position: relative;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;       /* stack layout: photo on top */
@@ -157,15 +158,25 @@ onBeforeUnmount(() => tip?.dispose())
 /* ---------- name and badge ---------- */
 .plant-info {
   min-width: 0;
+  max-width: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.3rem;
 }
 .plant-name { 
-    overflow-wrap: break-word;  /* only breaks a word if it cant fit */
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     line-height: 1.2;
     font-size: 0.95rem;
+}
+
+.plant-info .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* sun-glint sweep across extra-heat cards, using the same  foilShimmer keyframe from main.css */

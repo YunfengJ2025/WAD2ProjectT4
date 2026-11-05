@@ -92,7 +92,7 @@
               />
             </div>
             <div class="lb-name">
-              {{ u.name }}
+              <span class="lb-username">{{ u.name }}</span>
               <span v-if="isCurrentUser(u)" class="you-tag">You</span>
             </div>
             <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}</div>
@@ -139,7 +139,7 @@ const filteredLeaderboard = computed(() => {
 
 async function fetchLeaderboard() {
   try {
-    const res = await axios.get(apiUrl('/leaderboard'))
+    const res = await axios.get(apiUrl('/api/leaderboard'))
     if (res.data && res.data.leaderboard) {
       leaderboard.value = res.data.leaderboard
     }
@@ -157,7 +157,7 @@ async function fetchOptOutStatus() {
     return
   }
   try {
-    const res = await axios.get(apiUrl(`/leaderboard/status/${targetId}`))
+    const res = await axios.get(apiUrl(`/api/leaderboard/status/${targetId}`))
     if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
       isOptedOut.value = res.data.hideFromLeaderboard
       if (auth.user) {
@@ -179,11 +179,11 @@ async function toggleOptOut() {
     try {
       let resData
       if (auth.accessToken) {
-        resData = await auth.authorizedRequest(`/leaderboard/opt-out/${targetId}`, {
+        resData = await auth.authorizedRequest(`/api/leaderboard/opt-out/${targetId}`, {
           method: 'PATCH',
         })
       } else {
-        const res = await axios.patch(apiUrl(`/leaderboard/opt-out/${targetId}`))
+        const res = await axios.patch(apiUrl(`/api/leaderboard/opt-out/${targetId}`))
         resData = res.data
       }
 
@@ -573,6 +573,7 @@ onMounted(async () => {
 }
 
 .lb-name {
+  flex: 1;
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--color-neutral-800);
@@ -580,8 +581,13 @@ onMounted(async () => {
   align-items: center;
   gap: var(--space-sm);
   min-width: 0;
-  flex: 1;
-  word-break: break-word;
+  flex-wrap: wrap;
+}
+
+.lb-username {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .you-tag {
@@ -678,7 +684,7 @@ onMounted(async () => {
     height: 66px;
   }
   .lb-name {
-    min-width: 115px;
+    min-width: 0;
   }
 }
 
@@ -852,6 +858,7 @@ onMounted(async () => {
     min-width: 18px;
   }
   .lb-name {
+    min-width: 0;
     font-size: 0.74rem;
   }
   .lb-rating {
