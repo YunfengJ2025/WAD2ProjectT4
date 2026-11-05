@@ -26,7 +26,7 @@ test('missed visit → notification → reservation released → replacement req
       .getByRole('button', { name: 'Start visit', exact: true })
       .click()
     const label = await sitterPage.getByRole('dialog').getAttribute('aria-label')
-    const visitId = label.match(/Visit (\d+) details/)[1]
+    const visitId = label.split(' ')[1]
     await sitterPage
       .getByRole('dialog')
       .getByRole('button', { name: 'Close details', exact: true })
@@ -49,8 +49,8 @@ test('missed visit → notification → reservation released → replacement req
     await ownerPage.reload()
     await ownerPage.getByRole('button', { name: 'Notifications', exact: true }).click()
     await expect(
-      ownerPage.getByRole('button', { name: /The sitter missed your.*2 tokens were returned/ }),
-    ).toBeVisible()
+      ownerPage.getByRole('button', { name: 'The sitter missed your', exact: false }),
+    ).toContainText('2 tokens were returned.')
     await ownerPage.getByRole('button', { name: 'Request make-up visit', exact: true }).click()
     await expect(requestCard(ownerPage, plantName)).toContainText('Missed')
     await ownerPage.goto('/requests?tab=new')
@@ -58,21 +58,24 @@ test('missed visit → notification → reservation released → replacement req
       `Available: ${care.owner.user.tokenBalance}`,
     )
     await expect(
-      ownerPage.getByLabel('Token balances').getByRole('button', { name: /^Frozen:/ }),
+      ownerPage.getByLabel('Token balances').getByRole('button', { name: 'Frozen:', exact: false }),
     ).toContainText('Frozen: 0')
   })
 
   await test.step('Owner creates a make-up request and it becomes available to sitters', async () => {
     await ownerPage.goto('/requests')
-    await ownerPage.getByRole('button', { name: /^Completed/ }).click()
+    await ownerPage.getByRole('button', { name: 'Completed', exact: false }).click()
     await requestCard(ownerPage, plantName)
       .getByRole('button', { name: 'Request make-up visit', exact: true })
       .click()
     await expect(
-      ownerPage.getByRole('status').filter({ hasText: /Make-up request #\d+ posted/ }),
+      ownerPage
+        .getByRole('status')
+        .filter({ hasText: 'Make-up request #' })
+        .filter({ hasText: 'posted for' }),
     ).toBeVisible()
     await expect(requestCard(ownerPage, plantName)).toContainText('Make-up requested')
-    await ownerPage.getByRole('button', { name: /^Active/ }).click()
+    await ownerPage.getByRole('button', { name: 'Active', exact: false }).click()
     await expect(requestCard(ownerPage, plantName)).toContainText('waiting for a sitter')
     await sitterPage.goto('/my-sits')
     await expect(

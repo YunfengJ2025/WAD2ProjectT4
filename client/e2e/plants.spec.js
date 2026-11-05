@@ -38,7 +38,7 @@ test('adds a plant, marks it watered, edits it and deletes it', async ({ page })
   await page.getByRole('button', { name: 'Confirm', exact: true }).click()
 
   // Back on My Plants: the new plant's card shows its 2 care steps
-  await expect(page).toHaveURL(/\/plants$/)
+  await expect(page).toHaveURL('/plants')
   const card = page.getByRole('article').filter({ hasText: plantName })
   await expect(card).toBeVisible()
   await expect(card).toContainText('2 care steps')
@@ -88,7 +88,7 @@ test('cannot delete a plant (or the account) while the plant is in an active car
   await page.getByLabel('Block', { exact: true }).fill('123')
   await page.getByLabel('Unit number', { exact: true }).fill('#02-01')
   await page.getByRole('button', { name: 'Create account', exact: true }).click()
-  await expect(page).toHaveURL(/\/schedule$/)
+  await expect(page).toHaveURL('/schedule')
 
   // Add an outdoor plant (only outdoor plants can be requested)
   await page.getByRole('link', { name: 'My Plants', exact: true }).click()
@@ -106,20 +106,24 @@ test('cannot delete a plant (or the account) while the plant is in an active car
   // (2) actions: post a one-day care request for this plant (tomorrow, 1 token)
   await page.getByRole('link', { name: 'My Requests', exact: true }).click()
   await page.getByRole('link', { name: '+ New Request', exact: true }).click()
-  await page.getByRole('button', { name: new RegExp(plantName) }).click()
+  await page.getByRole('button', { name: plantName, exact: false }).click()
   await page.getByLabel('Start date', { exact: true }).fill(daysAgo(-1))
   await page.getByLabel('End date', { exact: true }).fill(daysAgo(-1))
   await page.getByLabel('Reward per visit (tokens)').fill('1')
   await page.getByLabel('Water left outside', { exact: true }).check()
   await page.getByRole('button', { name: 'Post request', exact: true }).click()
-  await expect(page.getByRole('status').filter({ hasText: /Request #\d+ posted/ })).toBeVisible()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Request #' }).filter({ hasText: 'posted.' }),
+  ).toBeVisible()
 
   // (3) assert: deleting from the My Plants card is refused by the server
   await page.getByRole('link', { name: 'My Plants', exact: true }).click()
   const card = page.getByRole('article').filter({ hasText: plantName })
   await card.getByRole('button', { name: `Delete ${plantName}` }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click()
-  await expect(page.getByText('This plant is in an active care request', { exact: false })).toBeVisible()
+  await expect(
+    page.getByText('This plant is in an active care request', { exact: false }),
+  ).toBeVisible()
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(card).toBeVisible()
 
@@ -141,10 +145,16 @@ test('cannot delete a plant (or the account) while the plant is in an active car
   const requestCard = page.getByRole('article').filter({ hasText: plantName })
   page.once('dialog', (dialog) => dialog.accept()) // "Cancel the request?" browser box
   await requestCard.getByRole('button', { name: 'Cancel request', exact: true }).click()
-  await expect(page.getByText(/Request #\d+ cancelled/)).toBeVisible()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Request #' }).filter({ hasText: 'cancelled.' }),
+  ).toBeVisible()
 
   await page.getByRole('link', { name: 'My Plants', exact: true }).click()
-  await page.getByRole('article').filter({ hasText: plantName }).getByRole('link', { name: plantName, exact: true }).click()
+  await page
+    .getByRole('article')
+    .filter({ hasText: plantName })
+    .getByRole('link', { name: plantName, exact: true })
+    .click()
   const deleteButton = page.getByRole('button', { name: 'Delete', exact: true })
   await expect(deleteButton).toBeEnabled()
   await deleteButton.click()
@@ -157,7 +167,7 @@ test('cannot delete a plant (or the account) while the plant is in an active car
   await page.getByRole('button', { name: 'Delete account', exact: true }).click()
   await page.getByLabel('Enter your password to confirm').fill(password)
   await page.getByRole('button', { name: 'Delete my account', exact: true }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL('/')
 })
 
 // "YYYY-MM-DD" for n days before today (the format a date input uses)

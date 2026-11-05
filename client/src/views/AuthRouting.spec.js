@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 
 // These tests exercise the real route table and guards, not map/schedule rendering.
-vi.mock('@/components/map/FindNearby.vue', () => ({ default: { template: '<p>Map</p>' } }))
+vi.mock('@/views/map/FindNearby.vue', () => ({ default: { template: '<p>Map</p>' } }))
 vi.mock('@/views/WateringSchedView.vue', () => ({ default: { template: '<p>Schedule</p>' } }))
 let wrapper
 let pinia

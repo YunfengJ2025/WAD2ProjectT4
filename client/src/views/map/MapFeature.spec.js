@@ -8,7 +8,7 @@ import FindNearby from './FindNearby.vue'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ authorizedRequest: request }) }))
 vi.mock('@/composables/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }))
-vi.mock('./RequestMap.vue', () => ({
+vi.mock('@/components/map/RequestMap.vue', () => ({
   default: {
     name: 'RequestMap',
     props: ['requests'],

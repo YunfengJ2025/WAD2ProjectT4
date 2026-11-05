@@ -22,13 +22,13 @@ test('a second user likes/comments and the author replies, with persistence', as
     await login(other, journey.accounts.B)
     await other.goto('/community/' + post.postId)
     /* 3. B likes the post. Compare with its starting count, then reload to verify both the selected heart and updated count were persisted. */
-    const like = other.getByRole('button', { name: /Like post:/ })
+    const like = other.getByRole('button', { name: 'Like post:', exact: false, pressed: false })
     const originalCount = Number((await like.innerText()).trim())
     const liked = mutation(other, '/post/' + post.postId + '/like', 'POST')
     await like.click()
     expect((await liked).ok()).toBe(true)
     await other.reload()
-    const unlike = other.getByRole('button', { name: /Unlike post:/ })
+    const unlike = other.getByRole('button', { name: 'Unlike post:', exact: false })
     await expect(unlike).toHaveAttribute('aria-pressed', 'true')
     await expect(unlike).toContainText(String(originalCount + 1))
     /* 4. B adds a unique comment; A then opens the same post to see that comment from another session. */

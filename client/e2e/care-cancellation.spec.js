@@ -12,21 +12,24 @@ test('owner cancels an open request → visits cancelled → reserved tokens rel
       .getByRole('button', { name: 'Cancel request', exact: true })
       .click()
     await expect(
-      ownerPage.getByRole('status').filter({ hasText: /Request #\d+ cancelled/ }),
+      ownerPage
+        .getByRole('status')
+        .filter({ hasText: 'Request #' })
+        .filter({ hasText: 'cancelled.' }),
     ).toBeVisible()
-    await ownerPage.getByRole('button', { name: /^Cancelled/ }).click()
-    await expect(requestCard(ownerPage, plantName)).toContainText(/cancelled/i)
+    await ownerPage.getByRole('button', { name: 'Cancelled', exact: false }).click()
+    await expect(requestCard(ownerPage, plantName)).toContainText('cancelled')
     await requestCard(ownerPage, plantName)
       .getByRole('button', { name: 'View details', exact: true })
       .click()
-    await expect(ownerPage.getByRole('dialog')).toContainText(/cancelled/i)
+    await expect(ownerPage.getByRole('dialog')).toContainText('Cancelled')
     await ownerPage
       .getByRole('dialog')
       .getByRole('button', { name: 'Close details', exact: true })
       .click()
     await ownerPage.reload()
-    await ownerPage.getByRole('button', { name: /^Cancelled/ }).click()
-    await expect(requestCard(ownerPage, plantName)).toContainText(/cancelled/i)
+    await ownerPage.getByRole('button', { name: 'Cancelled', exact: false }).click()
+    await expect(requestCard(ownerPage, plantName)).toContainText('cancelled')
   })
 
   await test.step('Request is unavailable to sitters and the owner’s reservation is released', async () => {
@@ -43,7 +46,7 @@ test('owner cancels an open request → visits cancelled → reserved tokens rel
       `Available: ${care.owner.user.tokenBalance}`,
     )
     await expect(
-      ownerPage.getByLabel('Token balances').getByRole('button', { name: /^Frozen:/ }),
+      ownerPage.getByLabel('Token balances').getByRole('button', { name: 'Frozen:', exact: false }),
     ).toContainText('Frozen: 0')
   })
 })

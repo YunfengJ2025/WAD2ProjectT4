@@ -18,9 +18,27 @@ test('shows unread notifications, marks them read, deletes one and clears the re
   // ---------- Fake notification API ----------
   // 2 unread notices and 1 that was already read
   let notifications = [
-    { _id: 'n1', type: 'visit_missed', message: 'You missed the visit scheduled for 04/11/2026.', readAt: null, createdAt: new Date().toISOString() },
-    { _id: 'n2', type: 'visit_expired', message: 'No sitter accepted your 03/11/2026 visit. 2 tokens were returned.', readAt: null, createdAt: new Date().toISOString() },
-    { _id: 'n3', type: 'visit_weather_skipped', message: 'Rain is forecast, so your visit may be skipped.', readAt: new Date().toISOString(), createdAt: new Date().toISOString() },
+    {
+      _id: 'n1',
+      type: 'visit_missed',
+      message: 'You missed the visit scheduled for 04/11/2026.',
+      readAt: null,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      _id: 'n2',
+      type: 'visit_expired',
+      message: 'No sitter accepted your 03/11/2026 visit. 2 tokens were returned.',
+      readAt: null,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      _id: 'n3',
+      type: 'visit_weather_skipped',
+      message: 'Rain is forecast, so your visit may be skipped.',
+      readAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    },
   ]
   await page.route('**/api/notifications**', async (route) => {
     const method = route.request().method()
@@ -50,7 +68,7 @@ test('shows unread notifications, marks them read, deletes one and clears the re
   await page.getByLabel('Email', { exact: true }).fill(TEST_USER.email)
   await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page).toHaveURL(/\/schedule$/)
+  await expect(page).toHaveURL('/schedule')
 
   // The bell shows 2 unread
   const bell = page.getByRole('button', { name: 'Notifications' })
@@ -60,7 +78,9 @@ test('shows unread notifications, marks them read, deletes one and clears the re
   await bell.click()
   await expect(page.getByText('2 new')).toBeVisible()
   await expect(page.getByText('You missed the visit scheduled for 04/11/2026.')).toBeVisible()
-  await expect(page.getByText('No sitter accepted your 03/11/2026 visit.', { exact: false })).toBeVisible()
+  await expect(
+    page.getByText('No sitter accepted your 03/11/2026 visit.', { exact: false }),
+  ).toBeVisible()
 
   // Mark all read: the "2 new" pill and the red badge disappear
   await page.getByRole('button', { name: 'Mark all read', exact: true }).click()

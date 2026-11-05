@@ -42,8 +42,8 @@ test('sitter opts out → owner notification → another sitter can accept', asy
     await ownerPage.reload()
     await ownerPage.getByRole('button', { name: 'Notifications', exact: true }).click()
     await expect(
-      ownerPage.getByRole('button', { name: /The sitter opted out.*open for another sitter/ }),
-    ).toBeVisible()
+      ownerPage.getByRole('button', { name: 'The sitter opted out', exact: false }),
+    ).toContainText('It is open for another sitter.')
     await ownerPage.getByRole('button', { name: 'Notifications', exact: true }).click()
     await expect(requestCard(ownerPage, plantName)).toContainText('waiting for a sitter')
   })
@@ -72,7 +72,7 @@ test('sitter opts out → owner notification → another sitter can accept', asy
       await page.getByLabel('Email', { exact: true }).fill(email)
       await page.getByLabel('Password', { exact: true }).fill(password)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-      await expect(page).toHaveURL(/\/my-sits$/)
+      await expect(page).toHaveURL('/my-sits')
       await acceptRequest({ ...care, sitterPage: page }, date)
       await ownerPage.reload()
       await expect(requestCard(ownerPage, plantName)).toContainText('sitter found')

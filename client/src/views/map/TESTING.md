@@ -1,10 +1,11 @@
-Map component tests follow Week 10 slides 17–29 and 41–42.
+Map page component tests follow Week 10 slides 17–29 and 41–42.
 
 `MapFeature.spec.js` uses Vitest (`describe`, `it`, `expect`) and Vue Test Utils
 (`mount`, `trigger`, `setValue`). Each test sets up data, performs an action,
 and checks the resulting display. The fixed date makes results repeatable.
 
-Both Find nearby and Find requests belong to `FindNearby.vue`. The API is mocked
+`views/map/FindNearby.vue` is the routed page for both Find nearby and Find requests.
+`components/map/RequestMap.vue` is its reusable map component. The API is mocked
 so tests need no account, server, or database. `RequestMap` is replaced with a
 custom stub that displays received requests and emits `select` when clicked,
 following the slides' prop-passing and child-event examples. These are isolated
@@ -31,13 +32,13 @@ restores today's date.
 From `client`, run once:
 
 ```sh
-npm run test:unit -- --run src/components/map/
+npm run test:unit -- --run src/views/map/
 ```
 
 For watch mode:
 
 ```sh
-npm run test:unit -- src/components/map/
+npm run test:unit -- src/views/map/
 ```
 
 Playwright (slides 45–61) is for E2E tests of complete workflows and is separate

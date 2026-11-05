@@ -4,7 +4,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
-import RequestMap from '../map/RequestMap.vue'
+import RequestMap from '@/components/map/RequestMap.vue'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
 // Care checklist (Carolyn): splits the instructions into steps (one per line)

@@ -75,13 +75,13 @@ test.describe('Owner request → map acceptance → My Sits', () => {
         await page.getByLabel('Email', { exact: true }).fill(account.email)
         await page.getByLabel('Password', { exact: true }).fill(password)
         await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-        await expect(page).toHaveURL(new RegExp(`${destination}$`))
+        await expect(page).toHaveURL(destination)
       }
 
       await test.step('Owner posts a two-day request from My Requests', async () => {
         await signIn(ownerPage, owner, '/requests')
         await ownerPage.getByRole('link', { name: '+ New Request', exact: true }).click()
-        await ownerPage.getByRole('button', { name: new RegExp(plantName) }).click()
+        await ownerPage.getByRole('button', { name: plantName, exact: false }).click()
         await ownerPage.getByLabel('Start date', { exact: true }).fill(today)
         await ownerPage.getByLabel('End date', { exact: true }).fill(tomorrow)
         await ownerPage.getByLabel('Reward per visit (tokens)').fill('2')
@@ -90,8 +90,11 @@ test.describe('Owner request → map acceptance → My Sits', () => {
         await expect(ownerPage.getByText('2 visits over 2 days.', { exact: false })).toBeVisible()
         await ownerPage.getByRole('button', { name: 'Post request', exact: true }).click()
         await expect(
-          ownerPage.getByRole('status').filter({ hasText: /Request #\d+ posted/ }),
-        ).toContainText(/Request #\d+ posted/)
+          ownerPage
+            .getByRole('status')
+            .filter({ hasText: 'Request #' })
+            .filter({ hasText: 'posted.' }),
+        ).toContainText('posted.')
         await ownerPage.getByRole('link', { name: '← My requests', exact: true }).click()
         await expect(ownerPage.getByRole('heading', { name: plantName, exact: true })).toBeVisible()
       })

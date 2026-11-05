@@ -46,13 +46,13 @@ test('add plant → request → accept → complete visit → reward paid → ow
 
   await test.step('Owner sees the saved proof and checklist and leaves feedback', async () => {
     await ownerPage.reload()
-    await ownerPage.getByRole('button', { name: /^Completed/ }).click()
+    await ownerPage.getByRole('button', { name: 'Completed', exact: false }).click()
     await requestCard(ownerPage, plantName)
       .getByRole('button', { name: 'View details', exact: true })
       .click()
     await ownerPage
       .getByRole('dialog')
-      .getByRole('link', { name: /^Open visit on/ })
+      .getByRole('link', { name: 'Open visit on', exact: false })
       .click()
     await expect(
       ownerPage.getByRole('heading', { name: 'Completed visit', exact: true }),
