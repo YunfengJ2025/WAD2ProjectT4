@@ -42,3 +42,7 @@ npm run test:unit -- src/components/map/
 
 Playwright (slides 45–61) is for E2E tests of complete workflows and is separate
 from these component tests. No E2E or real-map integration coverage is claimed here.
+
+The four real-browser lifecycle flows are documented in
+[`client/e2e/README.md`](../../../e2e/README.md). They cover completion and feedback,
+sitter opt-out, missed visits and make-up requests, and owner cancellation.
