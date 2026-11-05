@@ -128,7 +128,19 @@ exports.toggleOptOut = async (req, res) => {
   try {
     const { userId } = req.params;
     const isNum = !isNaN(Number(userId));
-    const query = isNum ? { userId: Number(userId) } : { _id: userId };
+    const targetUserId = isNum ? Number(userId) : userId;
+
+    // Authorization check: ensure logged-in user can only change their own visibility
+    if (req.user && req.userId != null) {
+      const callerId = req.user.userId ?? req.userId;
+      const callerMongoId = req.user._id ? String(req.user._id) : null;
+      const matchesCaller = (isNum && callerId === targetUserId) || String(targetUserId) === callerMongoId;
+      if (!matchesCaller) {
+        return res.status(403).json({ success: false, message: "You can only modify your own leaderboard privacy" });
+      }
+    }
+
+    const query = isNum ? { userId: targetUserId } : { _id: userId };
 
     const user = await User.findOne(query);
     if (!user) {

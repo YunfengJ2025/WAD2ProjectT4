@@ -111,6 +111,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { apiUrl } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 
@@ -138,7 +139,7 @@ const filteredLeaderboard = computed(() => {
 
 async function fetchLeaderboard() {
   try {
-    const res = await axios.get('http://localhost:8000/api/leaderboard')
+    const res = await axios.get(apiUrl('/leaderboard'))
     if (res.data && res.data.leaderboard) {
       leaderboard.value = res.data.leaderboard
     }
@@ -156,7 +157,7 @@ async function fetchOptOutStatus() {
     return
   }
   try {
-    const res = await axios.get(`http://localhost:8000/api/leaderboard/status/${targetId}`)
+    const res = await axios.get(apiUrl(`/leaderboard/status/${targetId}`))
     if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
       isOptedOut.value = res.data.hideFromLeaderboard
       if (auth.user) {
@@ -176,11 +177,20 @@ async function toggleOptOut() {
 
   if (targetId) {
     try {
-      const res = await axios.patch(`http://localhost:8000/api/leaderboard/opt-out/${targetId}`)
-      if (res.data && typeof res.data.hideFromLeaderboard === 'boolean') {
-        isOptedOut.value = res.data.hideFromLeaderboard
+      let resData
+      if (auth.accessToken) {
+        resData = await auth.authorizedRequest(`/leaderboard/opt-out/${targetId}`, {
+          method: 'PATCH',
+        })
+      } else {
+        const res = await axios.patch(apiUrl(`/leaderboard/opt-out/${targetId}`))
+        resData = res.data
+      }
+
+      if (resData && typeof resData.hideFromLeaderboard === 'boolean') {
+        isOptedOut.value = resData.hideFromLeaderboard
         if (auth.user) {
-          auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
+          auth.user.hideFromLeaderboard = resData.hideFromLeaderboard
         }
       }
       await fetchLeaderboard()
