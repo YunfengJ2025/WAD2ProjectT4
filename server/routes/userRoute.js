@@ -5,6 +5,7 @@ const {
   login,
   logout,
   getMe,
+  getMyLocation,
   getPublicProfile,
   updateMe,
   deleteMe,
@@ -22,6 +23,7 @@ const requireAdmin = (req, res, next) => {
 };
 router.get("/", requireUser, requireAdmin, getUsers);
 router.get("/me", requireUser, getMe);
+router.get("/me/location", requireUser, getMyLocation); // { lat, lng } for the weather banner
 router.get("/:userId/profile", getPublicProfile);
 router.patch("/me", requireUser, uploadPhoto, updateMe);
 router.delete("/me", requireUser, deleteMe); // delete your own account (needs your password)
