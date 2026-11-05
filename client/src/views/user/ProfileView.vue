@@ -2,8 +2,9 @@
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import UserAvatar from '@/components/user/UserAvatar.vue'
 import ProfileReviews from '@/components/user/ProfileReviews.vue'
 import ProfilePosts from '@/components/user/ProfilePosts.vue'
@@ -26,6 +27,48 @@ const sections = computed(() => [
 ])
 let scrollFrame = null
 let resizeObserver
+
+// ---------- Delete account ----------
+// Opens a small form asking for the password; the server checks it and blocks the delete
+// while there are active requests or accepted sits (its message is shown here).
+const router = useRouter()
+const { show: toast } = useToast()
+const deleteOpen = ref(false)
+const deletePassword = ref('')
+const deleteBusy = ref(false)
+const deleteError = ref('')
+
+function cancelDelete() {
+  deleteOpen.value = false
+  deletePassword.value = ''
+  deleteError.value = ''
+}
+
+async function deleteAccount() {
+  if (deleteBusy.value) return
+  deleteError.value = ''
+  if (!deletePassword.value) {
+    deleteError.value = 'Enter your password to confirm.'
+    return
+  }
+  deleteBusy.value = true
+  try {
+    await auth.authorizedRequest('/user/me', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: deletePassword.value }),
+    })
+    // Go to the public landing page first, then forget the login
+    // (clearing first would make App.vue send us to Sign in instead)
+    await router.replace('/')
+    auth.clearSession()
+    toast('Your account has been deleted. Goodbye 🌱')
+  } catch (err) {
+    deleteError.value = err.message
+  } finally {
+    deleteBusy.value = false
+  }
+}
 
 function updateActiveSection() {
   scrollFrame = null
@@ -482,12 +525,61 @@ async function save() {
             <RouterLink to="/dashboard" class="btn btn-sm empty-badges-btn">Explore Badges</RouterLink>
           </div>
         </section>
+
+        <!-- Delete account: hidden behind a button, then asks for the password -->
+        <section id="delete-account" class="details-section delete-section" aria-labelledby="delete-account-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="delete-account-title">Delete account</h2>
+              <p>Removes your account, plants and posts. This can't be undone.</p>
+            </div>
+            <button v-if="!deleteOpen" type="button" class="delete-open-btn" @click="deleteOpen = true">
+              Delete account
+            </button>
+          </div>
+          <form v-if="deleteOpen" class="delete-form" @submit.prevent="deleteAccount">
+            <p class="delete-warning">
+              ⚠ Your plants, posts and notifications will be deleted. Past visits and reviews stay,
+              shown as a deleted user. You can't delete while you have active requests or accepted sits.
+            </p>
+            <label for="delete-password">Enter your password to confirm</label>
+            <input
+              id="delete-password"
+              v-model="deletePassword"
+              type="password"
+              autocomplete="current-password"
+              :disabled="deleteBusy"
+              :aria-invalid="!!deleteError"
+              :aria-describedby="deleteError ? 'delete-error' : undefined"
+            />
+            <p v-if="deleteError" id="delete-error" class="field-error" role="alert">{{ deleteError }}</p>
+            <div class="delete-actions">
+              <button type="button" class="btn" :disabled="deleteBusy" @click="cancelDelete">Cancel</button>
+              <button type="submit" class="delete-confirm-btn" :disabled="deleteBusy">
+                {{ deleteBusy ? 'Deleting…' : 'Delete my account' }}
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
       <ScrollToTop />
   </main>
 </template>
 
 <style scoped>
+/* Delete account: red outline button, then a soft red box with the password form */
+.delete-section { margin-top: 2rem; }
+.delete-open-btn,
+.delete-confirm-btn { padding: 0.45rem 1rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.delete-open-btn { border: 1px solid #e7c3bd; background: #fff; color: #a22f17; }
+.delete-open-btn:hover { border-color: #a22f17; background: #fbe6df; }
+.delete-confirm-btn { border: 0; background: #a22f17; color: #fff; }
+.delete-confirm-btn:disabled { opacity: 0.6; cursor: default; }
+.delete-form { display: grid; gap: 0.5rem; max-width: 460px; padding: 1rem 1.1rem; border: 1px solid #f0cfc8; border-radius: 12px; background: #fdf3f0; }
+.delete-warning { margin: 0 0 0.25rem; color: #6e2a1c; font-size: 0.85rem; line-height: 1.5; }
+.delete-form label { font-size: 0.8rem; font-weight: 600; }
+.delete-form input { padding: 0.55rem 0.7rem; border: 1px solid #e3c4bd; border-radius: 8px; font: inherit; background: #fff; }
+.delete-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem; }
 .profile-bio { margin: 1rem 0; }
 .profile-bio > p { font-size: .85rem; line-height: 1.7; }
 .bio-editor { margin: 1rem 0; text-align: left; }

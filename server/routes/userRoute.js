@@ -7,6 +7,7 @@ const {
   getMe,
   getPublicProfile,
   updateMe,
+  deleteMe,
   updateTokenBalance
 } = require("../controllers/userController");
 
@@ -23,6 +24,7 @@ router.get("/", requireUser, requireAdmin, getUsers);
 router.get("/me", requireUser, getMe);
 router.get("/:userId/profile", getPublicProfile);
 router.patch("/me", requireUser, uploadPhoto, updateMe);
+router.delete("/me", requireUser, deleteMe); // delete your own account (needs your password)
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);

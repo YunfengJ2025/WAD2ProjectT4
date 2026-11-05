@@ -6,6 +6,7 @@ const {
   getAllUsers,
   applyTransactionToBalances,
   getPublicProfile,
+  deleteAccount,
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const { syncUserBadges } = require("./boardController");
@@ -154,6 +155,17 @@ exports.getMe = (req, res) => {
     console.error("Error triggering badge sync in getMe:", err);
   }
   res.json({ user: toAuthJSON(req.user) });
+};
+
+// DELETE /user/me  body: { password }
+// Deletes your own account (see deleteAccount in userModel for the rules)
+exports.deleteMe = async (req, res) => {
+  try {
+    await deleteAccount(req.userId, (req.body || {}).password);
+    res.status(204).end();
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 // PATCH /user/me
