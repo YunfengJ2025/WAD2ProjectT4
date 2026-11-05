@@ -1,4 +1,4 @@
-// Week 10: complete user workflows with Playwright.
+// Complete user workflows with Playwright.
 // Setup → actions → assertions. API setup creates accounts only; all feature actions use the UI.
 import { randomUUID } from 'node:crypto'
 import process from 'node:process'

@@ -1,9 +1,4 @@
-/* ============================================================
-   GOOGLE FONTS
-   [NOT IN WAD2 CONTENT] — Loading custom web fonts via @import url().
-   WAD2 weekly notes use plain browser fonts; this imports Outfit & Inter
-   from Google Fonts for a polished typographic look.
-   ============================================================ */
+
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
 @import './base.css';
@@ -138,13 +133,7 @@ a,
 }
 
 
-/* ============================================================
-   DESIGN TOKENS (CSS Custom Properties)
-   [NOT IN WAD2 CONTENT] — CSS custom properties (variables) using :root
-   are not covered in WAD2 weekly notes. This pattern lets you define
-   a centralised design system (colours, spacing, radius, shadows)
-   and reuse them with var(--name) throughout the stylesheet.
-   ============================================================ */
+
 :root {
   /* Primary — fresh greens */
   /* (Carolyn) testing: uses the new palette. Old: 50 #f0fdf4, 100 #dcfce7,
@@ -184,9 +173,7 @@ a,
   --color-danger: #ef4444;
   --color-info: #0ea5e9;
 
-  /* Glass
-     [NOT IN WAD2 CONTENT] — Glassmorphism uses backdrop-filter: blur()
-     to create a frosted-glass card effect. Not covered in WAD2 Bootstrap week. */
+
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.45);
   --glass-blur: 16px;
@@ -226,10 +213,7 @@ a,
   --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ============================================================
-   RESET & BASE
-   Standard CSS reset — basic good practice, not WAD2-specific.
-   ============================================================ */
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -240,7 +224,7 @@ body {
   background-color: var(--color-neutral-50);
   color: var(--color-neutral-800);
   -webkit-font-smoothing: antialiased;
-  /* [NOT IN WAD2 CONTENT] — vendor-prefixed font rendering smoothing */
+
   overflow-x: hidden;
 }
 
@@ -281,12 +265,7 @@ img {
   }
 }
 
-/* ============================================================
-   ANIMATED BACKGROUND GRADIENT
-   [NOT IN WAD2 CONTENT] — @keyframes CSS animations and background-size
-   with animated background-position are not covered in WAD2 weekly notes.
-   This creates a slow-shifting colour gradient behind all pages.
-   ============================================================ */
+
 .page-bg {
   position: fixed;
   inset: 0;
@@ -295,11 +274,7 @@ img {
      (sky above, grass below). Fixed layer, so it stays put while you scroll.
      Before this test: background: var(--bg); */
   background: linear-gradient(to bottom, #d6ecf8 0%, #e6f3f6 35%, var(--bg) 70%);
-  /* Old moving gradient:
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #e0f2fe 80%, #fef3c7 100%);
-  background-size: 400% 400%;
-  animation: bgShift 12s ease infinite;
-  [NOT IN WAD2 CONTENT] — CSS animation property */
+
 }
 
 /* (Carolyn) testing: white navbar with a green active link.
@@ -351,7 +326,7 @@ img {
 
 @keyframes bgShift {
 
-  /* [NOT IN WAD2 CONTENT] — @keyframes not in weekly notes */
+
   0% {
     background-position: 0% 50%;
   }
@@ -365,19 +340,14 @@ img {
   }
 }
 
-/* ============================================================
-   GLASS CARDS
-   [NOT IN WAD2 CONTENT] — Glassmorphism / backdrop-filter not covered
-   in WAD2. WAD2 wk3 teaches Bootstrap .card; this is a custom alternative
-   using CSS backdrop-filter blur for a frosted-glass appearance.
-   ============================================================ */
+
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--glass-blur));
-  /* [NOT IN WAD2 CONTENT] */
+
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  /* [NOT IN WAD2 CONTENT] — vendor prefix */
+
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
@@ -387,11 +357,7 @@ img {
   box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-/* ============================================================
-   BUTTONS
-   Custom button system — WAD2 wk3 teaches Bootstrap .btn classes.
-   These are hand-rolled equivalents using CSS custom properties.
-   ============================================================ */
+
 .btn {
   position: relative;
   display: inline-flex;
@@ -410,7 +376,7 @@ img {
   letter-spacing: 0.02em;
 }
 
-/* [NOT IN WAD2 CONTENT] — ::after pseudo-element ripple effect via CSS transform */
+
 .btn::after {
   content: '';
   position: absolute;
@@ -482,11 +448,7 @@ img {
   font-size: 0.8rem;
 }
 
-/* ============================================================
-   STATUS BADGES & TOKEN PILLS
-   [NOT IN WAD2 CONTENT] — Custom badge/pill components.
-   WAD2 wk3 teaches Bootstrap .badge; these are hand-rolled equivalents.
-   ============================================================ */
+
 .token-pill {
   display: inline-flex;
   align-items: center;
@@ -542,12 +504,7 @@ img {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* ============================================================
-   KEYFRAME ANIMATIONS
-   [NOT IN WAD2 CONTENT] — @keyframes and the animation shorthand property
-   are not covered in WAD2 weekly notes. These utility classes apply
-   entrance animations (slide up, fade in, bounce) to page elements.
-   ============================================================ */
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -616,7 +573,7 @@ img {
   }
 }
 
-/* Bolder animation keyframes — [NOT IN WAD2 CONTENT] */
+
 @keyframes crownFloat {
   0%, 100% {
     transform: translateY(0) rotate(-4deg);
@@ -709,12 +666,7 @@ img {
   animation-delay: 0.40s;
 }
 
-/* ============================================================
-   PAGE TRANSITIONS & SCROLLBAR
-   [NOT IN WAD2 CONTENT] — Vue Router <Transition> CSS hook classes
-   (page-enter-active, page-leave-to etc.) are not in WAD2 weekly notes.
-   They animate between route changes when wrapped in <Transition name="page">.
-   ============================================================ */
+
 .page-enter-active,
 .page-leave-active {
   transition: opacity 0.25s ease, transform 0.25s ease;
@@ -738,7 +690,7 @@ img {
   border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
-  /* [NOT IN WAD2 CONTENT] */
+
 }
 
 .loading-screen {
@@ -758,7 +710,7 @@ img {
   font-size: 0.95rem;
 }
 
-/* [NOT IN WAD2 CONTENT] — Custom scrollbar styling via ::-webkit-scrollbar pseudo-elements */
+
 /* Phone-only gutters leave room for content and the browser's safe areas. */
 @media (max-width: 600px) {
   html { -webkit-text-size-adjust: 100%; }

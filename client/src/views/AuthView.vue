@@ -57,7 +57,7 @@ async function submit() {
     }
     if (props.createAccount) await auth.register(credentials)
     else await auth.login(credentials)
-    // "Redirect back after login" (Week 11): the route guard sent the user here as
+    // "Redirect back after login": the route guard sent the user here as
     // /signin?redirect=/plants/5, so after logging in we go back to /plants/5.
     // Only follow it if it's a page inside our app (starts with one "/") that needs
     // login; otherwise go to /schedule. This stops links sending users to other websites.

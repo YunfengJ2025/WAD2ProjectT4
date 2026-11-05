@@ -12,7 +12,7 @@ To watch one component while editing:
 pnpm exec vitest src/components/review/ReviewCard.spec.js
 ```
 
-## How the tests follow Week 10
+## Test structure
 
 - `describe()` groups one component's behaviours. `it()` describes an observable result.
 - **Arrange:** mount the component with sample props, a fresh Pinia instance, or memory router.
@@ -21,7 +21,7 @@ pnpm exec vitest src/components/review/ReviewCard.spec.js
 - Await Vue interactions before checking the DOM. Use `flushPromises()` when a store action or navigation is asynchronous.
 - `afterEach()` unmounts shared wrappers and restores mocks to keep cases independent.
 
-Parent tests replace complex children with small stubs, as demonstrated in the lecture. For example, ProfilePosts tests the six-post selection and author props; PostCard tests its own navigation and photo selection. ProfileReviews does not repeat UserAvatar's broken-image tests.
+Parent tests replace complex children with small stubs. For example, ProfilePosts tests the six-post selection and author props; PostCard tests its own navigation and photo selection. ProfileReviews does not repeat UserAvatar's broken-image tests.
 
 Store action spies provide controlled success and failure without a server or database. These tests check how components respond; they do not prove HTTP persistence. View integration tests and real-backend Playwright journeys are separate layers.
 

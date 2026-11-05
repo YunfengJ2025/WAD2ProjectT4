@@ -544,7 +544,7 @@ async function save() {
             >
               <div class="profile-badge-icon-wrap">
                 <span class="profile-badge-icon">{{ b.icon }}</span>
-                <!-- Green tick overlay on unlocked badges [NOT IN WAD2 CONTENT] -->
+                <!-- Green tick overlay on unlocked badges -->
                 <span class="profile-badge-check">✓</span>
               </div>
               <div class="profile-badge-meta">

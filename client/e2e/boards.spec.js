@@ -9,7 +9,7 @@ test('navigates from Dashboard to Leaderboard and displays rankings and opt-out 
 
   await expect(page.getByText('My Green Space')).toBeVisible()
   await expect(page.getByText('Total Plants Owned')).toBeVisible()
-  await expect(page.getByText('Milestone Badges')).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Milestone Badges/i })).toBeVisible()
 
   // 3. Navigate to Leaderboard
   await page.getByText('View Leaderboard').click()
