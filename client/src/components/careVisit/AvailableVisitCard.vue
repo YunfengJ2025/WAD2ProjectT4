@@ -1,4 +1,5 @@
 <script setup>
+// Component: summarizes an open visit and emits the sitter's accept action to its parent.
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): this request's instructions (or the plant's notes) as steps
 import { getRequestSteps } from '@/utils/careSteps'

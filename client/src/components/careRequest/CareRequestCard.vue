@@ -1,4 +1,5 @@
 <script setup>
+// Component: summarizes one owner request and opens its visit/plant details on demand.
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import plantPlaceholder from '@/assets/plant.png'
@@ -20,10 +21,10 @@ const props = defineProps({
   makeupBusyVisitId: { type: Number, default: 0 },
   // true when a notification linked to this request (?requestId=…), so the card gets a green ring
   highlighted: { type: Boolean, default: false },
-  highlighted: { type: Boolean, default: false },
 })
 // Emit make-up actions to the view so request creation stays in the parent.
 const emit = defineEmits(['cancel-request', 'makeup-request'])
+// Normalize the multi-plant response and older single-plant response for display.
 const plants = computed(() =>
   props.request.plants?.length
     ? props.request.plants
@@ -51,6 +52,7 @@ const nextVisit = computed(() =>
     .filter((visit) => ['open', 'accepted'].includes(visit.status))
     .sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate))[0],
 )
+// Explain the next open or accepted visit in the card's progress summary.
 const nextVisitText = computed(() => {
   if (!nextVisit.value) return ''
   const who = nextVisit.value.status === 'accepted' ? 'sitter found' : 'waiting for a sitter'
@@ -74,6 +76,7 @@ const VISIT_STATES = {
   cancelled: { label: 'Cancelled', tone: 'off' },
   weather_skipped: { label: '🌧️ Skipped', tone: 'rain' },
 }
+// Convert each backend visit status into the card's label and color tone.
 function visitState(visit) {
   // rain was forecast on the visit day, so the sitter may skip it
   if (visit.weatherSkip && ['open', 'accepted'].includes(visit.status)) return { label: '🌧️ May skip', tone: 'rain' }
@@ -86,6 +89,7 @@ const missedVisits = computed(() => visits.value.filter((visit) => visit.status 
 // ---------- details ----------
 const open = ref(false)
 
+// Build the plant-name summary shown for one visit in the details modal.
 function visitPlants(visit) {
   return visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Unnamed plant'
 }
@@ -104,6 +108,7 @@ function stepsSummary(item) {
   return `${(item.completedSteps || []).length}/${total} steps`
 }
 
+// Turn a stored photo health result into a short owner-facing status line.
 function healthLine(item) {
   const check = item.health
   if (!check) return ''

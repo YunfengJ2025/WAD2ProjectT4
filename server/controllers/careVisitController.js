@@ -13,9 +13,11 @@ const {
   singaporeDateLabel,
 } = require("../services/visitPolicyService");
 
+// Create an error carrying the HTTP status expected by the response handler.
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const { dateInSingapore } = require("../utils/calendarDate");
 
+// Convert controller errors into consistent client responses.
 function handleError(err, res) {
   if (err.status) return res.status(err.status).json({ message: err.message });
   if (err.code === 11000)
@@ -160,6 +162,7 @@ exports.makeUpRequest = async (req, res) => {
   }
 };
 
+// List open visits from active requests, excluding the signed-in owner's own requests.
 exports.availableVisits = async (req, res) => {
   try {
     const visits = await CareVisit.find({ sitterId: null, status: "open" })
@@ -178,6 +181,7 @@ exports.availableVisits = async (req, res) => {
   }
 };
 
+// Claim an open visit for the signed-in sitter and update its request state.
 exports.acceptVisit = async (req, res) => {
   try {
     const visitId = Number(req.params.visitId);
@@ -266,6 +270,7 @@ exports.optOutVisit = async (req, res) => {
   }
 };
 
+// Validate today's per-plant care, upload proofs, complete the visit, and update watering dates.
 exports.addVisitProof = async (req, res) => {
   const uploadedPhotos = [];
   let visitDoc;
@@ -448,6 +453,7 @@ exports.addVisitProof = async (req, res) => {
   }
 };
 
+// Return the signed-in sitter's visit history with request and plant details.
 exports.myVisits = async (req, res) => {
   try {
     const visits = await CareVisit.find({ sitterId: req.userId }).sort({ visitDate: -1 }).lean();
@@ -457,6 +463,7 @@ exports.myVisits = async (req, res) => {
   }
 };
 
+// Return only visits currently accepted by the signed-in sitter.
 exports.myAssignments = async (req, res) => {
   try {
     const visits = await CareVisit.find({ sitterId: req.userId, status: "accepted" })
