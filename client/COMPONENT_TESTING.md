@@ -27,20 +27,19 @@ Store action spies provide controlled success and failure without a server or da
 
 ## Coverage by component
 
-| Component | Behaviours checked |
-| --- | --- |
-| UserAvatar | Profile photo, accessible description, missing/broken photo fallback, recovery after prop update |
-| ProfilePosts | Six-post limit, current author, navigation links, empty/error/retry states |
-| ProfileReviews | Received-only selection, newest-first ordering, six-review limit, loading/error/retry/empty states |
-| StarRating | Fractional display, accessible rating, selection event, parent prop update |
-| ReviewForm | Required target/rating/message, trimmed payload, post comments without rating, cancellation |
-| ReviewCard | Related-post navigation, trimmed reply event, busy/blank guards, replies disallowed for visits/replies/guests/profile summaries |
-| PostCard | Photo navigation, selected state, post navigation, missing/broken image behaviour |
-| PostDraftPreview | Arrows, keyboard, thumbnails, wrapping, swipe, vertical-gesture preservation, cancellation, photo removal |
-| LikeButton | Selected state/count, pending state, failure feedback, guest redirect |
-| TokenBalance | Total/available/frozen values, reservation details, fallback values, reactive updates, refresh failure |
+| Component        | Behaviours checked                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| UserAvatar       | Profile photo, accessible description, missing/broken photo fallback, recovery after prop update                                |
+| ProfilePosts     | Six-post limit, current author, navigation links, empty/error/retry states                                                      |
+| ProfileReviews   | Received-only selection, newest-first ordering, six-review limit, loading/error/retry/empty states                              |
+| StarRating       | Fractional display, accessible rating, selection event, parent prop update                                                      |
+| ReviewCard       | Related-post navigation, trimmed reply event, busy/blank guards, replies disallowed for visits/replies/guests/profile summaries |
+| PostCard         | Photo navigation, selected state, post navigation, missing/broken image behaviour                                               |
+| PostDraftPreview | Arrows, keyboard, thumbnails, wrapping, swipe, vertical-gesture preservation, cancellation, photo removal                       |
+| LikeButton       | Selected state/count, pending state, failure feedback, guest redirect                                                           |
+| TokenBalance     | Total/available/frozen values, reservation details, fallback values, reactive updates, refresh failure                          |
 
-No standalone cases are needed for empty placeholder files such as `test.js`. We do not test every HTML tag, decorative CSS class, or Vue's own functionality. The fractional star fill is an intentional visual-output assertion, not a general CSS snapshot.
+We do not test every HTML tag, decorative CSS class, or Vue's own functionality. The fractional star fill is an intentional visual-output assertion, not a general CSS snapshot.
 
 ## Limits
 

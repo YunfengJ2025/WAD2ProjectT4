@@ -5,6 +5,8 @@ import {
   requestCard,
   addPlantAndRequest,
   acceptRequest,
+  registerCareAccount,
+  signInCareAccount,
 } from './care-helpers.js'
 
 test('sitter opts out → owner notification → another sitter can accept', async ({
@@ -50,29 +52,11 @@ test('sitter opts out → owner notification → another sitter can accept', asy
 
   await test.step('A different sitter accepts the reopened visit', async () => {
     // Fresh real account; sign in through the UI, then use the same map acceptance flow.
-    const email = `replacement-${Date.now()}@example.com`
-    const password = 'Replacement-test-123!'
-    const registration = await request.post('/api/user/register', {
-      data: {
-        userName: `replacement_${Date.now()}`,
-        email,
-        password,
-        postalCode: '560123',
-        block: '123',
-        unitNumber: '#03-01',
-        lat: 1.35,
-        lng: 103.82,
-      },
-    })
-    expect(registration.status()).toBe(201)
+    const replacement = await registerCareAccount(request, 'replacement')
     const context = await browser.newContext({ baseURL, timezoneId: 'Asia/Singapore' })
     try {
       const page = await context.newPage()
-      await page.goto('/signin?redirect=/my-sits')
-      await page.getByLabel('Email', { exact: true }).fill(email)
-      await page.getByLabel('Password', { exact: true }).fill(password)
-      await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-      await expect(page).toHaveURL('/my-sits')
+      await signInCareAccount(page, replacement, '/my-sits')
       await acceptRequest({ ...care, sitterPage: page }, date)
       await ownerPage.reload()
       await expect(requestCard(ownerPage, plantName)).toContainText('sitter found')

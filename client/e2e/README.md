@@ -2,7 +2,8 @@ Care workflow E2E tests
 
 `care-workflow.spec.js` exercises the real Vue app, Express API, and MongoDB.
 It uses two isolated browser sessions and newly registered accounts per run.
-Account and outdoor plant creation use the real API as setup; sign-in, request
+The shared care fixture creates accounts and signs in through the UI. Outdoor
+plant creation uses the real API as setup in this original multi-visit test; sign-in, request
 creation, acceptance, and My Sits checks happen through the UI. No API routes
 or Vue components are mocked. This original multi-visit test does not upload photos;
 the completion lifecycle test below uploads one proof image.

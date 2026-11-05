@@ -1,4 +1,5 @@
 <script setup>
+defineOptions({ name: 'LandingPage' })
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import logo from '@/assets/Leaf It to Us Logo.png'

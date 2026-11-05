@@ -16,7 +16,7 @@ export function buildSchedule(plants, now = new Date(), days = 28) {
     // build schedule item from plant data
     function makeItem(plant, originalDue, due, statusOverride) {
         const originalISO = toDateInputValue(originalDue)
-        let status = '' // based on originalDue, overdue plants will be moved to today showing 'overdue'
+        let status // based on originalDue, overdue plants will be moved to today showing 'overdue'
         if (statusOverride) {
             status = statusOverride              // 'done' decided by the owner
         } else if (originalISO < todayISO) {

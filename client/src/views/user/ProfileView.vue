@@ -100,7 +100,7 @@ onMounted(async () => {
   // Refresh user profile/badges immediately so newly unlocked badges show up
   try {
     await auth.refreshUser()
-  } catch (e) {
+  } catch {
     // silently catch if offline
   }
 })

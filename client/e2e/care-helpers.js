@@ -4,29 +4,43 @@ import { randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { test as base, expect } from '@playwright/test'
 
+// Shared setup keeps account creation and UI sign-in consistent across care journeys.
+export async function registerCareAccount(
+  request,
+  role,
+  suffix = randomUUID().replaceAll('-', '').slice(0, 12),
+) {
+  const email = `e2e-${role}-${suffix}@example.com`
+  const password = `Test-${randomUUID()}!`
+  const response = await request.post('/api/user/register', {
+    data: {
+      userName: `e2e_${role}_${suffix}`,
+      email,
+      password,
+      postalCode: '560123',
+      block: '123',
+      unitNumber: '#02-01',
+      lat: 1.35,
+      lng: 103.82,
+    },
+  })
+  expect(response.status(), `Register test ${role}`).toBe(201)
+  return { email, password, ...(await response.json()) }
+}
+
+export async function signInCareAccount(page, account, path) {
+  await page.goto(`/signin?redirect=${encodeURIComponent(path)}`)
+  await page.getByLabel('Email', { exact: true }).fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL(path)
+}
+
 export const test = base.extend({
   care: async ({ browser, request, baseURL }, use) => {
     const suffix = randomUUID().replaceAll('-', '').slice(0, 12)
-    const password = `Test-${randomUUID()}!`
-    async function register(role) {
-      const email = `e2e-${role}-${suffix}@example.com`
-      const response = await request.post('/api/user/register', {
-        data: {
-          userName: `e2e_${role}_${suffix}`,
-          email,
-          password,
-          postalCode: '560123',
-          block: '123',
-          unitNumber: '#02-01',
-          lat: 1.35,
-          lng: 103.82,
-        },
-      })
-      expect(response.status(), `Register test ${role}`).toBe(201)
-      return { email, ...(await response.json()) }
-    }
-    const owner = await register('owner')
-    const sitter = await register('sitter')
+    const owner = await registerCareAccount(request, 'owner', suffix)
+    const sitter = await registerCareAccount(request, 'sitter', suffix)
     const options = { baseURL, timezoneId: 'Asia/Singapore', reducedMotion: 'reduce' }
     const ownerContext = await browser.newContext(options)
     const sitterContext = await browser.newContext(options)
@@ -35,15 +49,8 @@ export const test = base.extend({
       const sitterPage = await sitterContext.newPage()
       ownerPage.setDefaultTimeout(10000)
       sitterPage.setDefaultTimeout(10000)
-      async function signIn(page, account, path) {
-        await page.goto(`/signin?redirect=${encodeURIComponent(path)}`)
-        await page.getByLabel('Email', { exact: true }).fill(account.email)
-        await page.getByLabel('Password', { exact: true }).fill(password)
-        await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-        await expect(page).toHaveURL(path)
-      }
-      await signIn(ownerPage, owner, '/plants')
-      await signIn(sitterPage, sitter, '/my-sits')
+      await signInCareAccount(ownerPage, owner, '/plants')
+      await signInCareAccount(sitterPage, sitter, '/my-sits')
       await use({ ownerPage, sitterPage, owner, sitter, plantName: `E2E Plant ${suffix}` })
     } finally {
       await ownerContext.close()

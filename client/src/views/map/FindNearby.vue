@@ -9,6 +9,8 @@ import UserAvatar from '@/components/user/UserAvatar.vue'
 import plantPlaceholder from '@/assets/plant.png' // shown when a plant has no photo or it fails to load
 // Care checklist (Carolyn): splits the instructions into steps (one per line)
 import { getCareSteps } from '@/utils/careSteps'
+import { waterSourceLabel } from '@/utils/visitFormat'
+import { singaporeDate } from '@/utils/singaporeDate'
 
 
 const auth = useAuthStore()
@@ -22,7 +24,7 @@ const loadError = ref('')
 
 const pinSelected = ref(null) // the visit chosen from the list or the map
 const radiusKm = ref(1)
-const todayYmd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }) // "2026-11-03"
+const todayYmd = singaporeDate(new Date()) // "2026-11-03"
 const selectedDate = ref(todayYmd)
 
 // "See all requests" mode: requests grouped by owner for their whole request period
@@ -42,12 +44,6 @@ const ALL_ENDPOINT = '/find-nearby?all=1'
 const nationwideVisits = ref([]) // every open visit in the country, nearest first
 const loadingAll = ref(false)
 const loadAllError = ref('')
-
-const waterSourceLabels = {
-  left_out: 'Water left outside',
-  tap_available: 'Tap available',
-  sitter_brings: 'Sitter brings water',
-}
 
 // ---- load from the backend (GET /find-nearby, which the dev proxy sends to the server) ----
 async function load() {
@@ -98,7 +94,7 @@ function toggleView() {
   searchCenter.value = null
   radiusKm.value = 1
   selectedDate.value = returningToDate
-    ? new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }) : ''
+    ? singaporeDate(new Date()) : ''
 }
 
 function resetOverview() {
@@ -562,7 +558,7 @@ async function acceptVisit(visit) {
           </div>
           <div>
             <dt>Water</dt>
-            <dd>{{ waterSourceLabels[pinSelected.waterSource] || 'Tap available' }}</dd>
+            <dd>{{ waterSourceLabel(pinSelected.waterSource) }}</dd>
           </div>
           <div>
             <dt>Still open</dt>

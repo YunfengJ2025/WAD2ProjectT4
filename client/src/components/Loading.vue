@@ -1,4 +1,5 @@
 <script setup>
+defineOptions({ name: 'AppLoading' })
 // Pages supply a descriptive message while sharing the same growing-tree animation.
 defineProps({
   label: { type: String, default: 'Loading…' },

@@ -164,7 +164,7 @@ async function fetchOptOutStatus() {
         auth.user.hideFromLeaderboard = res.data.hideFromLeaderboard
       }
     }
-  } catch (err) {
+  } catch {
     if (auth.user?.hideFromLeaderboard !== undefined) {
       isOptedOut.value = Boolean(auth.user.hideFromLeaderboard)
     }
