@@ -161,6 +161,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.6);
   border: 1px dashed rgba(34, 197, 94, 0.5);
 }
+.sitting-empty .btn { display: inline-flex; align-items: center; justify-content: center; line-height: 1.5; padding-block: 0.5rem; }
 .sitting-empty-icon { font-size: 2rem; }
 
 @media (prefers-reduced-motion: reduce) {

@@ -228,7 +228,7 @@ function movePointer(event) {
 function syncMotion() {
   reducedMotion.value = mediaQuery.matches
   compact.value = window.innerWidth < 700
-  orbitRadius.value = Math.min(320, (window.innerWidth - (compact.value ? 205 : 230)) / 2)
+  orbitRadius.value = Math.min(320, (window.innerWidth - 230) / 2)
   cancelAnimationFrame(frame)
   frame = null
   previousTime = 0
@@ -1060,7 +1060,7 @@ h2 span {
     height: 350px;
   }
   .orbit-card {
-    width: 145px;
+    width: min(200px, calc(100vw - 60px));
     padding: 12px;
   }
   .orbit-card h3 {
@@ -1089,5 +1089,11 @@ h2 span {
     transition: none !important;
     scroll-behavior: auto;
   }
+}
+
+/* These headings receive focus after section navigation, but are not controls. */
+#welcome-title:focus, #features-title:focus { outline: none; }
+@media (max-width: 699px) {
+  .orbit-card .text-link { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
 }
 </style>
