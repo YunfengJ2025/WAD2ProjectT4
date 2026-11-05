@@ -237,30 +237,6 @@ onMounted(() => {
   gap: var(--space-md);
 }
 
-.btn-nav-action {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px;
-  line-height: 1 !important;
-  vertical-align: middle;
-  padding: 8px 16px !important;
-}
-
-.btn-nav-action .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
-  transform: translateY(-0.5px);
-}
-
-.btn-nav-action .btn-text {
-  display: inline-block;
-  line-height: 1;
-}
-
 .token-pill {
   padding: 6px 14px;
   font-size: 0.9rem;
@@ -551,3 +527,5 @@ onMounted(() => {
   }
 }
 </style>
+
+<style scoped src="@/assets/board-navigation.css"></style>

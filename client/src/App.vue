@@ -58,8 +58,6 @@ watch(() => auth.accessToken, (token) => {
   <!-- Background gradient container defined in main.css -->
   <div class="page-bg"></div>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
   <NavBar
     class="mb-4 full-width"
     v-if="!pageLoading && !['home', 'sign-in', 'register'].includes(route.name)"

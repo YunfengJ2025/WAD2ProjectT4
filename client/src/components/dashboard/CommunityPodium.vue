@@ -166,22 +166,6 @@ defineProps({
   box-shadow: 0 16px 36px rgba(245, 158, 11, 0.32);
 }
 
-.podium-card.gold::after {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.65) 50%, transparent 60%);
-  animation: foilShimmer 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes foilShimmer {
-  0%, 100% { transform: translateX(-100%); }
-  50% { transform: translateX(100%); }
-}
-
 /* The crown sits inside the card above the medal. (It used to poke out above the
    card, but the card's overflow: hidden - needed for the shimmer - cut it off.) */
 .crown {
@@ -275,3 +259,5 @@ defineProps({
   }
 }
 </style>
+
+<style scoped src="@/assets/podium-shimmer.css"></style>

@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import plantPlaceholder from '@/assets/plant.png'
-import { getCareSteps, getRequestSteps } from '@/utils/careSteps'
+import { getRequestSteps } from '@/utils/careSteps'
 // (Carolyn) Fix 5: shared date / token / water / status wording for all visit cards.
 // chipDate = "Tue 3", date = "03/11/2026", both in Singapore time like the server
 import {
@@ -34,7 +34,10 @@ const plants = computed(() =>
       : [],
 )
 // what the owner asked for each plant (water amount, instructions), shown under Details
-const plantRows = computed(() => (props.request.plantDetails?.length ? props.request.plantDetails : plants.value))
+const plantRows = computed(() =>
+  (props.request.plantDetails?.length ? props.request.plantDetails : plants.value)
+    .map((plant) => ({ ...plant, careSteps: getRequestSteps(plant) })),
+)
 const title = computed(
   () =>
     plants.value.map((plant) => plant.plantName).filter(Boolean).join(', ') ||
@@ -94,12 +97,6 @@ const open = ref(false)
 // Build the plant-name summary shown for one visit in the details modal.
 function visitPlants(visit) {
   return visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Unnamed plant'
-}
-
-// (Carolyn) Care steps for one plant row in the pop-up: this request's instructions,
-// else the plant's own care notes (same rule the sitter's checklist uses)
-function plantSteps(row) {
-  return getCareSteps(row.careInstructions || row.wateringInfo?.notes)
 }
 
 // Care checklist (Carolyn): how many care steps the sitter ticked on a finished visit,
@@ -187,7 +184,7 @@ function healthLine(item) {
         </RouterLink>
         <!-- Offer an owner a manual replacement after a visit expires or is missed. -->
         <button
-          v-if="visit.status === 'missed' && !visit.makeupRequestId"
+          v-if="!visit.makeupRequestId"
           type="button"
           class="makeup-button"
           :disabled="makeupBusyVisitId === visit.visitId"
@@ -249,8 +246,8 @@ function healthLine(item) {
                 <span class="water-amount">💧 {{ plant.amountToWater ?? 0 }} ml {{ nextVisit ? 'per upcoming visit' : 'per visit' }}</span>
                 <small v-if="nextVisit" class="no-steps">{{ plant.usePlantAmount ? 'Follows plant’s watering amount' : 'Custom amount for this request' }}</small>
                 <!-- Care instructions as a checklist (one line = one step) -->
-                <ul v-if="plantSteps(plant).length" class="care-steps" aria-label="Care steps">
-                  <li v-for="step in plantSteps(plant)" :key="step">
+                <ul v-if="plant.careSteps.length" class="care-steps" aria-label="Care steps">
+                  <li v-for="step in plant.careSteps" :key="step">
                     <span class="tick" aria-hidden="true">✓</span>{{ step }}
                   </li>
                 </ul>

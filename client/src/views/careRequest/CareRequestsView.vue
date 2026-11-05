@@ -1,7 +1,7 @@
 <script setup>
 // View: loads the owner's plants and requests, and coordinates create/cancel/make-up actions.
 import Loading from '@/components/Loading.vue'
-import { singaporeDate as singaporeDateString, addCalendarDays } from '@/utils/singaporeDate'
+import { makeupVisitDate } from '@/utils/singaporeDate'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
@@ -103,9 +103,7 @@ async function requestMakeup({ request, visit }) {
   error.value = ''
   notice.value = ''
   try {
-    const tomorrow = addCalendarDays(singaporeDateString(new Date()), 1)
-    const dayAfterRequest = addCalendarDays(singaporeDateString(request.endDate), 1)
-    const startDate = dayAfterRequest > tomorrow ? dayAfterRequest : tomorrow
+    const startDate = makeupVisitDate(request.endDate)
     // Replacement requests are routed with care visit operations.
     const result = await auth.authorizedRequest(`/care-visits/make-up/${visit.visitId}`, {
       method: 'POST',

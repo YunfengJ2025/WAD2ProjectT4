@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/^\/api/, '')
-    let body = {}
+    let body
     if (path === '/user/me') body = { user }
     else if (path === '/plants') body = { plants }
     else if (path === '/api/leaderboard') body = {
@@ -90,7 +90,7 @@ test('tablet calendar wraps full plant names within their cards', async ({ page 
   const names = calendar.locator('.plant-name')
   await expect(names.first()).toBeVisible()
   for (const name of await names.all()) {
-    expect(await name.textContent()).toBe(longName)
+    await expect(name).toHaveText(longName)
     expect(await name.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
   }
   await expectNoPageOverflow(page)

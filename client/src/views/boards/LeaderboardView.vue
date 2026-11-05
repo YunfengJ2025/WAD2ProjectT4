@@ -289,30 +289,6 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-.btn-nav-action {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px;
-  line-height: 1 !important;
-  vertical-align: middle;
-  padding: 8px 16px !important;
-}
-
-.btn-nav-action .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
-  transform: translateY(-0.5px);
-}
-
-.btn-nav-action .btn-text {
-  display: inline-block;
-  line-height: 1;
-}
-
 .opt-out-box {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);
@@ -904,3 +880,5 @@ onMounted(async () => {
   .podium-avatar.top { width: 52px !important; height: 52px !important; font-size: 20px !important; }
 }
 </style>
+
+<style scoped src="@/assets/board-navigation.css"></style>

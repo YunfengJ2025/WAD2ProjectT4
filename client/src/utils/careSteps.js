@@ -19,7 +19,7 @@ export function getCareSteps(notes) {
 // Uses the owner's instructions for that request; if they left it empty,
 // falls back to the plant's own care notes.
 export function getRequestSteps(item) {
-  return getCareSteps(item.careInstructions || item.plant?.wateringInfo?.notes)
+  return getCareSteps(item.careInstructions || item.plant?.wateringInfo?.notes || item.wateringInfo?.notes)
 }
 
 // The owner's ticks are kept in localStorage until the plant is watered again, e.g.

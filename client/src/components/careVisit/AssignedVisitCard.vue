@@ -5,6 +5,7 @@ import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): same helper as the owner's plant page, so both split
 // the steps the same way (one per line). Uses this request's instructions, else the plant's notes
 import { getRequestSteps } from '@/utils/careSteps'
+import { singaporeDate } from '@/utils/singaporeDate'
 // (Carolyn) Fix 5: shared date / token / water / status wording for all visit cards
 import {
   formatDate as date,
@@ -13,6 +14,7 @@ import {
   statusLabel,
   tokenText,
   waterSourceLabel,
+  ownerAddress,
 } from '@/utils/visitFormat'
 
 const props = defineProps({
@@ -74,27 +76,6 @@ const mapsUrl = computed(() => {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
 })
 const tokens = props.visit.request?.tokenReward // may be missing on old visits
-
-// Convert timestamps to YYYY-MM-DD in Singapore time for visit-day checks.
-function singaporeDate(value) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Singapore',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date(value))
-  const dateParts = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`
-}
-
-// Format the private owner address returned for the sitter's accepted visit.
-function ownerAddress(owner) {
-  if (!owner) return ''
-  const building = owner.block ? `Blk ${owner.block}` : ''
-  return [building, owner.unitNumber, owner.postalCode ? `Singapore ${owner.postalCode}` : '']
-    .filter(Boolean)
-    .join(', ')
-}
 
 // Care checklist (Carolyn): for each plant, its care steps and the steps the sitter ticks.
 // careSteps[plantId] = ["Water the soil", ...]   ticked[plantId] = steps ticked (v-model)

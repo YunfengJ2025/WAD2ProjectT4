@@ -9,11 +9,11 @@ import { usePlantsStore } from '@/stores/plants'
 import {
   getWateringStatus,
   startOfDay,
-  isWateredToday,
   formatShortDate,
 } from '@/utils/wateringStatus'
 import { getCareSteps, getDoneSteps, saveDoneSteps } from '@/utils/careSteps'
 import { useToast } from '@/composables/useToast'
+import { usePlantWatering } from '@/composables/usePlantWatering'
 
 // PlantDetailView: one plant's page (/plants/:plantId).
 // Shows the photo, facts, care checklist and next waterings,
@@ -32,40 +32,9 @@ const loadError = ref('')
 const confirmingDelete = ref(false) // "Delete plant?" pop-up open?
 const inActiveRequest = ref(false) // true = in a care request still going, so no Delete
 const deleting = ref(false)
-const watering = ref(false) // true while Mark watered is saving
-// Already watered today: the button is disabled so it can't be pressed twice
-const wateredToday = computed(() => plant.value && isWateredToday(plant.value))
-const waterLabel = computed(() => {
-  if (watering.value) return 'Saving…'
-  if (wateredToday.value) return 'Watered today ✓'
-  return 'Mark watered'
-})
+const { watering, confirmingEarly, wateredToday, waterLabel, markWatered, onWaterClick } =
+  usePlantWatering(() => plant.value, () => status.value)
 
-// Store action -> PATCH /plants/:id/water on the server -> lastWateredAt = now.
-// The store then updates the plant, so the status pill and schedule refresh by themselves.
-async function markWatered() {
-  if (watering.value) return // ignore double clicks
-  watering.value = true
-  try {
-    await plantsStore.markWatered(route.params.plantId)
-    toast('Watering recorded')
-  } catch (err) {
-    toast(err.message, 'error')
-  } finally {
-    watering.value = false
-    confirmingEarly.value = false
-  }
-}
-
-// Not due yet: ask first, in case the button was pressed by mistake
-const confirmingEarly = ref(false)
-function onWaterClick() {
-  if (status.value.key === 'upcoming') {
-    confirmingEarly.value = true
-  } else {
-    markWatered()
-  }
-}
 // true if the photo link is broken, so we show the "No photo yet" icon instead
 const photoFailed = ref(false)
 

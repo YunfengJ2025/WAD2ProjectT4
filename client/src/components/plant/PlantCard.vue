@@ -4,9 +4,8 @@
 // Delete is only *asked* here: the card emits 'delete' and the page shows the confirm pop-up.
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getWateringStatus, isWateredToday, formatShortDate } from '@/utils/wateringStatus'
-import { usePlantsStore } from '@/stores/plants'
-import { useToast } from '@/composables/useToast'
+import { getWateringStatus, formatShortDate } from '@/utils/wateringStatus'
+import { usePlantWatering } from '@/composables/usePlantWatering'
 import { getCareSteps, getDoneSteps } from '@/utils/careSteps'
 import StatusPill from './StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -73,42 +72,8 @@ const checklistLabel = computed(() => {
   return `${stepsLeft.value} care steps left`
 })
 
-// "Mark watered" button: same as on the plant's detail page.
-// The store updates the plant, so the status pill changes straight away.
-const plantsStore = usePlantsStore()
-const { show: toast } = useToast()
-const watering = ref(false) // true while saving (disables the button)
-// Already watered today: the button is disabled so it can't be pressed twice
-const wateredToday = computed(() => isWateredToday(props.plant))
-const waterLabel = computed(() => {
-  if (watering.value) return 'Saving…'
-  if (wateredToday.value) return 'Watered today ✓'
-  return 'Mark watered'
-})
-
-async function markWatered() {
-  if (watering.value) return
-  watering.value = true
-  try {
-    await plantsStore.markWatered(props.plant.plantId)
-    toast(`${props.plant.plantName} watered`)
-  } catch (err) {
-    toast(err.message, 'error')
-  } finally {
-    watering.value = false
-    confirmingEarly.value = false
-  }
-}
-
-// Not due yet: ask first, in case the button was pressed by mistake
-const confirmingEarly = ref(false)
-function onWaterClick() {
-  if (status.value.key === 'upcoming') {
-    confirmingEarly.value = true
-  } else {
-    markWatered()
-  }
-}
+const { watering, confirmingEarly, wateredToday, waterLabel, markWatered, onWaterClick } =
+  usePlantWatering(() => props.plant, () => status.value, () => `${props.plant.plantName} watered`)
 </script>
 
 <template>

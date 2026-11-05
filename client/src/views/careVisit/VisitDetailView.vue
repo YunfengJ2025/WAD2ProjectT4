@@ -9,6 +9,8 @@ import UserAvatar from '@/components/user/UserAvatar.vue'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import plantPlaceholder from '@/assets/plant.png'
 import { getRequestSteps } from '@/utils/careSteps'
+import { makeupVisitDate } from '@/utils/singaporeDate'
+import { ownerAddress as formatOwnerAddress } from '@/utils/visitFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,20 +55,7 @@ const canRequestMakeup = computed(
 const makeupBusy = ref(false)
 const makeupError = ref('')
 
-// "YYYY-MM-DD" in Singapore time, and that date plus some days
-function sgDate(value) {
-  return new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })
-}
-function addDays(day, days) {
-  const [year, month, date] = day.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10)
-}
-// Same date rule as My Requests: tomorrow, or the day after the original request ends if that is later
-const makeupDate = computed(() => {
-  const tomorrow = addDays(sgDate(new Date()), 1)
-  const afterRequest = visit.value?.request?.endDate ? addDays(sgDate(visit.value.request.endDate), 1) : tomorrow
-  return afterRequest > tomorrow ? afterRequest : tomorrow
-})
+const makeupDate = computed(() => makeupVisitDate(visit.value?.request?.endDate))
 
 // Ask the server to create a future replacement request for this missed visit.
 async function requestMakeup() {
@@ -168,16 +157,6 @@ function formatDate(value, includeTime = false) {
     options.timeStyle = 'short'
   }
   return new Intl.DateTimeFormat('en-SG', options).format(new Date(value))
-}
-
-// Display the owner's full address to visit participants.
-function formatOwnerAddress(owner) {
-  if (!owner) return ''
-  return [
-    owner.block ? `Blk ${owner.block}` : '',
-    owner.unitNumber,
-    owner.postalCode ? `Singapore ${owner.postalCode}` : '',
-  ].filter(Boolean).join(', ')
 }
 
 // A watcher also reloads the page when navigation changes only the visit ID.

@@ -1,6 +1,6 @@
 // Unit tests for getCareSteps (careSteps.js)
 import { describe, it, expect } from 'vitest'
-import { getCareSteps, getDoneSteps, saveDoneSteps } from './careSteps'
+import { getCareSteps, getDoneSteps, saveDoneSteps, getRequestSteps } from './careSteps'
 
 describe('getCareSteps', () => {
   it('makes one step per line', () => {
@@ -58,4 +58,10 @@ describe('getDoneSteps / saveDoneSteps', () => {
     localStorage.clear()
     expect(getDoneSteps({ plantId: 2, lastWateredAt: null })).toHaveLength(0)
   })
+})
+
+it('uses request instructions before nested or flat plant notes', () => {
+  expect(getRequestSteps({ careInstructions: 'Turn pot', plant: { wateringInfo: { notes: 'Water' } } })).toEqual(['Turn pot'])
+  expect(getRequestSteps({ plant: { wateringInfo: { notes: 'Water' } } })).toEqual(['Water'])
+  expect(getRequestSteps({ wateringInfo: { notes: 'Water\nWipe leaves' } })).toEqual(['Water', 'Wipe leaves'])
 })
