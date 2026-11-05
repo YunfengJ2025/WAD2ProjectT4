@@ -1,6 +1,6 @@
 <script setup>
 import Loading from '@/components/Loading.vue'
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -264,8 +264,14 @@ async function acceptVisit(visit) {
   } catch (err) {
     toast(err.message, 'error')
     if (err.status === 409 || err.status === 404) {
+      // Stop offering this visit even if the follow-up refresh fails.
+      allVisits.value = allVisits.value.filter((v) => v.visitId !== visit.visitId)
+      nationwideVisits.value = nationwideVisits.value.filter((v) => v.visitId !== visit.visitId)
       pinSelected.value = null
-      await load() // someone else got there first, so refresh the list
+      activeGroupKey.value = ''
+      // Nationwide and dropped-pin searches both read nationwideVisits.
+      if (showAll.value || searchCenter.value) await loadAll()
+      else await load()
     }
   } finally {
     acceptingId.value = 0

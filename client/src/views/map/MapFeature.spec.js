@@ -11,8 +11,8 @@ vi.mock('@/composables/useToast', () => ({ useToast: () => ({ show: vi.fn() }) }
 vi.mock('@/components/map/RequestMap.vue', () => ({
   default: {
     name: 'RequestMap',
-    props: ['requests'],
-    emits: ['select'],
+    props: ['requests', 'searchPin', 'radiusKm', 'center'],
+    emits: ['select', 'drop-pin'],
     // Like the StudentProfile example, echo received props. Buttons simulate child events.
     template: `<div aria-label="Map stub">
     <button v-for="request in requests" :key="request.visitId"
@@ -259,5 +259,103 @@ describe('Find requests', () => {
     expect(wrapper.get('h1').text()).toBe('Find requests')
     expect(wrapper.find('[role=alert]').exists()).toBe(false)
     expect(wrapper.findAll('.requestCard')).toHaveLength(1)
+  })
+})
+
+describe('Unavailable visits', () => {
+  for (const status of [404, 409]) {
+    it(`refreshes Find requests after an acceptance returns ${status}`, async () => {
+      const remaining = { ...visit, visitId: 2, date: tomorrow, visitDate: tomorrow }
+      let available = [visit, remaining]
+      request.mockImplementation(async (url, options) => {
+        if (options?.method === 'POST') {
+          throw Object.assign(new Error('Visit no longer available'), { status })
+        }
+        return { origin, visits: url.includes('all=1') ? available : [visit] }
+      })
+      const wrapper = panel()
+      await flushPromises()
+      await all(wrapper)
+      await wrapper.get('.requestCard').trigger('click')
+      await wrapper.findAll('.requestCard')[0].trigger('click')
+      available = [remaining]
+
+      await wrapper.get('.acceptBar button').trigger('click')
+      await flushPromises()
+
+      expect(request).toHaveBeenLastCalledWith('/find-nearby?all=1')
+      expect(wrapper.get('h1').text()).toBe('Find requests')
+      expect(wrapper.find('.backBtn').exists()).toBe(false)
+      expect(wrapper.find('.acceptBar').exists()).toBe(false)
+      expect(mapPins(wrapper).map((pin) => pin.attributes('data-visit-id'))).toEqual(['2'])
+      // Opening the surviving group must show only its remaining open day.
+      await wrapper.get('.requestCard').trigger('click')
+      expect(wrapper.findAll('.requestCard')).toHaveLength(1)
+    })
+  }
+
+  for (const nationwide of [false, true]) {
+    it(`refreshes a dropped-pin search in ${nationwide ? 'Find requests' : 'Find nearby'}`, async () => {
+      const wrapper = panel()
+      await flushPromises()
+      if (nationwide) await all(wrapper)
+      const map = wrapper.getComponent({ name: 'RequestMap' })
+      const point = { lat: 1.351, lng: 103.821 }
+      map.vm.$emit('drop-pin', point)
+      await flushPromises()
+      await wrapper.get('input[type=range]').setValue('0.5')
+      await wrapper.get('input[type=date]').setValue(today)
+      await wrapper.get('.requestCard').trigger('click')
+      if (nationwide) await wrapper.get('.requestCard').trigger('click')
+      request.mockRejectedValueOnce(Object.assign(new Error('Visit taken'), { status: 409 }))
+      visits = []
+
+      await wrapper.get('.acceptBar button').trigger('click')
+      await flushPromises()
+
+      expect(request).toHaveBeenLastCalledWith('/find-nearby?all=1')
+      expect(wrapper.get('h1').text()).toBe(nationwide ? 'Find requests' : 'Find nearby')
+      expect(map.props('searchPin')).toEqual(point)
+      expect(map.props('radiusKm')).toBe(0.5)
+      expect(wrapper.get('input[type=date]').element.value).toBe(today)
+      expect(mapPins(wrapper)).toHaveLength(0)
+      expect(wrapper.find('.acceptBar').exists()).toBe(false)
+    })
+  }
+
+  it('removes the unavailable visit even when refreshing Find requests fails', async () => {
+    const wrapper = panel()
+    await flushPromises()
+    await all(wrapper)
+    await wrapper.get('.requestCard').trigger('click')
+    await wrapper.get('.requestCard').trigger('click')
+    request.mockRejectedValueOnce(Object.assign(new Error('Visit taken'), { status: 409 }))
+    request.mockRejectedValueOnce(new Error('Could not refresh requests'))
+
+    await wrapper.get('.acceptBar button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[role=alert]').text()).toContain('Could not refresh requests')
+    expect(mapPins(wrapper)).toHaveLength(0)
+    expect(wrapper.find('.acceptBar').exists()).toBe(false)
+    visits = []
+    await wrapper.get('[role=alert] button').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.requestCard')).toHaveLength(0)
+  })
+
+  it('still refreshes the nearby endpoint for a search around home', async () => {
+    const wrapper = panel()
+    await flushPromises()
+    await wrapper.get('.requestCard').trigger('click')
+    request.mockRejectedValueOnce(Object.assign(new Error('Visit taken'), { status: 409 }))
+    visits = []
+
+    await wrapper.get('.acceptBar button').trigger('click')
+    await flushPromises()
+
+    expect(request).toHaveBeenLastCalledWith('/find-nearby')
+    expect(mapPins(wrapper)).toHaveLength(0)
+    expect(wrapper.find('.acceptBar').exists()).toBe(false)
   })
 })

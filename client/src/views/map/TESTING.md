@@ -47,3 +47,8 @@ from these component tests. No E2E or real-map integration coverage is claimed h
 The four real-browser lifecycle flows are documented in
 [`client/e2e/README.md`](../../../e2e/README.md). They cover completion and feedback,
 sitter opt-out, missed visits and make-up requests, and owner cancellation.
+
+Acceptance conflicts (404/409) are also covered: the unavailable visit is removed,
+the active results are refreshed, and stale details are closed. Tests include Find
+Requests, dropped-pin searches in both modes, a failed refresh followed by retry,
+and the normal nearby search. Date, radius and search-pin selections are preserved.
