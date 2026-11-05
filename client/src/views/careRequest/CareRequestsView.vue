@@ -97,22 +97,6 @@ async function cancelRequest(request) {
   }
 }
 
-// Format replacement request dates in Singapore time, matching server policy dates.
-function singaporeDateString(value) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date(value))
-  const date = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-  return `${date.year}-${date.month}-${date.day}`
-}
-
-// Add whole calendar days to an ISO date without local timezone shifts.
-function addCalendarDays(value, days) {
-  const [year, month, day] = value.split('-').map(Number)
-  const result = new Date(Date.UTC(year, month - 1, day + days))
-  return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}-${String(result.getUTCDate()).padStart(2, '0')}`
-}
-
 // Post a one-day make-up request after the original date range to avoid duplicates.
 async function requestMakeup({ request, visit }) {
   makeupBusyVisitId.value = visit.visitId
