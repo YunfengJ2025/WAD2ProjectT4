@@ -173,14 +173,14 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
             data-bs-toggle="dropdown"
             data-bs-auto-close="outside"
             aria-expanded="false"
-            aria-label="Notifications"
+            :aria-label="unreadCount ? `Notifications (${unreadCount} unread)` : 'Notifications'"
             @click="loadNotifications"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
               <path d="M10 21h4" />
             </svg>
-            <span class="unread-count" v-if="unreadCount">{{ unreadCount }}</span>
+            <span class="unread-count" v-if="unreadCount" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           <!-- (Carolyn) header with "Mark all read", icon per notice, dot for unread, ✕ to delete, "Clear all" -->
           <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
@@ -282,8 +282,8 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
   font-size: 0.75rem;
 }
 /* Keep the notification list readable in the compact navbar dropdown. */
-.notification-toggle { font-size: 1.35rem; line-height: 1; }
-.unread-count { position: absolute; top: 0; right: 0; min-width: 1.05rem; padding: 0.05rem 0.2rem; border-radius: 999px; background: #b42318; color: #fff; font-size: 0.65rem; font-weight: 700; }
+.notification-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; overflow: visible; font-size: 1.35rem; line-height: 1; }
+.unread-count { position: absolute; top: 1px; right: 1px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; border: 2px solid #fff; border-radius: 999px; background: #b42318; color: #fff; font-size: 0.6rem; line-height: 1; font-weight: 700; pointer-events: none; }
 /* (Carolyn) notification panel: fixed header/footer, list scrolls in between */
 .notification-menu { width: min(380px, calc(100vw - 1rem)); overflow: hidden; border: 1px solid #e2e8e2; border-radius: 16px; box-shadow: 0 14px 40px #10231b26; }
 .notification-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-bottom: 1px solid #e7ece7; }
