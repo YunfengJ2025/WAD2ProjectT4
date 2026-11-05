@@ -107,7 +107,9 @@ function submit() {
     plantIds: form.value.plantIds.slice(),
     plantDetails: selectedPlants.value.map((plant) => ({
       plantId: plant.plantId,
-      amountToWater: Number(form.value.plantDetails[plant.plantId]?.amountToWater || 0),
+      usePlantAmount: form.value.plantDetails[plant.plantId]?.usePlantAmount === true,
+      amountToWater: Number(form.value.plantDetails[plant.plantId]?.usePlantAmount
+        ? plant.wateringInfo.amountMl : form.value.plantDetails[plant.plantId]?.amountToWater || 0),
       careInstructions: form.value.plantDetails[plant.plantId]?.careInstructions || '',
     })),
     tokenReward: Number(form.value.tokenReward),
@@ -129,6 +131,7 @@ function togglePlant(plant) {
     // (from its plant profile); the owner can still change them for this request
     const plant = plantById.value[plantId]
     form.value.plantDetails[plantId] = {
+      usePlantAmount: true,
       amountToWater: plant?.wateringInfo?.amountMl || 0,
       careInstructions: plant?.wateringInfo?.notes || '',
     }
@@ -193,14 +196,22 @@ onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
           <img :src="plant.photoUrl || plantPlaceholder" alt="" @error="$event.target.src = plantPlaceholder" />
           Care for {{ plant.plantName }}
         </legend>
-        <label>
-          Water per visit
-          <!-- number box with "ml" joined on the right -->
-          <span class="amount-input">
-            <input v-model.number="form.plantDetails[plant.plantId].amountToWater" type="number" min="0" max="10000" step="10" required />
-            <span class="unit">ml</span>
-          </span>
-        </label>
+        <div class="watering-choice">
+          <label class="amount-default">
+            <input v-model="form.plantDetails[plant.plantId].usePlantAmount" type="checkbox" />
+            Use plant’s watering amount
+          </label>
+          <small v-if="form.plantDetails[plant.plantId].usePlantAmount" class="care-hint">Upcoming visits follow changes to the plant’s amount.</small>
+          <label>
+            {{ form.plantDetails[plant.plantId].usePlantAmount ? 'Water per visit' : 'Custom amount for this request' }}
+            <!-- number box with "ml" joined on the right -->
+            <span class="amount-input">
+              <input v-if="form.plantDetails[plant.plantId].usePlantAmount" :value="plant.wateringInfo.amountMl" type="number" disabled />
+              <input v-else v-model.number="form.plantDetails[plant.plantId].amountToWater" type="number" min="0" max="10000" step="1" required />
+              <span class="unit">ml</span>
+            </span>
+          </label>
+        </div>
         <label>
           Plant-specific instructions
           <textarea v-model="form.plantDetails[plant.plantId].careInstructions" maxlength="500" :rows="instructionRows(plant.plantId)" placeholder="e.g. Keep away from direct sun after watering"></textarea>
@@ -339,6 +350,9 @@ h2 { margin-bottom: 1rem; font-size: 1.2rem; }
 .plant-care legend img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 .plant-care label { font-size: 0.9rem; }
 .plant-care textarea { line-height: 1.5; resize: vertical; }
+.watering-choice { display: grid; gap: 0.5rem; }
+.plant-care .amount-default { display: flex; align-items: center; gap: 0.5rem; }
+.amount-default input { width: auto; flex: 0 0 auto; }
 .amount-input { display: flex; }
 .amount-input input { flex: 1; min-width: 0; border-radius: 7px 0 0 7px; }
 .amount-input .unit { display: grid; place-items: center; padding: 0 0.75rem; border: 1px solid #b9c7bb; border-left: 0; border-radius: 0 7px 7px 0; background: #edf3ed; color: #637466; font-weight: 500; }

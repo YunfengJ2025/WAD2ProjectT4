@@ -143,8 +143,9 @@ test('cannot delete a plant (or the account) while the plant is in an active car
   // ---------- Cancel the request, then the plant can be deleted ----------
   await page.getByRole('link', { name: 'My Requests', exact: true }).click()
   const requestCard = page.getByRole('article').filter({ hasText: plantName })
-  page.once('dialog', (dialog) => dialog.accept()) // "Cancel the request?" browser box
   await requestCard.getByRole('button', { name: 'Cancel request', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Cancel request?', exact: true })
+    .getByRole('button', { name: 'Cancel request', exact: true }).click()
   await expect(
     page.getByRole('status').filter({ hasText: 'Request #' }).filter({ hasText: 'cancelled.' }),
   ).toBeVisible()

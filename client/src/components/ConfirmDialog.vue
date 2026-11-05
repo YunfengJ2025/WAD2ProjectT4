@@ -4,7 +4,7 @@
 //   <ConfirmDialog :open="..." title="..." @confirm="doIt" @cancel="close" />
 // It uses the browser's built-in <dialog> element, which already gives us the dark
 // backdrop, keeps keyboard focus inside the pop-up, and closes on the Esc key.
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, useId } from 'vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false }, // parent sets true to show the pop-up
@@ -20,6 +20,7 @@ const emit = defineEmits(['confirm', 'cancel'])
 
 // ref="dialog" in the template: gives us the real <dialog> element
 const dialog = ref(null)
+const titleId = useId()
 
 // Show or hide the <dialog> to match the `open` prop.
 // showModal() and close() are the browser's own methods for <dialog>.
@@ -52,11 +53,11 @@ function onBackdropClick(event) {
   <dialog
     ref="dialog"
     class="confirm"
-    aria-labelledby="confirm-title"
+    :aria-labelledby="titleId"
     @cancel="onCancel"
     @click="onBackdropClick"
   >
-    <h2 id="confirm-title">{{ title }}</h2>
+    <h2 :id="titleId">{{ title }}</h2>
     <p v-if="message">{{ message }}</p>
     <div class="actions">
       <button type="button" class="btn" :disabled="busy" autofocus @click="emit('cancel')">

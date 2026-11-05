@@ -99,3 +99,18 @@ it('clears restoration loading even when the saved session has expired', async (
   expect(auth.isRestoring).toBe(false)
   expect(auth.isAuthenticated).toBe(false)
 })
+
+it.each(['/plants', '/requests', '/find-nearby'])('sends signed-out visitors from %s to home', async (path) => {
+  await router.push(path)
+  expect(router.currentRoute.value.path).toBe('/')
+  expect(router.currentRoute.value.query).toEqual({})
+})
+
+it('returns home when an expired saved session is restored on a protected page', async () => {
+  await router.push('/signin')
+  auth.accessToken = 'expired-token'
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 401, json: async () => ({ message: 'Expired token' }) })))
+  await router.push('/schedule')
+  expect(router.currentRoute.value.path).toBe('/')
+  expect(auth.accessToken).toBe('')
+})

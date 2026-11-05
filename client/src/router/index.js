@@ -146,7 +146,7 @@ router.beforeEach(async (to) => {
     }
   }
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: to.path === '/find-nearby' ? 'sign-in' : 'register', query: { redirect: to.fullPath } }
+    return { name: 'home', replace: true }
   }
   if (['sign-in', 'register'].includes(to.name) && auth.isAuthenticated) {
     return { name: 'schedule' }

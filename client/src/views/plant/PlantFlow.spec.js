@@ -6,6 +6,9 @@ import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
 
+// This flow verifies the expiry destination, without the welcome page's animations.
+vi.mock('@/views/landingpage.vue', () => ({ default: { template: '<p>Welcome</p>' } }))
+
 let wrapper
 afterEach(() => {
   wrapper?.unmount()
@@ -37,11 +40,9 @@ it('signs in through the form, creates and edits a shared plant, and redirects o
     return { ok: true, status: 200, json: async () => body }
   }))
   const auth = useAuthStore(pinia)
-  // Fix: signed-out visitors are now sent to Register (not Sign in), keeping ?redirect=/plants,
-  // so check that, then open Sign in with the same redirect to log in
+  // Guests land on the welcome page; explicit sign-in links can retain a destination.
   await router.push('/plants')
-  expect(router.currentRoute.value.name).toBe('register')
-  expect(router.currentRoute.value.query.redirect).toBe('/plants')
+  expect(router.currentRoute.value.name).toBe('home')
   await router.push('/signin?redirect=/plants')
   wrapper = mount(App, { global: { plugins: [pinia, router] } })
   await flushPromises()
@@ -76,6 +77,6 @@ it('signs in through the form, creates and edits a shared plant, and redirects o
 
   fetch.mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: 'Token expired' }) })
   await expect(usePlantsStore(pinia).fetchPlants()).rejects.toThrow('Token expired')
-  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('sign-in'))
+  await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
   expect(usePlantsStore(pinia).plants).toEqual([])
 })

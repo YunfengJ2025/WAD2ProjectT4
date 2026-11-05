@@ -1,6 +1,7 @@
 <script setup>
 import ScrollToTop from '@/components/ScrollToTop.vue'
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { usePostalCheck } from '@/composables/usePostalCheck'
 import { storeToRefs } from 'pinia'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -18,12 +19,13 @@ const sidebar = ref(null)
 const activeSection = ref('about-me')
 const scrollOffset = ref(32)
 const sections = computed(() => [
-  { id: 'about-me', label: 'About me', icon: '◉' },
-  { id: 'personal-details', label: 'Personal details', icon: '☷' },
-  { id: 'address', label: 'My address', icon: '⌂' },
-  { id: 'profile-reviews', label: 'My reviews', icon: '☆' },
-  { id: 'profile-posts', label: 'My posts', icon: '▧' },
-  { id: 'profile-badges', label: 'My badges', icon: '✦' },
+  // short = the label on phones, where the tabs are a 3 x 2 grid of small tiles
+  { id: 'about-me', label: 'About me', short: 'About', icon: '◉' },
+  { id: 'personal-details', label: 'Personal details', short: 'Details', icon: '☷' },
+  { id: 'address', label: 'My address', short: 'Address', icon: '⌂' },
+  { id: 'profile-reviews', label: 'My reviews', short: 'Reviews', icon: '☆' },
+  { id: 'profile-posts', label: 'My posts', short: 'Posts', icon: '▧' },
+  { id: 'profile-badges', label: 'My badges', short: 'Badges', icon: '✦' },
 ])
 let scrollFrame = null
 let resizeObserver
@@ -162,6 +164,20 @@ const fields = [
   { key: 'postalCode', label: 'Postal code', autocomplete: 'postal-code', max: 6 },
 ]
 
+// Check a NEW postal code with OneMap while editing, and fill in the block from it.
+// (The saved postal code isn't re-checked, so opening Edit doesn't call OneMap.)
+const postalChanged = computed(() => form.value.postalCode?.trim() !== user.value?.postalCode)
+const postal = usePostalCheck(() => (editing.value && postalChanged.value ? form.value.postalCode : ''))
+watch(postal.place, (place) => {
+  if (place?.block) form.value.block = place.block
+})
+// Editing the postal code clears its old error, so the new check result can show
+watch(() => form.value.postalCode, () => {
+  delete errors.value.postalCode
+})
+// Lock the block box when OneMap gave us the block (landed homes have none, so they type it)
+const blockFromOneMap = computed(() => !!postal.place.value?.block)
+
 function clearPhoto() {
   if (preview.value) URL.revokeObjectURL(preview.value)
   preview.value = ''
@@ -238,6 +254,11 @@ async function save() {
   if (!/^\S+@\S+\.\S+$/.test(form.value.email)) errors.value.email = 'Enter a valid email address.'
   if (!/^\d{6}$/.test(form.value.postalCode))
     errors.value.postalCode = 'Enter a 6-digit postal code.'
+  // A new postal code must be one OneMap knows (the server checks this again)
+  else if (postalChanged.value && postal.status.value !== 'ok')
+    errors.value.postalCode = postal.status.value === 'checking'
+      ? 'Still checking your postal code. Please wait a moment.'
+      : postal.message.value || 'Please enter a valid Singapore postal code.'
   if (Object.keys(errors.value).length) {
     error.value = 'Please check the highlighted fields.'
     return
@@ -265,8 +286,12 @@ async function save() {
         <a v-for="section in sections" :key="section.id" :href="`#${section.id}`"
           :class="{ selected: activeSection === section.id }"
           :aria-current="activeSection === section.id ? 'location' : undefined"
+          :aria-label="section.label"
           @click="activeSection = section.id">
-          <span aria-hidden="true">{{ section.icon }}</span> {{ section.label }}
+          <span class="nav-icon" aria-hidden="true">{{ section.icon }}</span>
+          <!-- full label on desktop, short label on phones (CSS picks one) -->
+          <span class="nav-label" aria-hidden="true">{{ section.label }}</span>
+          <span class="nav-short" aria-hidden="true">{{ section.short }}</span>
         </a>
       </nav>
 
@@ -457,12 +482,24 @@ async function save() {
                   :maxlength="field.max"
                   :inputmode="field.key === 'postalCode' ? 'numeric' : 'text'"
                   :disabled="busy"
+                  :readonly="field.key === 'block' && blockFromOneMap"
                   required
                   :aria-invalid="!!errors[field.key]"
                   :aria-describedby="errors[field.key] ? field.key + '-error' : undefined"
                 />
                 <p v-if="errors[field.key]" :id="field.key + '-error'" class="field-error">
                   {{ errors[field.key] }}
+                </p>
+                <!-- Result of the OneMap check, shown under the postal code box -->
+                <p v-else-if="field.key === 'postalCode'" class="postal-status" :class="postal.status.value" aria-live="polite">
+                  <template v-if="postal.status.value === 'checking'">Checking postal code…</template>
+                  <template v-else-if="postal.status.value === 'ok'">
+                    ✓ {{ postal.place.value.block ? 'Blk ' + postal.place.value.block + ' ' : '' }}{{ postal.place.value.road }}
+                  </template>
+                  <template v-else-if="postal.message.value">✗ {{ postal.message.value }}</template>
+                </p>
+                <p v-else-if="field.key === 'block' && blockFromOneMap" class="postal-status">
+                  Filled in from your postal code
                 </p>
               </template>
               <p v-else class="detail-value">{{ user[field.key] || 'Not added yet' }}</p>
@@ -631,9 +668,12 @@ h1 {
   font-weight: 500;
   text-decoration: none;
 }
-.profile-sidebar nav a span {
+.profile-sidebar nav a .nav-icon {
   font-size: 1.2rem;
   color: var(--accent);
+}
+.profile-sidebar nav a .nav-short {
+  display: none; /* only shown on phones */
 }
 .profile-sidebar nav a.selected {
   background: #eeeeec;
@@ -1055,6 +1095,20 @@ h2 {
   font-size: 0.75rem;
   margin: 0.4rem 0 0;
 }
+/* OneMap check result under the postal code box */
+.postal-status {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin: 0.4rem 0 0;
+}
+.postal-status.ok { color: var(--accent); }
+.postal-status.notfound,
+.postal-status.error { color: var(--danger); }
+/* Block filled in from OneMap: greyed so it reads as automatic */
+input[readonly] {
+  opacity: 0.75;
+  cursor: default;
+}
 .feedback {
   padding: 0.85rem 1rem;
   border-radius: 8px;
@@ -1079,8 +1133,9 @@ h2 {
   .about-layout {
     grid-template-columns: 1fr;
   }
+  /* Stacked layout: the card fills the column (a 340px cap left an empty gap beside it) */
   .identity-card {
-    max-width: 340px;
+    max-width: none;
     width: 100%;
   }
   .intro h3 br {
@@ -1090,7 +1145,12 @@ h2 {
 @media (max-width: 600px) {
   .profile-page {
     display: block;
-    margin-top: 1rem;
+    margin-top: 0;
+    /* the app already leaves 4rem at the bottom on phones for the floating buttons */
+    margin-bottom: 0;
+  }
+  .delete-section {
+    padding-bottom: 0.5rem;
   }
   .profile-sidebar {
     position: static;
@@ -1098,41 +1158,62 @@ h2 {
     overflow: visible;
     top: 0;
     z-index: 10;
-    padding: .75rem 0;
-    background: var(--surface);
+    padding: 0 0 1rem;
+    background: transparent;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
   .profile-sidebar h1 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.8rem;
   }
+  /* Phones: 3 x 2 grid of tiles (icon on top, short label below), so all six fit */
   .profile-sidebar nav {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.25rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
   }
   .profile-sidebar nav a {
-    padding: 0.6rem 0.3rem;
+    flex-direction: column;
     justify-content: center;
-    white-space: nowrap;
-    font-size: 0.7rem;
+    gap: 0.2rem;
+    min-height: 60px;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--surface);
+    font-size: 0.8rem;
+    text-align: center;
   }
-  .profile-sidebar nav a span {
+  .profile-sidebar nav a .nav-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .profile-sidebar nav a .nav-label {
     display: none;
+  }
+  .profile-sidebar nav a .nav-short {
+    display: block;
   }
   .profile-sidebar > .eyebrow {
     display: none;
   }
+  .profile-sidebar nav a.selected { background: var(--accent-soft); border-color: var(--accent); }
+  .sidebar-note, .sidebar-badges-section, .about-section > .eyebrow { display: none; }
   .profile-content {
-    padding: 1.75rem 0 0;
+    padding: 1rem 0 0;
   }
   .about-layout {
-    gap: 1.75rem;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin: 0.75rem 0 1.5rem;
   }
   .identity-card {
     max-width: none;
+    padding: 1.25rem 1rem;
   }
+  .identity-card :deep(.user-avatar) { width: 80px !important; height: 80px !important; font-size: 30px !important; }
+  .identity-card h3 { margin-top: 0.6rem; font-size: 1.4rem; }
+  .intro h3 { font-size: 1.15rem; }
+  .section-heading { flex-wrap: wrap; gap: 0.75rem; }
   .fields-grid {
     grid-template-columns: 1fr;
   }

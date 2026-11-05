@@ -35,8 +35,10 @@ async function search(postal) {
   return fetch(url, { headers: { Authorization: token }, signal: AbortSignal.timeout(8000) });
 }
 
-// Returns { lat, lng }, or null if OneMap has no match for this postal code.
-async function geocodePostal(postalCode) {
+// Checks a postal code with OneMap. Used by signup, profile edits and Find Nearby.
+// Returns { postalCode, block, road, lat, lng }, or null if the postal code doesn't exist.
+// Throws (status 503) if OneMap can't be reached, so callers can block the save.
+async function lookupPostal(postalCode) {
   const postal = String(postalCode || "").trim();
   if (!/^\d{6}$/.test(postal)) return null;
   if (hits.has(postal)) return hits.get(postal);
@@ -51,18 +53,34 @@ async function geocodePostal(postalCode) {
     if (!res.ok) throw fail(503, `OneMap search failed (${res.status})`);
 
     const data = await res.json();
-    const first = data.results?.[0];
-    const lat = parseFloat(first?.LATITUDE); // OneMap sends numbers as text
-    const lng = parseFloat(first?.LONGITUDE);
+    // OneMap's search is fuzzy: a made-up code can still return a nearby address.
+    // Only accept a result whose postal code is exactly the one typed.
+    const match = (data.results || []).find((result) => result.POSTAL === postal);
+    if (!match) return null;
+    const lat = parseFloat(match.LATITUDE); // OneMap sends numbers as text
+    const lng = parseFloat(match.LONGITUDE);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-    const pos = { lat, lng };
-    hits.set(postal, pos);
-    return pos;
+    const place = {
+      postalCode: postal,
+      // "NIL" means the address has no block number (e.g. a landed house)
+      block: match.BLK_NO && match.BLK_NO !== "NIL" ? match.BLK_NO : "",
+      road: match.ROAD_NAME && match.ROAD_NAME !== "NIL" ? match.ROAD_NAME : "",
+      lat,
+      lng,
+    };
+    hits.set(postal, place);
+    return place;
   } catch (err) {
     if (err.status) throw err;
-    throw fail(503, "Could not reach OneMap. Please try again."); // network error or timeout
+    throw fail(503, "Could not reach OneMap to check your postal code. Please try again."); // network error or timeout
   }
 }
 
-module.exports = { geocodePostal };
+// Returns { lat, lng }, or null if OneMap has no match for this postal code.
+async function geocodePostal(postalCode) {
+  const place = await lookupPostal(postalCode);
+  return place ? { lat: place.lat, lng: place.lng } : null;
+}
+
+module.exports = { lookupPostal, geocodePostal };

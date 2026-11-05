@@ -142,6 +142,7 @@ function onWaterClick() {
 
       <!-- Where to find it (title shows the full text on hover if it gets cut off) -->
       <p class="where" :title="plant.plantLocation">{{ plant.plantLocation }}</p>
+      <StatusPill :status="status" class="compact-status" />
 
       <!-- Small tags: watering, indoor/outdoor, and care progress when due -->
       <ul class="tags" aria-label="Plant details">
@@ -466,6 +467,25 @@ h3 {
 .icon-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.compact-status { display: none; }
+@media (max-width: 600px) {
+  .card { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-content: start; gap: 0.4rem 0.75rem; height: auto; padding: 0.75rem; }
+  .photo { grid-column: 1; grid-row: 1 / span 3; width: 76px; height: 76px; aspect-ratio: 1; border-radius: 10px; }
+  .photo .pill, .no-photo > span { display: none; }
+  .no-photo :deep(svg) { width: 52px; height: 52px; }
+  .body { display: contents; }
+  h3 { grid-column: 2; grid-row: 1; margin: 0; font-size: 1rem; line-height: 1.35; overflow-wrap: break-word; }
+  .where { grid-column: 2; grid-row: 2; margin: 0; font-size: 0.8rem; }
+  .compact-status { display: inline-flex; grid-column: 2; grid-row: 3; justify-self: start; position: static; padding: 0.15rem 0.5rem; font-size: 0.7rem; box-shadow: none; }
+  .tags, .care-count, .actions { grid-column: 1 / -1; }
+  .tags { margin: 0.2rem 0 0; gap: 0.3rem; }
+  .tag { padding: 0.15rem 0.5rem; font-size: 0.72rem; }
+  .care-count { font-size: 0.8rem; }
+  .actions { margin-top: 0.15rem; padding-top: 0.4rem; }
+  .water-btn { min-height: 44px; padding-inline: 0.75rem; }
+  .icon-btn { width: 44px; height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

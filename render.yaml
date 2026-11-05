@@ -20,3 +20,8 @@ services:
         sync: false
       - key: PLANT_HEALTH_MODE
         value: demo
+      # OneMap login: signup and profile edits check postal codes with it
+      - key: ONEMAP_EMAIL
+        sync: false
+      - key: ONEMAP_PASSWORD
+        sync: false

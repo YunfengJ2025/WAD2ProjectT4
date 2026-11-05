@@ -1,4 +1,5 @@
 <script setup>
+import MobileBackButton from '@/components/nav/MobileBackButton.vue'
 import Loading from '@/components/Loading.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -218,6 +219,7 @@ async function onDelete() {
 
 <template>
   <main class="detail-page">
+    <MobileBackButton />
 
     <!-- Keep plant detail loading consistent with the rest of the app. -->
     <Loading v-if="loading" label="Loading plant details…" />

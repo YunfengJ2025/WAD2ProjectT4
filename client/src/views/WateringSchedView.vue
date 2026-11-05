@@ -131,11 +131,18 @@ onMounted(async () => {
       <!-- :key changes with the view, so Vue plays the crossfade -->
       <Transition name="view-fade" mode="out-in">
         <div :key="view">
-          <div v-if="view === 'sitting' && !sittingItems.length" class="sitting-empty">
-            <div class="sitting-empty-icon">🤝</div>
+          <div v-if="view === 'sitting' && !sittingItems.length" class="schedule-empty">
+            <div class="schedule-empty-icon">🤝</div>
             <strong>You are not sitting any plants yet</strong>
             <p class="text-muted mb-2">Accept a request and its watering days will appear here.</p>
             <RouterLink class="btn btn-success btn-sm" to="/find-nearby">Find plants nearby</RouterLink>
+          </div>
+          <!-- No plants at all: point new users to Add plant (on phones it's otherwise hidden in the menu) -->
+          <div v-else-if="view !== 'sitting' && !plants.length" class="schedule-empty">
+            <div class="schedule-empty-icon">🪴</div>
+            <strong>You haven't added any plants yet</strong>
+            <p class="text-muted mb-2">Add your first plant and we'll build your watering schedule for you.</p>
+            <RouterLink class="btn btn-success btn-sm" to="/plants/new">+ Add your first plant</RouterLink>
           </div>
           <template v-else>
             <ScheduleCalendar class="d-none d-md-block" :items="activeItems" />
@@ -152,16 +159,25 @@ onMounted(async () => {
 .view-fade-enter-from { opacity: 0; transform: translateY(8px); }
 .view-fade-leave-to   { opacity: 0; transform: translateY(-8px); }
 
-.sitting-empty {
+/* Empty box: everything stacked and centred, and never wider than the screen */
+.schedule-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
   max-width: 420px;
+  box-sizing: border-box;
   margin: 1.5rem auto;
-  padding: 1.5rem;
+  padding: 1.5rem 1rem;
   text-align: center;
+  overflow-wrap: anywhere;
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.6);
   border: 1px dashed rgba(34, 197, 94, 0.5);
 }
-.sitting-empty-icon { font-size: 2rem; }
+.schedule-empty-icon { font-size: 2rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .view-fade-enter-active, .view-fade-leave-active { transition: none; }

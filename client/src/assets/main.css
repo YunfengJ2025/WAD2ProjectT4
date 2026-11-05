@@ -759,6 +759,18 @@ img {
 }
 
 /* [NOT IN WAD2 CONTENT] — Custom scrollbar styling via ::-webkit-scrollbar pseudo-elements */
+/* Phone-only gutters leave room for content and the browser's safe areas. */
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { min-height: 100svh; }
+  #app {
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  #app > main { min-width: 0; }
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

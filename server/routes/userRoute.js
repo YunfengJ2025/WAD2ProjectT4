@@ -9,7 +9,8 @@ const {
   getPublicProfile,
   updateMe,
   deleteMe,
-  updateTokenBalance
+  updateTokenBalance,
+  checkPostal
 } = require("../controllers/userController");
 
 const router = express.Router();
@@ -24,6 +25,7 @@ const requireAdmin = (req, res, next) => {
 router.get("/", requireUser, requireAdmin, getUsers);
 router.get("/me", requireUser, getMe);
 router.get("/me/location", requireUser, getMyLocation); // { lat, lng } for the weather banner
+router.get("/postal/:postalCode", checkPostal); // no login needed: the signup form uses it
 router.get("/:userId/profile", getPublicProfile);
 router.patch("/me", requireUser, uploadPhoto, updateMe);
 router.delete("/me", requireUser, deleteMe); // delete your own account (needs your password)
