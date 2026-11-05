@@ -11,6 +11,7 @@ const {
 } = require("./visitPolicyService");
 const { runWeatherChecks, settleWeatherSkip } = require("./weatherSkip");
 
+// Complete a request once it has no open or accepted visits left.
 async function finishRequestIfNoVisitsRemain(requestId) {
   const hasVisits = await CareVisit.exists({
     requestId,
@@ -24,6 +25,7 @@ async function finishRequestIfNoVisitsRemain(requestId) {
   }
 }
 
+// Process ended visits: apply weather skips, missed-visit penalties, expirations, refunds, and notices.
 async function sweepVisits(now = new Date()) {
   await runWeatherChecks(now); // morning rain check, see weatherSkip.js
 
@@ -112,6 +114,7 @@ async function sweepVisits(now = new Date()) {
   }
 }
 
+// Run one sweep at startup, then repeat every 15 minutes without overlapping runs.
 function startVisitSweeper() {
   let running = false;
   const run = async () => {
