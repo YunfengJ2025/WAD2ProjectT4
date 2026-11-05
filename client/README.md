@@ -1,69 +1,48 @@
-# vue-project
+# Leaf It to Us — client
 
-This template should help get you started developing with Vue 3 in Vite.
+The Vue 3 frontend uses Vite, Pinia, Bootstrap and MapLibre. Follow the
+[project setup guide](../README.md) to start the separate Express backend first.
 
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+Use pnpm for dependency installation and keep `pnpm-lock.yaml` updated:
 
 ```sh
 pnpm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 pnpm dev
 ```
 
-### Compile and Minify for Production
+## Checks
 
 ```sh
-pnpm build
-```
+# All Vitest component, integration and utility tests, once
+pnpm test:unit --run
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
+# Watch tests while editing
 pnpm test:unit
-```
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+# Read-only lint check
+pnpm exec eslint src e2e
 
-```sh
-# Install browsers for the first run
-npx playwright install
-
-# When testing on CI, must build the project first
+# Production bundle
 pnpm build
-
-# Runs the end-to-end tests
-pnpm test:e2e
-# Runs the tests only on Chromium
-pnpm test:e2e --project=chromium
-# Runs the tests of a specific file
-pnpm test:e2e tests/example.spec.ts
-# Runs the tests in debug mode
-pnpm test:e2e --debug
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+`pnpm lint` also runs the project's automatic lint fixes. Use the read-only command
+above when reviewing changes.
 
-```sh
-pnpm lint
-```
+## Test guides
+
+- [Component tests](COMPONENT_TESTING.md)
+- [Integration tests](INTEGRATION_TESTING.md)
+- [Map page tests](src/views/map/TESTING.md)
+- [General Playwright E2E tests](E2E_TESTING.md)
+- [Care workflow browser tests](e2e/README.md)
+
+The ordinary Playwright config and the care config serve different test setups.
+The care config uses dedicated frontend/backend ports to avoid your normal dev
+server. Keep the original multi-visit test and the four lifecycle tests: their
+shared setup lives in `e2e/care-helpers.js`, but their assertions cover different flows.
+
+## Production hosting
+
+See [API configuration](API_DEPLOYMENT.md) for `VITE_API_BASE_URL`, reverse-proxy
+routing and the client-side route fallback required by the frontend host.

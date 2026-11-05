@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import DashboardView from '../views/boards/DashboardView.vue'
 import LeaderboardView from '../views/boards/LeaderboardView.vue'
 
-import FindNearby from '@/components/map/FindNearby.vue'
+import FindNearby from '@/views/map/FindNearby.vue'
 
 const routes = [
   { path: '/recently-liked', name: 'recently-liked', meta: { requiresAuth: true }, component: () => import('../views/post/RecentlyLikedView.vue') },

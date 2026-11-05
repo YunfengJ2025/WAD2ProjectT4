@@ -6,7 +6,6 @@ const FOLDERS = {
   plants: "plant-sitting/plants",
   userIcon: "plant-sitting/userIcon",
   postImage: "plant-sitting/postImage",
-  shopImage: "plant-sitting/shopImage",
 };
 
 // Reads CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET

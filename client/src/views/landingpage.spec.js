@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import LandingPage from './landingpage.vue'
 
-vi.mock('@/components/map/FindNearby.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/map/FindNearby.vue', () => ({ default: { template: '<div />' } }))
 let wrapper
 beforeEach(() => {
   sessionStorage.clear()

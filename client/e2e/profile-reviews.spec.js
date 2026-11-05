@@ -38,9 +38,9 @@ test('profile reviews separate received/written feedback and retain the visit-on
     await page.goto('/profile')
     await page
       .locator('#profile-reviews')
-      .getByRole('link', { name: /View all reviews/ })
+      .getByRole('link', { name: 'View all reviews', exact: false })
       .click()
-    await expect(page).toHaveURL(/\/reviews$/)
+    await expect(page).toHaveURL('/reviews')
     await expect(page.getByTestId('average-rating')).toHaveText(average)
     await expect(page.locator('.review-card').filter({ hasText: received })).toHaveCount(1)
     await expect(page.locator('.review-card').filter({ hasText: written })).toHaveCount(0)

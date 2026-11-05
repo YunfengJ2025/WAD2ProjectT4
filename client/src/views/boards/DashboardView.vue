@@ -393,9 +393,9 @@ onMounted(() => {
 .section-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-xs);
 }
 
 .section-header h2 {
@@ -540,6 +540,14 @@ onMounted(() => {
   }
   .token-pill {
     font-size: 0.78rem;
+  }
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .section-header h2 {
+    font-size: 1rem;
   }
 }
 </style>

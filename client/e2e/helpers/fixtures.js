@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { test as base, expect } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
@@ -18,15 +19,23 @@ export const test = base.extend({
       const password = process.env['E2E_USER_' + key + '_PASSWORD']
       // Reject the sample values before attempting to sign in. Report only the
       // variable names, never print passwords or tokens into the test report.
-      if (!email || !password || email.startsWith('your-test-account-') || password.startsWith('your-test-password-'))
-        throw new Error(`Replace E2E_USER_${key}_EMAIL and E2E_USER_${key}_PASSWORD in client/.env.e2e.local with an existing test account; example placeholders cannot log in.`)
+      if (
+        !email ||
+        !password ||
+        email.startsWith('your-test-account-') ||
+        password.startsWith('your-test-password-')
+      )
+        throw new Error(
+          `Replace E2E_USER_${key}_EMAIL and E2E_USER_${key}_PASSWORD in client/.env.e2e.local with an existing test account; example placeholders cannot log in.`,
+        )
       accounts[key] = { email, password }
     }
     if (accounts.A.email === accounts.B.email) throw new Error('Accounts A and B must be distinct.')
     /* Generate a fresh label per test attempt so retries cannot select records left behind by a previous run. */
     const prefix = 'E2E-' + randomUUID()
     /* API verification/cleanup must target the SAME backend as the browser: either its separate origin or the frontend’s /api proxy. */
-    const base = (process.env.E2E_API_BASE_URL || new URL('/api', baseURL).href).replace(/\/+$/, '')
+    let base = process.env.E2E_API_BASE_URL || new URL('/api', baseURL).href
+    while (base.endsWith('/')) base = base.slice(0, -1)
     const posts = []
     const journey = {
       accounts,
@@ -66,7 +75,7 @@ export async function login(page, account, landing = false) {
   await page.getByLabel('Email', { exact: true }).fill(account.email)
   await page.getByLabel('Password', { exact: true }).fill(account.password)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page).toHaveURL(/\/schedule(?:[?#].*)?$/)
+  await expect(page).toHaveURL('/schedule')
 }
 
 // Match path AND HTTP method so background GETs cannot satisfy a mutation wait.
@@ -92,7 +101,7 @@ export async function shareDraft(page, journey) {
   expect(response.status(), 'Real create-post request must succeed').toBe(201)
   const post = await response.json()
   await journey.remember(page, post)
-  await expect(page).toHaveURL(/\/community$/)
+  await expect(page).toHaveURL('/community')
   return post
 }
 /* Create a comment through the browser form and verify that the real response appears in the discussion. */

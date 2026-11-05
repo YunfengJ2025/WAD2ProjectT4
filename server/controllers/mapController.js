@@ -8,7 +8,7 @@ const CareVisit = require("../models/careVisitModel");
 const RequestItem = require("../models/requestItemModel");
 const { Plant } = require("../models/plantModel");
 const { User } = require("../models/userModel");
-const { geocodePostal } = require("../utils/onemap");
+const { coordinatesOf } = require("../utils/userCoordinates");
 
 const MAX_RADIUS_KM = 1; // from the proposal: "within a short walk, 1 km"
 
@@ -31,17 +31,6 @@ const sgDate = (value) => {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
 };
 const startOfTodaySg = () => new Date(`${sgDate(Date.now())}T00:00:00+08:00`);
-
-// Teammates' signup never saves coordinates, so look them up with OneMap the
-// first time and save them on the user. Every later request reads them from the database.
-async function coordinatesOf(user) {
-  if (Number.isFinite(user.lat) && Number.isFinite(user.lng)) {
-    return { lat: user.lat, lng: user.lng };
-  }
-  const pos = await geocodePostal(user.postalCode);
-  if (pos) await User.updateOne({ userId: user.userId }, { $set: { lat: pos.lat, lng: pos.lng } });
-  return pos;
-}
 
 exports.findNearby = async (req, res) => {
   try {

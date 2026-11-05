@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -19,7 +20,35 @@ export function findNearestStation(stations, userLat, userLng) {
   }, null)
 }
 
-export function useWeather(userLat, userLng) {
+// Middle of Singapore, used only if the user's postal code can't be located
+const SG_CENTRE = { lat: 1.3521, lng: 103.8198 }
+
+// One lookup per user and address per page load, shared by every banner that asks.
+// Keyed on the address too, so editing the postal code on the profile takes effect.
+let cachedFor = null
+let cachedPos = null
+
+// Where the signed-in user lives. The server geocodes their postal code with OneMap
+// (the same lookup Find Nearby uses) and saves it, so later calls are instant.
+async function userLocation(auth) {
+  const u = auth.user
+  const key = u ? `${u.userId}:${u.postalCode}:${u.block}` : null
+  if (key && cachedFor === key) return cachedPos
+  try {
+    const pos = await auth.authorizedRequest('/user/me/location')
+    if (Number.isFinite(pos?.lat) && Number.isFinite(pos?.lng)) {
+      cachedFor = key
+      cachedPos = { lat: pos.lat, lng: pos.lng }
+      return cachedPos
+    }
+  } catch {
+    // OneMap down, postal code not found, or not signed in: use the centre of Singapore
+  }
+  return SG_CENTRE
+}
+
+export function useWeather() {
+  const auth = useAuthStore()
   const condition = ref(null)   // 'rain' | 'sunny' | 'cloudy'
   const tempHigh = ref(null) // today's forecast high in celcius
   const stationName = ref(null)
@@ -31,14 +60,17 @@ export function useWeather(userLat, userLng) {
     loading.value = true
     error.value = null
     try {
-      const response = await axios.get('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast')
+      const [response, pos] = await Promise.all([
+        axios.get('https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast'),
+        userLocation(auth),
+      ])
       const json = response.data
 
       const areas = json.data.area_metadata
       const forecasts = json.data.items[0].forecasts
       const nearestArea = findNearestStation(
         areas.map(a => ({ ...a, location: a.label_location })),
-        userLat, userLng
+        pos.lat, pos.lng
       )
 
       const match = forecasts.find(f => f.area === nearestArea.name)

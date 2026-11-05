@@ -1,13 +1,8 @@
-const multer = require("multer");
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024, files: 9, fields: 5 },
-  fileFilter(req, file, cb) {
-    if (["image/jpeg", "image/png", "image/webp"].includes(file.mimetype))
-      return cb(null, true);
-    cb(new Error("Photos must be JPG, PNG or WebP images"));
-  },
-}).array("photos", 9);
+const { createImageUpload } = require("./imageUpload");
+const upload = createImageUpload(
+  { files: 9, fields: 5 },
+  "Photos must be JPG, PNG or WebP images",
+).array("photos", 9);
 module.exports = (req, res, next) =>
   upload(req, res, (err) => {
     if (!err) return next();

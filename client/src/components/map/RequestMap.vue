@@ -23,7 +23,6 @@ const mapEl = ref(null)
 let map = null
 let ready = false // true once the style and layers have loaded
 let plantMarkers = []
-let homeMarker = null
 let searchMarker = null
 
 
@@ -291,7 +290,7 @@ onMounted(() => {
     })
 
     
-    homeMarker = new maplibregl.Marker({ element: makeHomeEl(), anchor: 'bottom' })
+    new maplibregl.Marker({ element: makeHomeEl(), anchor: 'bottom' })
       .setLngLat([props.home.lng, props.home.lat])
       .addTo(map)
     

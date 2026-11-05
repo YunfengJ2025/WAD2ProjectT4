@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { test, expect, login, mutation, publish, shareDraft, photoPath } from './helpers/fixtures'
 
 // Scenario 1: the complete lifecycle uses UI navigation and real persisted records.
@@ -29,7 +30,7 @@ test('landing → login → create → edit → cancel removal → delete', asyn
   await page.getByRole('link', { name: 'My posts', exact: true }).click()
   /* 4. Edit through My Posts, then reload. The assertions check saved backend data rather than only the current form state. */
   const managed = page.locator('.managed-post').filter({ hasText: title })
-  await managed.getByRole('link', { name: /Edit post/ }).click()
+  await managed.getByRole('link', { name: 'Edit post', exact: false }).click()
   const edited = title + ' updated'
   await page.getByLabel('Title', { exact: false }).fill(edited)
   await page.getByLabel('Your update', { exact: false }).fill('My saved update.')
@@ -37,7 +38,7 @@ test('landing → login → create → edit → cancel removal → delete', asyn
   const updated = mutation(page, '/post/' + post.postId, 'PATCH')
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()
   expect((await updated).ok()).toBe(true)
-  await expect(page).toHaveURL(/\/my-posts$/)
+  await expect(page).toHaveURL('/my-posts')
   await page.reload()
   await expect(page.locator('.managed-post').filter({ hasText: edited })).toBeVisible()
   /* 5. Cancel the first removal to verify the confirmation protects the post. Confirm the second removal and check both listings after reload. */

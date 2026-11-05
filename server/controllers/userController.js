@@ -12,6 +12,7 @@ const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const { syncUserBadges } = require("./boardController");
 const STARTER_TOKENS = 50;
 const { createAccessToken } = require("../config/jwt");
+const { coordinatesOf } = require("../utils/userCoordinates");
 
 
 
@@ -155,6 +156,21 @@ exports.getMe = (req, res) => {
     console.error("Error triggering badge sync in getMe:", err);
   }
   res.json({ user: toAuthJSON(req.user) });
+};
+
+// GET /user/me/location -> { lat, lng }
+// Where the signed-in user lives, for the weather banner. Same lookup as Find Nearby
+// (OneMap the first time, then the saved coordinates).
+exports.getMyLocation = async (req, res) => {
+  try {
+    const pos = await coordinatesOf(req.user);
+    if (!pos) {
+      return res.status(404).json({ message: "We couldn't find your postal code on the map. Check it on your profile." });
+    }
+    res.json(pos);
+  } catch (err) {
+    handleError(err, res);
+  }
 };
 
 // DELETE /user/me  body: { password }

@@ -53,17 +53,15 @@ async function loadSitting() {
   }
 }
 
-// the logged-in owner; fall back to central Singapore if lat/lng were never set
+// the logged-in owner (useWeather looks up where they live from their postal code)
 const user = computed(() => auth.user)
-const lat = auth.user?.lat ?? 1.3521
-const lng = auth.user?.lng ?? 103.8198
 
 
 // true while the sitter schedule is on screen; decides which data the alert banner reads
 const isHelper = computed(() => view.value === 'sitting')
 
 // fetch weather, shared to header and schedule logic
-const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather(lat, lng)
+const {condition, stationName, forecastText, tempHigh, loading: weatherLoading, error: weatherError, fetchForecast, fetchTemperature} = useWeather()
 
 // 'rain' to test the rain skip, 'sunny' for heat, null for real
 const demoCondition = ref(null)

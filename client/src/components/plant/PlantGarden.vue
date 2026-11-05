@@ -3,7 +3,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getWateringStatus } from '@/utils/wateringStatus'
-import { useAuthStore } from '@/stores/auth'
 import { usePlantsStore } from '@/stores/plants'
 import { useToast } from '@/composables/useToast'
 import { useWeather } from '@/composables/schedule/useWeather'
@@ -15,10 +14,7 @@ const props = defineProps({
 })
 
 // Weather: reuses Ari's useWeather composable (data.gov.sg API)
-// ?? = use the middle of Singapore if no location saved
-const auth = useAuthStore()
-const lat = auth.user?.lat ?? 1.3521
-const lng = auth.user?.lng ?? 103.8198
+// It finds the user's area from their postal code (same OneMap lookup as Find Nearby)
 const {
   condition,
   stationName,
@@ -27,7 +23,7 @@ const {
   error: weatherError,
   fetchForecast,
   fetchTemperature,
-} = useWeather(lat, lng)
+} = useWeather()
 
 onMounted(() => {
   fetchForecast()

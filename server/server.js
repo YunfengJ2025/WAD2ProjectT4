@@ -1,12 +1,10 @@
 const dns = require("node:dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const express = require("express");
-const session = require("express-session");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 const CareRequest = require("./models/careRequestModel");
-const fs = require("fs");
 const server = express();
 const userRoutes = require("./routes/userRoute");
 const plantRoutes = require("./routes/plantRoute");
@@ -32,19 +30,15 @@ server.get('/health', (_req, res) => {
   const ready = mongoose.connection.readyState === 1;
   res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable' });
 });
-// server.use(
-//   session({
-//     secret: process.env.SECRET || "wad2_secret_key",
-//     resave: false,
-//     saveUninitialized: false,
-//   }),
-// );
 //Routes
 server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);
 server.use("/token", tokenRoutes);
 server.use("/review", reviewRoutes);
 server.use("/api", boardRoutes);
+server.use("/boards", boardRoutes);
+server.use("/leaderboard", boardRoutes);
+server.use("/dashboard", boardRoutes);
 server.use("/post", postRoutes);
 server.use("/care-requests", careRequestRoutes);
 server.use("/care-visits", careVisitRoutes);
