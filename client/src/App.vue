@@ -48,8 +48,8 @@ async function logout() {
 }
 
 watch(() => auth.accessToken, (token) => {
-  if (!token && route.meta.requiresAuth) {
-    router.replace({ name: 'sign-in', query: { redirect: route.fullPath } })
+  if (!token && route.meta.requiresAuth && !loggingOut.value) {
+    router.replace({ name: 'home' })
   }
 })
 </script>
@@ -100,5 +100,8 @@ watch(() => auth.accessToken, (token) => {
   min-height: 70vh;
   display: grid;
   place-items: center;
+}
+@media (max-width: 600px) {
+  .full-width { margin-bottom: 0.5rem !important; }
 }
 </style>

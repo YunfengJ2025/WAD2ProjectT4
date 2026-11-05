@@ -10,6 +10,8 @@ const {
 } = require("../models/userModel");
 const { createTransaction, TokenTransaction } = require("../models/tokenModel");
 const { syncUserBadges } = require("./boardController");
+// Kept as an object so tests can swap in a fake lookupPostal.
+const onemap = require("../utils/onemap");
 const STARTER_TOKENS = 50;
 const { createAccessToken } = require("../config/jwt");
 const { coordinatesOf } = require("../utils/userCoordinates");
@@ -38,7 +40,8 @@ async function giveStarterTokens(userId) {
 const handleError = (err, res) => {
   console.log(err);
   if (err.status) {
-    return res.status(err.status).json({ message: err.message });
+    // errors (if any) holds per-field messages, e.g. { postalCode: "..." }
+    return res.status(err.status).json({ message: err.message, errors: err.errors });
   }
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
@@ -82,12 +85,12 @@ exports.register = async (req, res) => {
   try {
     const body = req.body || {};
     // Check required fields before touching the model
+    // block is not required here: it is filled in from the postal code
     const requiredFields = [
       "userName",
       "email",
       "password",
       "postalCode",
-      "block",
       "unitNumber",
     ];
     const missing = requiredFields.filter(
@@ -168,6 +171,25 @@ exports.getMyLocation = async (req, res) => {
       return res.status(404).json({ message: "We couldn't find your postal code on the map. Check it on your profile." });
     }
     res.json(pos);
+  } catch (err) {
+    handleError(err, res);
+  }
+};
+
+// GET /user/postal/:postalCode -> { postalCode, block, road }
+// Lets the signup and profile forms check a postal code as it is typed
+// and fill in the block. (The server checks again when the form is saved.)
+exports.checkPostal = async (req, res) => {
+  try {
+    const postalCode = String(req.params.postalCode || "").trim();
+    if (!/^\d{6}$/.test(postalCode)) {
+      return res.status(400).json({ message: "Postal code must be 6 digits" });
+    }
+    const place = await onemap.lookupPostal(postalCode);
+    if (!place) {
+      return res.status(404).json({ message: "This postal code doesn't exist. Please check it." });
+    }
+    res.json({ postalCode: place.postalCode, block: place.block, road: place.road });
   } catch (err) {
     handleError(err, res);
   }

@@ -25,6 +25,11 @@ validateJwtConfig();
 server.use(cors());
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
+// Hosting health checks report ready only while MongoDB is connected.
+server.get('/health', (_req, res) => {
+  const ready = mongoose.connection.readyState === 1;
+  res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable' });
+});
 //Routes
 server.use("/user", userRoutes);
 server.use("/plants", plantRoutes);

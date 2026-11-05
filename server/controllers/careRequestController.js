@@ -46,14 +46,20 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
   const plantDetails = new Map();
   for (const detail of Array.isArray(body.plantDetails) ? body.plantDetails : []) {
     const plantId = Number(detail.plantId);
-    if (detail.amountToWater === "" || detail.amountToWater == null)
+    if (detail.usePlantAmount != null && typeof detail.usePlantAmount !== "boolean")
+      throw fail(400, "Choose whether to use the plant's watering amount");
+    const usePlantAmount = detail.usePlantAmount === true;
+    if (!usePlantAmount && (detail.amountToWater === "" || detail.amountToWater == null))
       throw fail(400, "Enter a watering amount for each selected plant");
-    const amountToWater = Number(detail.amountToWater);
     if (!plantIds.includes(plantId)) throw fail(400, "Care details must match selected plants");
+    const amountToWater = Number(usePlantAmount
+      ? plants.find((plant) => plant.plantId === plantId).wateringInfo.amountMl
+      : detail.amountToWater);
     if (!Number.isFinite(amountToWater) || amountToWater < 0 || amountToWater > 10000)
       throw fail(400, "Water amount must be between 0 and 10000 ml per visit");
     plantDetails.set(plantId, {
       amountToWater,
+      usePlantAmount,
       careInstructions: String(detail.careInstructions || "").trim(),
     });
   }
@@ -109,7 +115,9 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
           visitId: visit.visitId,
           plantId,
           action: "Plant care",
-          amountToWater: plantDetails.get(plantId)?.amountToWater ?? 0,
+          amountToWater: plantDetails.get(plantId)?.amountToWater
+            ?? plants.find((plant) => plant.plantId === plantId).wateringInfo.amountMl ?? 0,
+          usePlantAmount: plantDetails.get(plantId)?.usePlantAmount ?? true,
           careInstructions: plantDetails.get(plantId)?.careInstructions || "",
           status: "pending",
           originalDueAt: visitDate,
@@ -175,9 +183,10 @@ exports.mine = async (req, res) => {
             const plant = item.plant;
             if (!plant) continue;
             if (!plants.some((item) => item.plantId === plant.plantId)) plants.push(plant);
-            if (!plantDetails.has(plant.plantId)) plantDetails.set(plant.plantId, {
+            if (!plantDetails.has(plant.plantId) || ["pending", "accepted"].includes(item.status)) plantDetails.set(plant.plantId, {
               ...plant,
               amountToWater: item.amountToWater ?? 0,
+              usePlantAmount: item.usePlantAmount === true,
               careInstructions: item.careInstructions || "",
             });
           }

@@ -131,10 +131,6 @@ async function getTransactionsByUser(userId) {
   }).sort({ createdAt: -1 });
 }
 
-async function getTransactionsByVisit(visitId) {
-  return TokenTransaction.find({ visitId }).sort({ createdAt: -1 });
-}
-
 module.exports = {
   TRANSACTION_TYPES,
   TokenTransaction,
@@ -142,5 +138,4 @@ module.exports = {
   getAllTransactions,
   getTransactionsByType,
   getTransactionsByUser,
-  getTransactionsByVisit,
 };

@@ -1,4 +1,4 @@
-// Lecture approach: arrange props/dependencies, act through the rendered controls,
+// Arrange props/dependencies, act through the rendered controls,
 // then assert observable output. Await trigger/setValue for Vue updates and
 // flushPromises for async requests. Cleanup prevents state leaking between tests.
 import { mount, flushPromises } from '@vue/test-utils'

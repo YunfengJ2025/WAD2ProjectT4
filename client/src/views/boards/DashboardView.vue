@@ -136,15 +136,15 @@ const timeOfDay = computed(() => {
 // Fetch user stats, badges, and 6-month chart datasets
 async function fetchDashboard() {
   try {
-    const leadRes = await axios.get(apiUrl('/leaderboard'))
+    const leadRes = await axios.get(apiUrl('/api/leaderboard'))
     const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
     if (activeUserId) {
-      const statsRes = await axios.get(apiUrl(`/dashboard/stats/${activeUserId}`))
+      const statsRes = await axios.get(apiUrl(`/api/dashboard/stats/${activeUserId}`))
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
-      const chartRes = await axios.get(apiUrl(`/dashboard/charts/${activeUserId}`))
+      const chartRes = await axios.get(apiUrl(`/api/dashboard/charts/${activeUserId}`))
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
     }
@@ -235,30 +235,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-}
-
-.btn-nav-action {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px;
-  line-height: 1 !important;
-  vertical-align: middle;
-  padding: 8px 16px !important;
-}
-
-.btn-nav-action .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
-  transform: translateY(-0.5px);
-}
-
-.btn-nav-action .btn-text {
-  display: inline-block;
-  line-height: 1;
 }
 
 .token-pill {
@@ -392,13 +368,15 @@ onMounted(() => {
 
 .section-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-xs);
 }
 
 .section-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--color-primary-900);
@@ -549,3 +527,5 @@ onMounted(() => {
   }
 }
 </style>
+
+<style scoped src="@/assets/board-navigation.css"></style>

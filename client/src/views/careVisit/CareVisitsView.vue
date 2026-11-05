@@ -1,6 +1,7 @@
 <script setup>
 // View: loads sitter opportunities and assignments, then coordinates accept/proof/reward actions.
 import Loading from '@/components/Loading.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -24,6 +25,7 @@ const message = ref('')
 const submittingVisitId = ref(0)
 const acceptingVisitId = ref(0)
 const optingOutVisitId = ref(0)
+const pendingOptOut = ref(null)
 
 // Load the visit lists, reward transactions, and refreshed sitter balance.
 async function load() {
@@ -73,12 +75,9 @@ async function acceptVisit(visit) {
 
 // The opt-out backend creates and applies any PENALTY transaction itself.
 // Do not also POST /token/ here: that would charge the same cancellation twice.
-async function optOutVisit(visit) {
-  if (optingOutVisitId.value) return
-  const confirmed = window.confirm(
-    'Opt out of this visit? After the 24-hour cutoff, a penalty up to the visit reward will be deducted from your available tokens.',
-  )
-  if (!confirmed) return
+async function optOutVisit() {
+  const visit = pendingOptOut.value
+  if (!visit || optingOutVisitId.value) return
   optingOutVisitId.value = visit.visitId
   error.value = ''
   message.value = ''
@@ -91,6 +90,7 @@ async function optOutVisit(visit) {
         ? `You opted out. ${result.penalty} token${result.penalty === 1 ? '' : 's'} deducted.`
         : 'You opted out after the cutoff, but had no available tokens to deduct.'
       : 'You opted out before the penalty cutoff.'
+    pendingOptOut.value = null
     await load()
   } catch (err) {
     error.value = err.message
@@ -214,7 +214,7 @@ async function submitVisitProof(details) {
           :busy="submittingVisitId === visit.visitId"
           :opting-out="optingOutVisitId === visit.visitId"
           @submit-proof="submitVisitProof"
-          @opt-out="optOutVisit"
+          @opt-out="pendingOptOut = $event"
         />
       </div>
     </section>
@@ -234,6 +234,16 @@ async function submitVisitProof(details) {
         />
       </div>
     </section>
+  <ConfirmDialog
+    :open="!!pendingOptOut"
+    title="Opt out of this visit?"
+    message="After the 24-hour cutoff, a penalty up to the visit reward will be deducted from your available tokens."
+    confirm-label="Opt out"
+    :busy="!!optingOutVisitId"
+    busy-label="Opting out..."
+    @confirm="optOutVisit"
+    @cancel="pendingOptOut = null"
+  />
   </main>
 </template>
 
@@ -309,5 +319,10 @@ h1 {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   align-items: stretch;
   gap: 1rem;
+}
+@media (max-width: 600px) {
+  .panel { min-width: 0; padding: 0.75rem; }
+  .panel h2 { font-size: 1.1rem; }
+  .visit-card-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
 }
 </style>

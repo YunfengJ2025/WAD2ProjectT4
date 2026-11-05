@@ -1,0 +1,15 @@
+.podium-card.gold::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.65) 50%, transparent 60%);
+  animation: foilShimmer 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes foilShimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}

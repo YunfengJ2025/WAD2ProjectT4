@@ -84,8 +84,8 @@ const LABELS = {
 .group-strip:hover { filter: brightness(0.97); }
 .group-strip:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
-.group-head { display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 600; }
-.group-label { color: var(--tone); }
+.group-head { min-width: 0; max-width: 100%; display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 600; }
+.group-label { min-width: 0; overflow-wrap: anywhere; color: var(--tone); }
 
 .chevron { display: inline-block; margin-right: 0.3rem; transition: transform 0.2s ease; }
 .chevron.open { transform: rotate(90deg); }
@@ -141,6 +141,12 @@ const LABELS = {
 }
 @keyframes cardOut {
   to { opacity: 0; transform: translateY(10px) scale(0.95); }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .group-strip { padding-inline: 0.25rem; }
+  .group-head { font-size: 0.65rem; }
+  .chevron { margin-right: 0.15rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

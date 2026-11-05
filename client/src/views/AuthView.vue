@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
+import { usePostalCheck } from '@/composables/usePostalCheck'
 import logo from '@/assets/Leaf It to Us Logo.png'
 
 // AuthView: ONE page for both sign in (/signin) and create account (/register).
@@ -17,6 +18,18 @@ const password = ref('')
 const postalCode = ref('')
 const block = ref('')
 const unitNumber = ref('')
+
+// Check the postal code with OneMap as it is typed, and fill in the block from it.
+const postal = usePostalCheck(() => postalCode.value)
+watch(postal.place, (place, oldPlace) => {
+  if (place?.block) block.value = place.block
+  else if (oldPlace?.block) block.value = '' // postal code changed, so the old block no longer fits
+})
+// Lock the block box when OneMap gave us the block (landed homes have none, so they type it)
+const blockFromOneMap = computed(() => !!postal.place.value?.block)
+// Create account only works with a postal code OneMap knows
+const postalReady = computed(() => !props.createAccount || postal.status.value === 'ok')
+
 // The auth store (Pinia) does the actual login/register request and keeps the user + token.
 // storeToRefs: take `error` and `submitting` out of the store but keep them reactive,
 // so error.value = '' changes the store's error too.
@@ -29,6 +42,10 @@ error.value = '' // clear any old error when the page opens
 async function submit() {
   if (submitting.value) return
   error.value = ''
+  if (!postalReady.value) {
+    error.value = postal.message.value || 'Please enter a valid Singapore postal code.'
+    return
+  }
   try {
     const credentials = { email: email.value.trim(), password: password.value }
     // Creating an account also needs the username and address
@@ -40,7 +57,7 @@ async function submit() {
     }
     if (props.createAccount) await auth.register(credentials)
     else await auth.login(credentials)
-    // "Redirect back after login" (Week 11): the route guard sent the user here as
+    // "Redirect back after login": the route guard sent the user here as
     // /signin?redirect=/plants/5, so after logging in we go back to /plants/5.
     // Only follow it if it's a page inside our app (starts with one "/") that needs
     // login; otherwise go to /schedule. This stops links sending users to other websites.
@@ -127,12 +144,29 @@ async function submit() {
                 maxlength="6"
                 title="6-digit postal code"
                 required
+                :aria-invalid="postal.status.value === 'notfound'"
+                aria-describedby="postal-status"
               />
+              <!-- Result of the OneMap check, shown under the box -->
+              <p id="postal-status" class="postal-status" :class="postal.status.value" aria-live="polite">
+                <template v-if="postal.status.value === 'checking'">Checking postal code…</template>
+                <template v-else-if="postal.status.value === 'ok'">
+                  ✓ {{ postal.place.value.block ? 'Blk ' + postal.place.value.block + ' ' : '' }}{{ postal.place.value.road }}
+                </template>
+                <template v-else-if="postal.message.value">✗ {{ postal.message.value }}</template>
+              </p>
             </div>
             <div class="address-row">
               <div class="field">
                 <label for="block">Block</label>
-                <input id="block" v-model="block" name="block" placeholder="e.g. 123A" required />
+                <input
+                  id="block"
+                  v-model="block"
+                  name="block"
+                  :placeholder="blockFromOneMap ? '' : 'Filled in from your postal code'"
+                  :readonly="blockFromOneMap"
+                  required
+                />
               </div>
               <div class="field">
                 <label for="unit-number">Unit number</label>
@@ -146,7 +180,7 @@ async function submit() {
               </div>
             </div>
           </template>
-          <button type="submit" class="btn btn-primary" :disabled="submitting">
+          <button type="submit" class="btn btn-primary" :disabled="submitting || !postalReady">
             {{
               submitting
                 ? createAccount
@@ -275,6 +309,23 @@ input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Block filled in from OneMap: greyed so it reads as automatic */
+input[readonly] {
+  background: var(--color-background-mute, #f1f1f1);
+  color: var(--muted);
+}
+
+/* OneMap check result under the postal code box */
+.postal-status {
+  min-height: 1.2em;
+  margin: 0 0 0 1.1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.postal-status.ok { color: var(--accent); }
+.postal-status.notfound,
+.postal-status.error { color: var(--danger); }
 
 .error {
   padding: 0.75rem 1.1rem;

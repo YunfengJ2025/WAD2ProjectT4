@@ -198,8 +198,11 @@ async function createPlantForOwner(data, ownerId, file) {
 // plant.set() only changes the fields that were sent.
 async function updatePlantForOwner(plantId, ownerId, data, file) {
     const plant = await getPlantByOwner(plantId, ownerId);
+    const previousAmount = plant.wateringInfo.amountMl;
     plant.set(pickPlantFields(data));
     await validateUploadAndSave(plant, file);
+    const { syncPlantWateringAmount } = require("../services/plantWateringAmount");
+    await syncPlantWateringAmount(plant, previousAmount);
     return plant;
 }
 

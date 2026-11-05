@@ -19,6 +19,26 @@ const { show: toast } = useToast()
 const searchCenter = ref(null)
 const origin = ref(null) // the sitter's home { lat, lng }, sent by the server
 const allVisits = ref([]) // every open visit within 1 km, already sorted nearest first
+const requestScroller = ref(null)
+const requestContent = ref(null)
+const requestsOverflow = ref(false)
+
+// Contain gestures only when results really overflow. Short lists leave page
+// scrolling available; long lists never hand their edge gestures to the page.
+watch([requestScroller, requestContent], ([scroller, content], previous, onCleanup) => {
+  if (!scroller || !content) {
+    requestsOverflow.value = false
+    return
+  }
+  const updateOverflow = () => {
+    requestsOverflow.value = scroller.scrollHeight > scroller.clientHeight + 1
+  }
+  const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateOverflow)
+  observer?.observe(scroller)
+  observer?.observe(content)
+  updateOverflow()
+  onCleanup(() => observer?.disconnect())
+}, { flush: 'post' })
 const loading = ref(true)
 const loadError = ref('')
 
@@ -338,7 +358,7 @@ async function acceptVisit(visit) {
   </div>
 
   <!-- map on top and list underneath on phones/tablets; side by side (70% / 30%) from 992px up -->
-  <div v-else class="d-flex flex-column flex-lg-row">
+  <div v-else class="mapResults d-flex flex-column flex-lg-row">
     <!-- map section, about 70% of the page -->
     <RequestMap
       class="mapArea"
@@ -355,8 +375,10 @@ async function acceptVisit(visit) {
       @select="onMapSelect"
     />
 
-    <!-- request section -->
-    <div class="requests">
+    <!-- The outer frame keeps its spacing while the inner results scroll. -->
+    <div class="requestPanel">
+    <div ref="requestScroller" class="requests" :class="{ 'is-scrollable': requestsOverflow }" tabindex="0" role="region" aria-label="Plant care requests">
+    <div ref="requestContent">
       <!-- no pin selected: scrollable list, nearest first -->
       <div v-if="!pinSelected">
         <p v-if="acceptedNote" class="acceptedNote" role="status">
@@ -614,6 +636,8 @@ async function acceptVisit(visit) {
         </div>
       </div>
     </div>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -832,8 +856,16 @@ h1 {
 }
 
 /* phone layout (map on top, list below): the map is shorter, the list scrolls in its own box */
+.requestPanel {
+  min-width: 0;
+  padding-block: 1rem;
+  overflow: hidden;
+}
+
 .mapArea {
-  height: 50vh;
+  height: max(300px, 50vh);
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .requests {
@@ -841,6 +873,15 @@ h1 {
   padding: 1rem;
   overflow-y: auto;
   max-height: 70vh;
+  min-height: 0;
+  flex-shrink: 0;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.requests.is-scrollable {
+  overscroll-behavior-y: contain;
 }
 
 .requestList {
@@ -1237,6 +1278,15 @@ h1 {
   }
 }
 
+/* Stacked layouts need a smaller results window: a few cards should scroll
+   inside the list rather than requiring another screenful of page scrolling. */
+@media (max-width: 991px) {
+  .requests {
+    max-height: 40vh;
+    max-height: min(40dvh, 20rem);
+  }
+}
+
 /* laptops (992px and up): map 70% on the left, list 30% on the right, like the original */
 @media (min-width: 992px) {
   .mapArea {
@@ -1245,9 +1295,10 @@ h1 {
     height: 70vh;
   }
 
-  .requests {
+  .requestPanel {
     flex: 0 0 30%;
     max-width: 30%;
+    padding-block: 0;
   }
 }
 </style>

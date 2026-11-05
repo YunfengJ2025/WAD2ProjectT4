@@ -145,6 +145,7 @@ exports.makeUpRequest = async (req, res) => {
         plantDetails: items.map((item) => ({
           plantId: item.plantId,
           amountToWater: item.amountToWater ?? 0,
+          usePlantAmount: item.usePlantAmount === true,
           careInstructions: item.careInstructions || "",
         })),
         startDate: date,
@@ -357,6 +358,9 @@ exports.addVisitProof = async (req, res) => {
       item.completedSteps = tickedByPlant.get(item.plantId) || []; // Care checklist (Carolyn)
       item.status = "completed";
       item.dueAt = visitDate;
+      // Freeze the instructions loaded for this completion even if the owner
+      // edits the plant while proof photos are being uploaded.
+      item.markModified("amountToWater");
       await item.save();
     }
 

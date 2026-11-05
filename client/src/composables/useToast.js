@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 
-// useToast: a composable (Week 11) for the small pop-up messages.
+// useToast: a composable for the small pop-up messages.
 // Usage in any component:  const { show } = useToast();  show('Plant added')
 // ToastHost.vue (in App.vue) displays the list.
 

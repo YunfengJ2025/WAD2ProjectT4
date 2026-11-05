@@ -74,3 +74,13 @@ const STATUS_ICONS = {
 export function statusIcon(status) {
   return STATUS_ICONS[status] || ''
 }
+
+// Private address returned only to participants of an accepted visit.
+export function ownerAddress(owner) {
+  if (!owner) return ''
+  return [
+    owner.block ? `Blk ${owner.block}` : '',
+    owner.unitNumber,
+    owner.postalCode ? `Singapore ${owner.postalCode}` : '',
+  ].filter(Boolean).join(', ')
+}

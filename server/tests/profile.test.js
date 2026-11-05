@@ -10,6 +10,15 @@ cloud.uploadImage = async (buffer, folder) => {
   return { url: "https://images.example/new-avatar.png", publicId: "new-avatar" };
 };
 cloud.deleteImage = async (id) => { if (id) deletions.push(id); };
+// Fake OneMap: 000000 doesn't exist, 999999 means OneMap is down, anything else is Blk 640.
+const onemap = require("../utils/onemap");
+let lookups = [];
+onemap.lookupPostal = async (postalCode) => {
+  lookups.push(postalCode);
+  if (postalCode === "000000") return null;
+  if (postalCode === "999999") throw Object.assign(new Error("Could not reach OneMap"), { status: 503 });
+  return { postalCode, block: "640", road: "ROWELL ROAD", lat: 1.3, lng: 103.8 };
+};
 const { User, toAuthJSON } = require("../models/userModel");
 const { createAccessToken } = require("../config/jwt");
 process.env.JWT_SECRET = "profile-test-secret-with-at-least-32-bytes";
@@ -28,8 +37,10 @@ test("profile details and avatar uploads", async (t) => {
   t.beforeEach(() => {
     uploads = [];
     deletions = [];
+    lookups = [];
     failSave = false;
-    current = new User({ userId: 1, userName: "Gardener", email: "garden@example.com",
+    // hydrate = a user loaded from the database, so unchanged fields are not "modified"
+    current = User.hydrate({ userId: 1, userName: "Gardener", email: "garden@example.com",
       passwordHash: "secret-hash", postalCode: "123456", block: "123A", unitNumber: "#05-12",
       photoUrl: "https://images.example/old.png", photoPublicId: "old-avatar", tokenBalance: 50 });
     current.save = async () => {
@@ -66,6 +77,31 @@ test("profile details and avatar uploads", async (t) => {
     assert.equal(user.photoUrl, "https://images.example/old.png");
     assert.equal(user.photoPublicId, undefined);
     assert.equal(user.passwordHash, undefined);
+    // A new postal code fills in its block from OneMap
+    assert.equal(user.block, "640");
+    assert.deepEqual(lookups, ["654321"]);
+  });
+  await t.test("does not ask OneMap when the address is unchanged", async () => {
+    const response = await patch({ userName: "Other name", postalCode: "123456" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(lookups, []);
+  });
+  await t.test("rejects a postal code that does not exist", async () => {
+    const response = await patch({ postalCode: "000000" });
+    assert.equal(response.status, 400);
+    assert.ok((await response.json()).errors.postalCode);
+  });
+  await t.test("blocks the save when OneMap is down", async () => {
+    const response = await patch({ postalCode: "999999" });
+    assert.equal(response.status, 503);
+  });
+  await t.test("postal check endpoint returns the block or 404", async () => {
+    const base = `http://127.0.0.1:${server.address().port}/user/postal/`;
+    const found = await fetch(base + "200640");
+    assert.equal(found.status, 200);
+    assert.deepEqual(await found.json(), { postalCode: "200640", block: "640", road: "ROWELL ROAD" });
+    assert.equal((await fetch(base + "000000")).status, 404);
+    assert.equal((await fetch(base + "12ab")).status, 400);
   });
   await t.test("uploads avatars to the icon folder and deletes the old image after saving", async () => {
     const response = await patch(photoForm());

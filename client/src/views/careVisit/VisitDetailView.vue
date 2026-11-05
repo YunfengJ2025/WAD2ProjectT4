@@ -9,6 +9,8 @@ import UserAvatar from '@/components/user/UserAvatar.vue'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import plantPlaceholder from '@/assets/plant.png'
 import { getRequestSteps } from '@/utils/careSteps'
+import { makeupVisitDate } from '@/utils/singaporeDate'
+import { ownerAddress as formatOwnerAddress } from '@/utils/visitFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,20 +55,7 @@ const canRequestMakeup = computed(
 const makeupBusy = ref(false)
 const makeupError = ref('')
 
-// "YYYY-MM-DD" in Singapore time, and that date plus some days
-function sgDate(value) {
-  return new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })
-}
-function addDays(day, days) {
-  const [year, month, date] = day.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10)
-}
-// Same date rule as My Requests: tomorrow, or the day after the original request ends if that is later
-const makeupDate = computed(() => {
-  const tomorrow = addDays(sgDate(new Date()), 1)
-  const afterRequest = visit.value?.request?.endDate ? addDays(sgDate(visit.value.request.endDate), 1) : tomorrow
-  return afterRequest > tomorrow ? afterRequest : tomorrow
-})
+const makeupDate = computed(() => makeupVisitDate(visit.value?.request?.endDate))
 
 // Ask the server to create a future replacement request for this missed visit.
 async function requestMakeup() {
@@ -168,16 +157,6 @@ function formatDate(value, includeTime = false) {
     options.timeStyle = 'short'
   }
   return new Intl.DateTimeFormat('en-SG', options).format(new Date(value))
-}
-
-// Display the owner's full address to visit participants.
-function formatOwnerAddress(owner) {
-  if (!owner) return ''
-  return [
-    owner.block ? `Blk ${owner.block}` : '',
-    owner.unitNumber,
-    owner.postalCode ? `Singapore ${owner.postalCode}` : '',
-  ].filter(Boolean).join(', ')
 }
 
 // A watcher also reloads the page when navigation changes only the visit ID.
@@ -570,15 +549,6 @@ async function submitReview() {
 .participant-rating small {
   color: #607166;
 }
-/* Narrow phones: let the rating move below the identity while staying right-aligned. */
-@media (max-width: 420px) {
-  .participant-row {
-    flex-wrap: wrap;
-  }
-  .participant-rating {
-    margin-left: auto;
-  }
-}
 /* Profile link feedback: underline on hover and show a visible keyboard focus ring. */
 .participant-link:hover span {
   text-decoration: underline;
@@ -671,15 +641,6 @@ async function submitReview() {
 .participant-rating small {
   /* Place the review count beneath both the score and stars. */
   grid-column: 1 / -1;
-}
-/* Narrow phones: reduce panel padding and stack the rating contents for extra room. */
-@media (max-width: 420px) {
-  .panel {
-    padding: 1rem;
-  }
-  .participant-rating {
-    grid-template-columns: auto;
-  }
 }
 /* Status badge: distinguish the visit state with a compact green pill. */
 .status {
@@ -948,5 +909,80 @@ textarea {
   border: 1px solid #b8c9bc;
   border-radius: 8px;
   padding: 0.75rem;
+}
+/* The app already supplies phone gutters; use the remaining width for content. */
+@media (max-width: 600px) {
+  .visit-detail {
+    padding: 0 0 2rem;
+  }
+  .back-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .panel {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .summary-heading {
+    gap: 0.5rem;
+  }
+  .status {
+    font-size: 0.85rem;
+  }
+  .visit-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .participants-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .participant-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .participant-link {
+    gap: 0.6rem;
+    min-height: 44px;
+  }
+  .participant-rating {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    text-align: left;
+  }
+  .participant-rating :deep(.review-stars) {
+    font-size: 1.1rem;
+  }
+  .participant-address {
+    font-size: 0.9rem;
+  }
+  .plant-layout {
+    gap: 1rem;
+  }
+  .plant-photo {
+    aspect-ratio: 4 / 3;
+  }
+  .gallery-arrow {
+    width: 44px;
+    height: 44px;
+  }
+  .plant-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .makeup-button,
+  form button[type='submit'] {
+    width: 100%;
+    min-height: 44px;
+  }
+  form :deep(.review-rating-input label) {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 </style>

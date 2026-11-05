@@ -4,9 +4,8 @@
 // Delete is only *asked* here: the card emits 'delete' and the page shows the confirm pop-up.
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getWateringStatus, isWateredToday, formatShortDate } from '@/utils/wateringStatus'
-import { usePlantsStore } from '@/stores/plants'
-import { useToast } from '@/composables/useToast'
+import { getWateringStatus, formatShortDate } from '@/utils/wateringStatus'
+import { usePlantWatering } from '@/composables/usePlantWatering'
 import { getCareSteps, getDoneSteps } from '@/utils/careSteps'
 import StatusPill from './StatusPill.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -73,42 +72,8 @@ const checklistLabel = computed(() => {
   return `${stepsLeft.value} care steps left`
 })
 
-// "Mark watered" button: same as on the plant's detail page.
-// The store updates the plant, so the status pill changes straight away.
-const plantsStore = usePlantsStore()
-const { show: toast } = useToast()
-const watering = ref(false) // true while saving (disables the button)
-// Already watered today: the button is disabled so it can't be pressed twice
-const wateredToday = computed(() => isWateredToday(props.plant))
-const waterLabel = computed(() => {
-  if (watering.value) return 'Saving…'
-  if (wateredToday.value) return 'Watered today ✓'
-  return 'Mark watered'
-})
-
-async function markWatered() {
-  if (watering.value) return
-  watering.value = true
-  try {
-    await plantsStore.markWatered(props.plant.plantId)
-    toast(`${props.plant.plantName} watered`)
-  } catch (err) {
-    toast(err.message, 'error')
-  } finally {
-    watering.value = false
-    confirmingEarly.value = false
-  }
-}
-
-// Not due yet: ask first, in case the button was pressed by mistake
-const confirmingEarly = ref(false)
-function onWaterClick() {
-  if (status.value.key === 'upcoming') {
-    confirmingEarly.value = true
-  } else {
-    markWatered()
-  }
-}
+const { watering, confirmingEarly, wateredToday, waterLabel, markWatered, onWaterClick } =
+  usePlantWatering(() => props.plant, () => status.value, () => `${props.plant.plantName} watered`)
 </script>
 
 <template>
@@ -142,6 +107,7 @@ function onWaterClick() {
 
       <!-- Where to find it (title shows the full text on hover if it gets cut off) -->
       <p class="where" :title="plant.plantLocation">{{ plant.plantLocation }}</p>
+      <StatusPill :status="status" class="compact-status" />
 
       <!-- Small tags: watering, indoor/outdoor, and care progress when due -->
       <ul class="tags" aria-label="Plant details">
@@ -215,6 +181,7 @@ function onWaterClick() {
 <style scoped>
 .card {
   position: relative;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -283,6 +250,7 @@ function onWaterClick() {
 
 .body {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -397,6 +365,7 @@ h3 {
   position: relative;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.25rem;
@@ -423,6 +392,7 @@ h3 {
 
 /* Round icon buttons */
 .icon-btn {
+  flex-shrink: 0;
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -462,6 +432,25 @@ h3 {
 .icon-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.compact-status { display: none; }
+@media (max-width: 600px) {
+  .card { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-content: start; gap: 0.4rem 0.75rem; height: auto; padding: 0.75rem; }
+  .photo { grid-column: 1; grid-row: 1 / span 3; width: 76px; height: 76px; aspect-ratio: 1; border-radius: 10px; }
+  .photo .pill, .no-photo > span { display: none; }
+  .no-photo :deep(svg) { width: 52px; height: 52px; }
+  .body { display: contents; }
+  h3 { grid-column: 2; grid-row: 1; margin: 0; font-size: 1rem; line-height: 1.35; overflow-wrap: break-word; }
+  .where { grid-column: 2; grid-row: 2; margin: 0; font-size: 0.8rem; }
+  .compact-status { display: inline-flex; grid-column: 2; grid-row: 3; justify-self: start; position: static; padding: 0.15rem 0.5rem; font-size: 0.7rem; box-shadow: none; }
+  .tags, .care-count, .actions { grid-column: 1 / -1; }
+  .tags { margin: 0.2rem 0 0; gap: 0.3rem; }
+  .tag { padding: 0.15rem 0.5rem; font-size: 0.72rem; }
+  .care-count { font-size: 0.8rem; }
+  .actions { margin-top: 0.15rem; padding-top: 0.4rem; }
+  .water-btn { min-height: 44px; padding-inline: 0.75rem; }
+  .icon-btn { width: 44px; height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

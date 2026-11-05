@@ -57,9 +57,8 @@ it('creates one request with separate care details for each selected plant', asy
   await plantCards[0].trigger('click')
   await plantCards[1].trigger('click')
 
-  const waterAmounts = wrapper.findAll('.plant-care input[type="number"]')
-  await waterAmounts[0].setValue('120')
-  await waterAmounts[1].setValue('250')
+  await wrapper.findAll('.plant-care input[type="checkbox"]')[1].setValue(false)
+  await wrapper.findAll('.plant-care input[type="number"]')[1].setValue('150')
   const plantNotes = wrapper.findAll('.plant-care textarea')
   await plantNotes[0].setValue('Keep the soil lightly damp')
   await plantNotes[1].setValue('Avoid direct sun')
@@ -75,8 +74,8 @@ it('creates one request with separate care details for each selected plant', asy
 
   expect(createdRequest.plantIds).toEqual([11, 12])
   expect(createdRequest.plantDetails).toEqual([
-    { plantId: 11, amountToWater: 120, careInstructions: 'Keep the soil lightly damp' },
-    { plantId: 12, amountToWater: 250, careInstructions: 'Avoid direct sun' },
+    { plantId: 11, usePlantAmount: true, amountToWater: 120, careInstructions: 'Keep the soil lightly damp' },
+    { plantId: 12, usePlantAmount: false, amountToWater: 150, careInstructions: 'Avoid direct sun' },
   ])
   expect(createdRequest.waterSource).toBe('left_out')
   expect(wrapper.text()).toContain('Request #31 posted.')

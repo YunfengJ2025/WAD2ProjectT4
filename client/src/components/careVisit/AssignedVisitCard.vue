@@ -1,10 +1,12 @@
 <script setup>
 // Component: summarizes an accepted visit and collects required care steps, notes, and proof photos.
 import { computed, reactive, ref } from 'vue'
+import { useScrollLock } from '@/composables/useScrollLock'
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): same helper as the owner's plant page, so both split
 // the steps the same way (one per line). Uses this request's instructions, else the plant's notes
 import { getRequestSteps } from '@/utils/careSteps'
+import { singaporeDate } from '@/utils/singaporeDate'
 // (Carolyn) Fix 5: shared date / token / water / status wording for all visit cards
 import {
   formatDate as date,
@@ -13,6 +15,7 @@ import {
   statusLabel,
   tokenText,
   waterSourceLabel,
+  ownerAddress,
 } from '@/utils/visitFormat'
 
 const props = defineProps({
@@ -27,6 +30,11 @@ const actions = reactive({})
 const photos = reactive({})
 const error = ref('')
 const detailsOpen = ref(false)
+useScrollLock(detailsOpen) // the page behind the pop-up can't scroll while it's open
+// Short date for the phone footer chip, e.g. "10 Nov"
+function shortDate(value) {
+  return new Date(value).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' })
+}
 // Normalize the visit's plant items, including the older one-plant response shape.
 const items = props.visit.items?.length
   ? props.visit.items
@@ -74,27 +82,6 @@ const mapsUrl = computed(() => {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
 })
 const tokens = props.visit.request?.tokenReward // may be missing on old visits
-
-// Convert timestamps to YYYY-MM-DD in Singapore time for visit-day checks.
-function singaporeDate(value) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Singapore',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date(value))
-  const dateParts = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`
-}
-
-// Format the private owner address returned for the sitter's accepted visit.
-function ownerAddress(owner) {
-  if (!owner) return ''
-  const building = owner.block ? `Blk ${owner.block}` : ''
-  return [building, owner.unitNumber, owner.postalCode ? `Singapore ${owner.postalCode}` : '']
-    .filter(Boolean)
-    .join(', ')
-}
 
 // Care checklist (Carolyn): for each plant, its care steps and the steps the sitter ticks.
 // careSteps[plantId] = ["Water the soil", ...]   ticked[plantId] = steps ticked (v-model)
@@ -196,6 +183,7 @@ function submit() {
           alt=""
           @error="$event.target.src = plantPlaceholder"
         />
+        <span v-if="plants.length > 2" class="mobile-plant-count">+{{ plants.length - 2 }} more</span>
       </div>
       <div class="heading-text">
         <h3 :title="plantNames.join(', ')">{{ title }}</h3>
@@ -408,41 +396,57 @@ function submit() {
               </div>
             </fieldset>
             <p v-if="error" class="error" role="alert">{{ error }}</p>
+            <!-- Above the footer, so the footer is always the last thing, pinned to the bottom -->
+            <RouterLink
+              class="visit-page-link"
+              :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }"
+            >
+              Open the full visit page →
+            </RouterLink>
             <!-- (Carolyn) Complete visit, step 6: quiet opt-out on the left, main submit on the right.
            Opt-out still goes through the page's "are you sure?" box (CareVisitsView). -->
             <div class="modal-foot">
-              <!-- (Carolyn) what's still needed before Submit works (✓ when done, ○ when not) -->
+              <!-- (Carolyn) what's still needed before Submit works (✓ when done, ○ when not).
+                   Each chip has a full label and a short one for phones (CSS shows one). -->
               <ul class="ready-list" aria-live="polite" aria-label="Before you submit">
                 <li :class="{ done: canCompleteToday }">
                   <span class="mark" aria-hidden="true">{{ canCompleteToday ? '✓' : '○' }}</span>
-                  {{
+                  <span class="chip-long">{{
                     canCompleteToday
                       ? 'It’s the visit day'
                       : `Opens on ${longDate(visit.visitDate)}`
-                  }}
+                  }}</span>
+                  <span class="chip-short">{{
+                    canCompleteToday ? 'Visit day' : `Opens ${shortDate(visit.visitDate)}`
+                  }}</span>
                 </li>
                 <li v-if="totalSteps" :class="{ done: allStepsTicked }">
                   <span class="mark" aria-hidden="true">{{ allStepsTicked ? '✓' : '○' }}</span>
-                  {{ tickedSteps }} of {{ totalSteps }} care step{{
+                  <span class="chip-long">{{ tickedSteps }} of {{ totalSteps }} care step{{
                     totalSteps === 1 ? '' : 's'
-                  }}
-                  ticked
+                  }} ticked</span>
+                  <span class="chip-short">{{ tickedSteps }}/{{ totalSteps }} steps</span>
                 </li>
                 <li class="photo-progress" :class="{ done: allPhotosAdded }">
                   <span class="mark" aria-hidden="true">{{ allPhotosAdded ? '✓' : '○' }}</span>
-                  {{ photoCount }} of {{ items.length }} photo{{
+                  <span class="chip-long">{{ photoCount }} of {{ items.length }} photo{{
                     items.length === 1 ? '' : 's'
-                  }}
-                  added
+                  }} added</span>
+                  <span class="chip-short">{{ photoCount }}/{{ items.length }} photos</span>
                 </li>
               </ul>
               <button
                 type="button"
                 class="optout-btn"
                 :disabled="optingOut || busy"
+                aria-label="Opt out of this visit"
                 @click="emit('opt-out', visit)"
               >
-                {{ optingOut ? 'Opting out…' : 'Opt out of this visit' }}
+                <template v-if="optingOut">Opting out…</template>
+                <template v-else>
+                  <span class="chip-long">Opt out of this visit</span>
+                  <span class="chip-short">Opt out</span>
+                </template>
               </button>
               <div class="submit-side">
                 <button
@@ -460,12 +464,6 @@ function submit() {
                 </button>
               </div>
             </div>
-            <RouterLink
-              class="visit-page-link"
-              :to="{ name: 'visit-detail', params: { visitId: visit.visitId } }"
-            >
-              Open the full visit page →
-            </RouterLink>
           </form>
         </section>
       </div>
@@ -967,6 +965,8 @@ p {
   color: #245b34;
   font-size: 0.85rem;
 }
+/* Footer labels: full text normally, short text on phones */
+.chip-short { display: none; }
 .plant-care-card label {
   display: grid;
   gap: 0.35rem;
@@ -1043,4 +1043,76 @@ p {
   margin-top: 0.2rem;
   accent-color: #2d6740;
 }
+.mobile-plant-count { display: none; }
+@media (max-width: 600px) {
+  .visit-card { min-width: 0; padding: 0.85rem; }
+  .visit-heading { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: start; }
+  .thumbs { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; gap: 0.4rem; }
+  .thumbs img { width: 56px; height: 56px; margin: 0; border-width: 2px; border-radius: 10px; }
+  .thumbs img:nth-of-type(n+3) { display: none; }
+  .mobile-plant-count { display: block; font-size: 0.7rem; color: var(--muted); text-align: center; }
+  .heading-text { grid-column: 2; grid-row: 1; }
+  .heading-text h3 { font-size: 1rem; line-height: 1.4; word-break: normal; overflow-wrap: break-word; }
+  .visit-heading > .day-badge, .visit-heading > .status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .visit-action { min-height: 44px; }
+  /* Phones: the pop-up becomes a bottom sheet (full width, slides up from the bottom)
+     so the plant details get the screen instead of a floating box with margins */
+  .modal-backdrop { padding: 0; place-items: end stretch; }
+  .details-modal {
+    width: 100%;
+    max-height: 92dvh;
+    /* bottom padding = room for the fixed footer, so the last content isn't hidden behind it */
+    padding: 1rem 1rem calc(7rem + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    animation: sheetUp 0.25s ease-out;
+  }
+  .modal-heading h3 { font-size: 1.2rem; }
+  /* Header stays pinned at the top of the sheet while the details scroll.
+     top: -1rem cancels the sheet's top padding so it sits flush with the top edge. */
+  .modal-heading {
+    position: sticky;
+    z-index: 2;
+    top: -1rem;
+    margin: -1rem -1rem 0.8rem;
+    padding: 1rem 1rem 0.7rem;
+    border-radius: 20px 20px 0 0;
+    background: #fff;
+  }
+  .modal-close { flex-basis: 44px; width: 44px; height: 44px; font-size: 1.4rem; } /* easy to tap */
+  /* Footer pinned to the bottom of the screen. (A sticky footer can't rise above the top
+     of its form, so on short phones it was pushed partly off-screen.) Compact: one row of
+     short chips, then Opt out + Submit side by side. */
+  .modal-foot {
+    position: fixed;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-width: 0;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 16px #10231b14;
+  }
+  /* Short labels so the three chips fit on one line: "○ Opens 10 Nov  ○ 0/1 steps  ○ 0/1 photos" */
+  .chip-long { display: none; }
+  .chip-short { display: inline; }
+  .ready-list { min-width: 0; gap: 0.3rem; }
+  .ready-list li { gap: 0.25rem; padding: 0.15rem 0.5rem; font-size: 0.72rem; white-space: nowrap; }
+  /* Buttons: small "Opt out" + wide "Submit proof" on one row */
+  .optout-btn { flex: 0 0 auto; min-height: 44px; padding-inline: 1rem; font-size: 0.85rem; }
+  .submit-side { flex: 1 1 0; margin-left: 0; }
+  .submit-btn { width: 100%; min-height: 44px; justify-content: center; padding-inline: 0.5rem; white-space: nowrap; }
+  .visit-page-link { padding: 0.25rem 0 0.75rem; text-align: center; }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .details-modal { animation: none; }
+}
+/* Scrolling inside the pop-up never spills over to the page behind (needed on iPhones too) */
+.modal-backdrop, .modal-backdrop [role="dialog"] { overscroll-behavior: contain; }
 </style>

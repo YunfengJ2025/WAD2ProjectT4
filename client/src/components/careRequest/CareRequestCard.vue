@@ -1,9 +1,11 @@
 <script setup>
 // Component: summarizes one owner request and opens its visit/plant details on demand.
 import { computed, ref } from 'vue'
+import { useScrollLock } from '@/composables/useScrollLock'
 import { RouterLink } from 'vue-router'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import plantPlaceholder from '@/assets/plant.png'
-import { getCareSteps, getRequestSteps } from '@/utils/careSteps'
+import { getRequestSteps } from '@/utils/careSteps'
 // (Carolyn) Fix 5: shared date / token / water / status wording for all visit cards.
 // chipDate = "Tue 3", date = "03/11/2026", both in Singapore time like the server
 import {
@@ -33,7 +35,10 @@ const plants = computed(() =>
       : [],
 )
 // what the owner asked for each plant (water amount, instructions), shown under Details
-const plantRows = computed(() => (props.request.plantDetails?.length ? props.request.plantDetails : plants.value))
+const plantRows = computed(() =>
+  (props.request.plantDetails?.length ? props.request.plantDetails : plants.value)
+    .map((plant) => ({ ...plant, careSteps: getRequestSteps(plant) })),
+)
 const title = computed(
   () =>
     plants.value.map((plant) => plant.plantName).filter(Boolean).join(', ') ||
@@ -60,10 +65,11 @@ const nextVisitText = computed(() => {
 })
 
 // (Carolyn) Cancel asks first (it used to cancel straight away on one click)
-function askCancel() {
-  if (window.confirm(`Cancel the request for ${title.value}? Visits not done yet will be cancelled.`)) {
-    emit('cancel-request', props.request)
-  }
+const confirmingCancel = ref(false)
+function confirmCancel() {
+  if (props.busy) return
+  confirmingCancel.value = false
+  emit('cancel-request', props.request)
 }
 
 // ---------- the visit chips ----------
@@ -88,16 +94,11 @@ const missedVisits = computed(() => visits.value.filter((visit) => visit.status 
 
 // ---------- details ----------
 const open = ref(false)
+useScrollLock(open) // the page behind the pop-up can't scroll while it's open
 
 // Build the plant-name summary shown for one visit in the details modal.
 function visitPlants(visit) {
   return visit.plants?.map((plant) => plant.plantName).join(', ') || visit.plant?.plantName || 'Unnamed plant'
-}
-
-// (Carolyn) Care steps for one plant row in the pop-up: this request's instructions,
-// else the plant's own care notes (same rule the sitter's checklist uses)
-function plantSteps(row) {
-  return getCareSteps(row.careInstructions || row.wateringInfo?.notes)
 }
 
 // Care checklist (Carolyn): how many care steps the sitter ticked on a finished visit,
@@ -185,7 +186,7 @@ function healthLine(item) {
         </RouterLink>
         <!-- Offer an owner a manual replacement after a visit expires or is missed. -->
         <button
-          v-if="visit.status === 'missed' && !visit.makeupRequestId"
+          v-if="!visit.makeupRequestId"
           type="button"
           class="makeup-button"
           :disabled="makeupBusyVisitId === visit.visitId"
@@ -205,7 +206,7 @@ function healthLine(item) {
         type="button"
         class="cancel-link"
         :disabled="busy"
-        @click="askCancel"
+        @click="confirmingCancel = true"
       >
         {{ busy ? 'Cancelling…' : 'Cancel request' }}
       </button>
@@ -244,10 +245,11 @@ function healthLine(item) {
               />
               <div class="plant-card-body">
                 <strong>{{ plant.plantName || 'Unnamed plant' }}</strong>
-                <span class="water-amount">💧 {{ plant.amountToWater ?? 0 }} ml each visit</span>
+                <span class="water-amount">💧 {{ plant.amountToWater ?? 0 }} ml {{ nextVisit ? 'per upcoming visit' : 'per visit' }}</span>
+                <small v-if="nextVisit" class="no-steps">{{ plant.usePlantAmount ? 'Follows plant’s watering amount' : 'Custom amount for this request' }}</small>
                 <!-- Care instructions as a checklist (one line = one step) -->
-                <ul v-if="plantSteps(plant).length" class="care-steps" aria-label="Care steps">
-                  <li v-for="step in plantSteps(plant)" :key="step">
+                <ul v-if="plant.careSteps.length" class="care-steps" aria-label="Care steps">
+                  <li v-for="step in plant.careSteps" :key="step">
                     <span class="tick" aria-hidden="true">✓</span>{{ step }}
                   </li>
                 </ul>
@@ -289,6 +291,16 @@ function healthLine(item) {
       </section>
     </div>
     </Teleport>
+  <ConfirmDialog
+    :open="confirmingCancel"
+    title="Cancel request?"
+    :message="`Cancel the request for ${title}? Visits not done yet will be cancelled.`"
+    confirm-label="Cancel request"
+    :busy="busy"
+    busy-label="Cancelling..."
+    @confirm="confirmCancel"
+    @cancel="confirmingCancel = false"
+  />
   </article>
 </template>
 
@@ -432,4 +444,52 @@ function healthLine(item) {
   .request-card { transition: none; }
   .request-card:hover { transform: none; }
 }
+/* Phones: same bottom sheet as the visit pop-up (full width, slides up, pinned header),
+   and plant cards with a small photo and the care steps using the full card width */
+@media (max-width: 600px) {
+  .modal-backdrop { padding: 0; place-items: end stretch; }
+  .details-modal {
+    width: 100%;
+    max-height: 92dvh;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    animation: sheetUp 0.25s ease-out;
+  }
+  /* Header pinned while scrolling; top: -1rem cancels the sheet's top padding */
+  .modal-heading {
+    position: sticky;
+    z-index: 2;
+    top: -1rem;
+    align-items: flex-start;
+    margin: -1rem -1rem 0;
+    padding: 1rem 1rem 0.7rem;
+    border-radius: 20px 20px 0 0;
+    background: #fff;
+  }
+  .modal-heading h3 { font-size: 1.2rem; line-height: 1.3; }
+  .modal-close { flex-basis: 44px; width: 44px; height: 44px; } /* easy to tap */
+  /* Plant card: photo + name/water on top, care steps full width underneath.
+     display: contents lets the body's children sit directly in the card's grid. */
+  .plant-card {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 0.2rem 0.75rem;
+    padding: 0.65rem;
+  }
+  .plant-card img { grid-column: 1; grid-row: 1 / span 3; width: 56px; height: 56px; border-radius: 10px; }
+  .plant-card-body { display: contents; }
+  .plant-card-body > strong, .plant-card-body > .water-amount, .plant-card-body > small.no-steps { grid-column: 2; }
+  .plant-card-body > small.no-steps { font-size: 0.78rem; }
+  .care-steps, .plant-card-body > span.no-steps { grid-column: 1 / -1; margin-top: 0.4rem; }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .details-modal { animation: none; }
+}
+/* Scrolling inside the pop-up never spills over to the page behind (needed on iPhones too) */
+.modal-backdrop, .modal-backdrop [role="dialog"] { overscroll-behavior: contain; }
 </style>

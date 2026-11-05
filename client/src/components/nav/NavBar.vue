@@ -4,6 +4,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Collapse, Dropdown } from 'bootstrap'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/user/UserAvatar.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 defineProps({ navigationitems: { type: Array, default: () => [] } })
 defineEmits(['logout'])
@@ -13,6 +15,9 @@ const router = useRouter()
 const notifications = ref([])
 const notificationError = ref('')
 const unreadCount = ref(0)
+const confirmingClear = ref(false)
+const clearingNotifications = ref(false)
+const { show: toast } = useToast()
 
 // Load the current user's notices when signed in and when opening the bell.
 async function loadNotifications() {
@@ -63,18 +68,26 @@ async function removeNotification(notification) {
   }
 }
 async function clearAll() {
-  if (!window.confirm('Clear all notifications? This cannot be undone.')) return
+  if (clearingNotifications.value) return
+  clearingNotifications.value = true
+  notificationError.value = ''
   try {
     await auth.authorizedRequest('/notifications', { method: 'DELETE' })
     notifications.value = []
     unreadCount.value = 0
+    confirmingClear.value = false
+    toast('All notifications cleared')
   } catch (err) {
     notificationError.value = err.message
+    toast(err.message || 'Could not clear notifications', 'error')
+  } finally {
+    clearingNotifications.value = false
   }
 }
 
 // (Carolyn) icon + colour for each kind of notice
 const NOTICE_LOOK = {
+  watering_amount_changed: { icon: '💧', tone: 'off' },
   visit_missed: { icon: '⚠', tone: 'missed' },
   visit_expired: { icon: '↩', tone: 'expired' },
   visit_weather_skipped: { icon: '🌧', tone: 'rain' },
@@ -104,6 +117,10 @@ function hasMakeupAction(notification) {
 // Open the matching request from missed or expired visit alerts.
 async function openNotification(notification) {
   await markNotificationRead(notification)
+  if (notification.type === 'watering_amount_changed' && notification.visitId) {
+    await router.push({ name: 'visit-detail', params: { visitId: notification.visitId } })
+    return
+  }
   const opensRequest = notification.type === 'visit_expired' || hasMakeupAction(notification)
   if (notification.requestId && opensRequest) {
     await router.push({
@@ -133,11 +150,12 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-sm bg-body-tertiary" aria-label="Main navigation">
+  <nav class="navbar navbar-expand-md bg-body-tertiary" aria-label="Main navigation">
     <div class="container-fluid flex-wrap gap-2">
       <RouterLink class="navbar-brand order-0" to="/schedule"><img src="../../assets/Leaf It to Us Logo.png" height="40px"></RouterLink>
-      <!-- Main links: below the bar on phones (order-3), beside the logo from sm up -->
-      <div v-if="auth.isAuthenticated" id="mainNav" ref="menu" class="collapse navbar-collapse order-3 order-sm-1">
+      <!-- Main links: in the hamburger menu below 768px (they don't fit on one row with the
+           bell and avatar until then), beside the logo from md up -->
+      <div v-if="auth.isAuthenticated" id="mainNav" ref="menu" class="collapse navbar-collapse order-3 order-md-1">
         <ul class="navbar-nav flex-wrap me-auto">
           <li v-for="item in navigationitems" :key="item.to" class="nav-item">
             <RouterLink class="nav-link" active-class="active" :to="item.to">{{ item.label }}</RouterLink>
@@ -145,7 +163,7 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
         </ul>
       </div>
 
-      <div class="d-flex align-items-center gap-2 ms-auto order-1 order-sm-2">
+      <div class="d-flex align-items-center gap-2 ms-auto order-1 order-md-2">
         <!-- Display policy notices and let the user clear each unread badge. -->
         <div v-if="auth.isAuthenticated" class="dropdown">
           <button
@@ -155,14 +173,14 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
             data-bs-toggle="dropdown"
             data-bs-auto-close="outside"
             aria-expanded="false"
-            aria-label="Notifications"
+            :aria-label="unreadCount ? `Notifications (${unreadCount} unread)` : 'Notifications'"
             @click="loadNotifications"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
               <path d="M10 21h4" />
             </svg>
-            <span class="unread-count" v-if="unreadCount">{{ unreadCount }}</span>
+            <span class="unread-count" v-if="unreadCount" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           <!-- (Carolyn) header with "Mark all read", icon per notice, dot for unread, ✕ to delete, "Clear all" -->
           <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
@@ -201,7 +219,7 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
               </div>
             </div>
             <div v-if="notifications.length" class="notification-foot">
-              <button type="button" class="head-link" @click="clearAll">Clear all</button>
+              <button type="button" class="head-link" :disabled="clearingNotifications" @click="confirmingClear = true">Clear all</button>
             </div>
           </div>
         </div>
@@ -213,7 +231,8 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
             aria-expanded="false"
           >
             <UserAvatar :user="auth.user" :size="34" />
-            <span class="d-none d-md-inline">{{ auth.user.userName }}</span>
+            <!-- username only from lg: between 768 and 991px the links need the room -->
+            <span class="d-none d-lg-inline">{{ auth.user.userName }}</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
             <li v-for="item in accountItems" :key="item.to">
@@ -244,6 +263,16 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
         <span class="navbar-toggler-icon"></span>
       </button>
     </div>
+  <ConfirmDialog
+    :open="confirmingClear"
+    title="Clear all notifications?"
+    message="This will delete all your notifications. This cannot be undone."
+    confirm-label="Clear all"
+    :busy="clearingNotifications"
+    busy-label="Clearing..."
+    @confirm="clearAll"
+    @cancel="confirmingClear = false"
+  />
   </nav>
 </template>
 
@@ -253,8 +282,8 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
   font-size: 0.75rem;
 }
 /* Keep the notification list readable in the compact navbar dropdown. */
-.notification-toggle { font-size: 1.35rem; line-height: 1; }
-.unread-count { position: absolute; top: 0; right: 0; min-width: 1.05rem; padding: 0.05rem 0.2rem; border-radius: 999px; background: #b42318; color: #fff; font-size: 0.65rem; font-weight: 700; }
+.notification-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; overflow: visible; font-size: 1.35rem; line-height: 1; }
+.unread-count { position: absolute; top: 1px; right: 1px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; border: 2px solid #fff; border-radius: 999px; background: #b42318; color: #fff; font-size: 0.6rem; line-height: 1; font-weight: 700; pointer-events: none; }
 /* (Carolyn) notification panel: fixed header/footer, list scrolls in between */
 .notification-menu { width: min(380px, calc(100vw - 1rem)); overflow: hidden; border: 1px solid #e2e8e2; border-radius: 16px; box-shadow: 0 14px 40px #10231b26; }
 .notification-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-bottom: 1px solid #e7ece7; }
@@ -280,7 +309,13 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
 .notification-item:hover .notice-remove, .notice-remove:focus-visible { opacity: 1; }
 .notification-item:hover .unread-dot { opacity: 0; }
 .notice-remove:hover { background: #e7ece7; color: #1f2d24; }
-@media (hover: none) { .notice-remove { opacity: 1; } .unread-dot { right: 2.2rem; } }
+/* Reserve space for both controls when delete is always visible on phones. */
+@media (hover: none), (max-width: 600px) {
+  .notification-item { padding-right: 3.25rem; }
+  .notice-remove { opacity: 1; }
+  .unread-dot { right: 2.2rem; }
+  .notification-item:hover .unread-dot { opacity: 1; }
+}
 .notification-empty { display: grid; justify-items: center; gap: 0.25rem; padding: 1.75rem 1rem; color: #68766b; }
 .notification-empty span { font-size: 1.6rem; }
 .notification-empty p { margin: 0; font-size: 0.9rem; }
@@ -293,4 +328,11 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
 }
 .notification-action { justify-self: start; padding: 0.3rem 0.55rem; border: 1px solid #34834c; border-radius: 6px; background: #fff; color: #245b34; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
 .notification-action:hover { background: #e7f3e9; }
+@media (max-width: 600px) {
+  .navbar > .container-fluid { column-gap: 0.375rem !important; padding-inline: 0.5rem; }
+  .navbar-brand { margin-right: 0; padding: 0; }
+  .navbar-brand img { height: 34px; width: auto; }
+  .navbar-toggler { width: 44px; min-height: 44px; padding: 0.375rem; }
+  .navbar-toggler-icon { width: 24px; height: 24px; }
+}
 </style>

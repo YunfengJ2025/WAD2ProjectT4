@@ -15,3 +15,12 @@ export function addCalendarDays(day, days) {
   const [year, month, date] = day.split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10)
 }
+
+// A make-up visit must be after today and after the original request period.
+export function makeupVisitDate(requestEndDate, now = new Date()) {
+  const tomorrow = addCalendarDays(singaporeDate(now), 1)
+  const afterRequest = requestEndDate
+    ? addCalendarDays(singaporeDate(requestEndDate), 1)
+    : tomorrow
+  return afterRequest > tomorrow ? afterRequest : tomorrow
+}
