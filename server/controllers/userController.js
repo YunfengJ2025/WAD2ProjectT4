@@ -142,16 +142,16 @@ exports.logout = (req, res) => {
   // Stateless JWT logout: the client must discard its access token.
   res.status(204).end();
 };
-exports.getMe = async (req, res) => {
+exports.getMe = (req, res) => {
   try {
     if (typeof syncUserBadges === "function") {
-      const updatedBadges = await syncUserBadges(req.user.userId || req.user._id);
-      if (updatedBadges) {
-        req.user.badges = updatedBadges;
-      }
+      // Fire-and-forget in the background without awaiting, so /user/me returns immediately (<50ms)
+      syncUserBadges(req.user.userId || req.user._id).catch((err) => {
+        console.error("Error auto-syncing badges in background:", err);
+      });
     }
   } catch (err) {
-    console.error("Error auto-syncing badges in getMe:", err);
+    console.error("Error triggering badge sync in getMe:", err);
   }
   res.json({ user: toAuthJSON(req.user) });
 };
