@@ -256,6 +256,7 @@ onMounted(() => {
     maxZoom: 18,
     maxBounds: SINGAPORE_MAP_BOUNDS,
     renderWorldCopies: false,
+    cooperativeGestures: window.matchMedia('(pointer: coarse)').matches,
     attributionControl: false, // we add our own below, with OneMap's required credit
   })
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
