@@ -309,7 +309,13 @@ watch(() => auth.accessToken, loadNotifications, { immediate: true })
 .notification-item:hover .notice-remove, .notice-remove:focus-visible { opacity: 1; }
 .notification-item:hover .unread-dot { opacity: 0; }
 .notice-remove:hover { background: #e7ece7; color: #1f2d24; }
-@media (hover: none) { .notice-remove { opacity: 1; } .unread-dot { right: 2.2rem; } }
+/* Reserve space for both controls when delete is always visible on phones. */
+@media (hover: none), (max-width: 600px) {
+  .notification-item { padding-right: 3.25rem; }
+  .notice-remove { opacity: 1; }
+  .unread-dot { right: 2.2rem; }
+  .notification-item:hover .unread-dot { opacity: 1; }
+}
 .notification-empty { display: grid; justify-items: center; gap: 0.25rem; padding: 1.75rem 1rem; color: #68766b; }
 .notification-empty span { font-size: 1.6rem; }
 .notification-empty p { margin: 0; font-size: 0.9rem; }

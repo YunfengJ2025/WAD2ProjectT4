@@ -48,7 +48,8 @@ LOCAL SETUP FROM THE SUBMITTED FILES
      CLOUDINARY_API_KEY=<your Cloudinary API key>
      CLOUDINARY_API_SECRET=<your Cloudinary API secret>
 
-   To enable OneMap address lookup, also set:
+   OneMap is REQUIRED: sign-up and profile edits check every postal code
+   with OneMap, so registration fails without these:
      ONEMAP_EMAIL=<your OneMap account email>
      ONEMAP_PASSWORD=<your OneMap account password>
 
@@ -98,10 +99,58 @@ Frontend lint and production build, from client:
   pnpm exec eslint src e2e
   pnpm build
 
+End-to-end (Playwright) browser tests, from client:
+  pnpm exec playwright install chromium    (first time only)
+  pnpm test:e2e                            (all browser tests)
+  pnpm test:e2e:care                       (care-request workflow tests)
+  pnpm exec playwright show-report         (view results after a run)
+
 Browser tests require additional setup and an isolated test database. They
 create records and some upload photos. Do not run them against the shared
-application database. See client/E2E_TESTING.md for
-accounts, local ports, browser installation and the care-workflow commands.
+application database. Before the first run, copy client/.env.e2e.example to
+client/.env.e2e.local and fill in two test accounts. See client/E2E_TESTING.md
+for accounts, local ports, browser installation and the care-workflow commands.
+
+EXTERNAL APIS
+-------------
+OneMap (Singapore Land Authority)
+  Checks that postal codes exist at sign-up and on profile edits, fills in the
+  block number, and turns addresses into map positions for Find Nearby and
+  the weather banner. Called from the server (server/utils/onemap.js).
+data.gov.sg real-time weather (NEA)
+  Rain forecasts and temperatures for the weather banner and for skipping or
+  adding waterings (client/src/composables/schedule/useWeather.js,
+  server/services/weatherSkip.js).
+Plant.id (Kindwise)
+  Optional plant health checks on visit proof photos
+  (server/services/plantHealth.js); demo responses unless PLANT_HEALTH_MODE=live.
+Cloudinary
+  Stores plant, profile, post and visit proof photos (server/config/cloudinary.js).
+
+AI/LLM USAGE
+------------
+This declaration covers AI/LLM use on behalf of the whole project group.
+
+Tools:
+- Claude (Anthropic), used through Claude Code in VS Code.
+- Codex (OpenAI), used as an AI coding assistant for this project.
+
+Lower-order tasks (allowed uses):
+- Explaining errors and debugging hints: git merge conflicts and a rejected
+  push, a failing route test, API paths returning 404 after a merge, and CSS
+  layout bugs (flexbox/grid items overflowing, a sticky footer being pushed
+  off-screen, the leaderboard crown being clipped).
+- Deployment guidance: comparing hosting options for the Express backend,
+  environment variables, and the order to redeploy backend and frontend.
+- Layout and UI/UX suggestions, with the CSS for responsive fixes: bottom-sheet
+  pop-ups on phones (care visit and care request details), the profile tab
+  grid, navbar breakpoint, add-plant form and live-preview layout, the
+  "Add your first plant" empty state, and profile/schedule spacing.
+- Minor responsive styling fixes: care visit detail cards, participant names
+  and ratings, touch targets, and notification badge/dot spacing on phones.
+- Documentation support: improving the wording, clarity and formatting of
+  the README and setup instructions.
+- Reviewing the project against the briefing's requirements and rubric.
 
 PROJECT STRUCTURE AND FURTHER GUIDES
 ----------------------------------
