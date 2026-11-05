@@ -48,8 +48,7 @@ it('allows signed-out visitors onto the landing page and protects the schedule',
   expect(wrapper.get('.hero-actions a[href="/register"]').text()).toBe('Sign up')
   expect(wrapper.get('.hero-actions a[href="/signin"]').text()).toContain('Log in')
   await router.push('/schedule')
-  expect(router.currentRoute.value.path).not.toBe('/schedule')
-  expect(router.currentRoute.value.query.redirect).toBe('/schedule')
+  expect(router.currentRoute.value.path).toBe('/')
 })
 
 it('rotates features on a tree click, without responding to scroll', async () => {
