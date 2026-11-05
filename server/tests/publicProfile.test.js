@@ -32,7 +32,8 @@ test("public profile HTTP endpoint", async (t) => {
     const response = await fetch(`${endpoint}/7/profile`);
     assert.equal(response.status, 200);
     const profile = await response.json();
-    assert.deepEqual(Object.keys(profile.user).sort(), ["bio", "createdAt", "photoUrl", "userId", "userName"]);
+    // Fix: badges are now shown on public profiles on purpose, so they are an allowed public field
+    assert.deepEqual(Object.keys(profile.user).sort(), ["badges", "bio", "createdAt", "photoUrl", "userId", "userName"]);
     assert.equal(profile.averageRating, 4.5);
     assert.equal(profile.reviewCount, 2);
     assert.ok(profile.reviews.every((review) => review.type === "VISIT"));

@@ -1,6 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import CareRequestsView from './CareRequestsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -19,10 +20,15 @@ it('creates one request with separate care details for each selected plant', asy
   const auth = useAuthStore(pinia)
   auth.user = { userId: 1, userName: 'Gardener', tokenBalance: 20, availableTokenBalance: 20 }
 
+  // Fix: the visit planner needs each plant's watering schedule (and outdoor plants only),
+  // so the sample plants now include wateringInfo and isOutdoor
   const plants = [
-    { plantId: 11, plantName: 'Fern', plantLocation: 'Balcony', photoUrl: '' },
-    { plantId: 12, plantName: 'Pothos', plantLocation: 'Kitchen', photoUrl: '' },
+    { plantId: 11, plantName: 'Fern', plantLocation: 'Balcony', photoUrl: '', isOutdoor: true, wateringInfo: { frequencyDays: 1, amountMl: 120 } },
+    { plantId: 12, plantName: 'Pothos', plantLocation: 'Kitchen', photoUrl: '', isOutdoor: true, wateringInfo: { frequencyDays: 1, amountMl: 250 } },
   ]
+  // Fix: dates were fixed (3-4 Nov 2026) and became past dates, which the form no longer allows
+  const startDate = dayFromToday(1)
+  const endDate = dayFromToday(2)
   let requests = []
   let createdRequest
   vi.stubGlobal('fetch', vi.fn(async (url, options = {}) => {
@@ -37,7 +43,14 @@ it('creates one request with separate care details for each selected plant', asy
     throw new Error(`Unexpected request: ${url}`)
   }))
 
-  wrapper = mount(CareRequestsView, { global: { plugins: [pinia] } })
+  // Fix: the page now reads route.query.requestId (to focus a request from a notification),
+  // so it must be mounted with a router; without one, useRoute() is undefined and the page crashes.
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/requests', component: CareRequestsView }],
+  })
+  await router.push('/requests')
+  wrapper = mount(CareRequestsView, { global: { plugins: [pinia, router] } })
   await flushPromises()
 
   const plantCards = wrapper.findAll('.plant-option')
@@ -51,8 +64,8 @@ it('creates one request with separate care details for each selected plant', asy
   await plantNotes[0].setValue('Keep the soil lightly damp')
   await plantNotes[1].setValue('Avoid direct sun')
   const dates = wrapper.findAll('input[type="date"]')
-  await dates[0].setValue('2026-11-03')
-  await dates[1].setValue('2026-11-04')
+  await dates[0].setValue(startDate)
+  await dates[1].setValue(endDate)
   const numberInputs = wrapper.findAll('input[type="number"]')
   await numberInputs[2].setValue('2')
   await wrapper.get('input[name="waterSource"][value="left_out"]').setValue(true)
@@ -70,6 +83,13 @@ it('creates one request with separate care details for each selected plant', asy
   expect(wrapper.text()).toContain('Fern')
   expect(wrapper.text()).toContain('Pothos')
 })
+
+// "YYYY-MM-DD" for today + n days (local time, like the date inputs)
+function dayFromToday(n) {
+  const day = new Date()
+  day.setDate(day.getDate() + n)
+  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+}
 
 function response(body) {
   return { ok: true, status: 200, json: async () => body }

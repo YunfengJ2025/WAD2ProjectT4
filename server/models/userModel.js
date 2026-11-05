@@ -518,7 +518,58 @@ function toAuthJSON(user) {
   };
 }
 
+// Deletes the signed-in user's account after checking their password.
+// Blocked while they still have active care requests or accepted sits, so no owner or
+// sitter is left waiting. Their plants, posts, notifications and photos are removed;
+// shared history (past visits, reviews) stays and shows them as "User #id".
+async function deleteAccount(userId, password) {
+  if (typeof password !== "string" || !password) {
+    throw httpError(400, "Enter your password to delete your account");
+  }
+  const user = await User.findOne({ userId }).select("+passwordHash +photoPublicId");
+  if (!user) throw httpError(404, "Account not found");
+  if (!(await bcrypt.compare(password, user.passwordHash))) {
+    // 400, not 401: the app signs you out on any 401, and a typo shouldn't do that
+    throw httpError(400, "Wrong password");
+  }
+
+  // Loaded here (not at the top) to avoid circular requires between models
+  const CareRequest = require("./careRequestModel");
+  const CareVisit = require("./careVisitModel");
+  const activeRequests = await CareRequest.countDocuments({
+    ownerId: userId,
+    status: { $in: ["funding", "open", "in_progress"] },
+  });
+  if (activeRequests) {
+    throw httpError(409, `You still have ${activeRequests} active care request${activeRequests === 1 ? "" : "s"}. Cancel or finish ${activeRequests === 1 ? "it" : "them"} first.`);
+  }
+  const acceptedSits = await CareVisit.countDocuments({ sitterId: userId, status: "accepted" });
+  if (acceptedSits) {
+    throw httpError(409, `You still have ${acceptedSits} accepted sit${acceptedSits === 1 ? "" : "s"}. Complete or opt out of ${acceptedSits === 1 ? "it" : "them"} first.`);
+  }
+
+  // Plants and their photos
+  const { Plant } = require("./plantModel");
+  const plants = await Plant.find({ ownerId: userId });
+  for (const plant of plants) {
+    await plant.deleteOne();
+    await deleteImage(plant.photoPublicId);
+  }
+  // Their posts (deletePost also removes the comments and likes on each post)
+  const { Post, deletePost } = require("./postModel");
+  const posts = await Post.find({ creatorId: userId }).select("postId");
+  for (const post of posts) await deletePost(post.postId, userId);
+  // Notifications
+  const Notification = require("./notificationModel");
+  await Notification.deleteMany({ userId });
+
+  // Finally the account and its profile photo
+  await user.deleteOne();
+  await deleteImage(user.photoPublicId);
+}
+
 module.exports = {
+  deleteAccount,
   tokenSummary,
   reserveTokens,
   releaseTokens,

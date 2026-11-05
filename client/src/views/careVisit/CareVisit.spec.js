@@ -4,6 +4,10 @@ import { afterEach, expect, it, vi } from 'vitest'
 import CareVisitsView from './CareVisitsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
+// Fix: rewritten for the current visit flow. The old test typed an "action" per plant into
+// .plant-care-card inputs, which no longer exist. Now the sitter opens the visit with
+// "Start visit", ticks every care step, adds one photo per plant and submits (only on the visit day).
+
 let wrapper
 
 afterEach(() => {
@@ -12,7 +16,7 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
-it('accepts a visit and submits one proof photo for each plant', async () => {
+it('accepts a visit, ticks every care step and submits one proof photo for each plant', async () => {
   sessionStorage.setItem('leaf-access-token', 'sitter-token')
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -46,27 +50,52 @@ it('accepts a visit and submits one proof photo for each plant', async () => {
     throw new Error(`Unexpected request: ${url}`)
   }))
 
-  wrapper = mount(CareVisitsView, { global: { plugins: [pinia] } })
+  // teleport stub keeps the visit pop-up inside the wrapper so find() can see it
+  wrapper = mount(CareVisitsView, {
+    global: { plugins: [pinia], stubs: { teleport: true, RouterLink: true } },
+  })
   await flushPromises()
-  await wrapper.get('button').trigger('click')
+
+  // 1. Accept the open visit
+  await wrapper.get('.available-list button').trigger('click')
   await flushPromises()
   expect(wrapper.text()).toContain('You accepted the visit for 2 plants.')
-  expect(wrapper.findAll('.plant-care-card')).toHaveLength(2)
 
-  const actionInputs = wrapper.findAll('.plant-care-card input:not([type="file"])')
-  await actionInputs[0].setValue('Watered Fern')
-  await actionInputs[1].setValue('Watered Pothos')
-  const photoInputs = wrapper.findAll('.plant-care-card input[type="file"]')
+  // 2. Open it from My Sits (the visit is today, so the button says "Start visit")
+  const startButton = wrapper.findAll('button').find((button) => button.text() === 'Start visit')
+  expect(startButton).toBeTruthy()
+  await startButton.trigger('click')
+  await flushPromises()
+
+  // 3. Tick every care step (Fern has 2 steps, Pothos has 1)
+  // (find the boxes again each time: ticking one re-renders the list, so old references go stale)
+  const boxCount = wrapper.findAll('input[type="checkbox"]').length
+  expect(boxCount).toBe(3)
+  for (let i = 0; i < boxCount; i++) {
+    await wrapper.findAll('input[type="checkbox"]')[i].setValue(true)
+  }
+
+  // 4. Add one photo per plant
+  const photoInputs = wrapper.findAll('input[type="file"]')
+  expect(photoInputs).toHaveLength(2)
   const fernPhoto = new File(['fern'], 'fern.jpg', { type: 'image/jpeg' })
   const pothosPhoto = new File(['pothos'], 'pothos.jpg', { type: 'image/jpeg' })
   Object.defineProperty(photoInputs[0].element, 'files', { value: [fernPhoto] })
   Object.defineProperty(photoInputs[1].element, 'files', { value: [pothosPhoto] })
   await photoInputs[0].trigger('change')
   await photoInputs[1].trigger('change')
-  await wrapper.get('.visit-form').trigger('submit')
   await flushPromises()
 
-  expect(JSON.parse(submittedProof.get('actions'))).toEqual({ 11: 'Watered Fern', 12: 'Watered Pothos' })
+  // 5. Submit is enabled now; send the proof
+  const submitButton = wrapper.get('button[type="submit"]')
+  expect(submitButton.attributes('disabled')).toBeUndefined()
+  await wrapper.get('form').trigger('submit')
+  await flushPromises()
+
+  expect(JSON.parse(submittedProof.get('completedSteps'))).toEqual({
+    11: ['Water the soil', 'Check the leaves'],
+    12: ['Wipe the leaves'],
+  })
   expect(submittedProof.get('photo_11').name).toBe('fern.jpg')
   expect(submittedProof.get('photo_12').name).toBe('pothos.jpg')
   expect(wrapper.text()).toContain('Visit #101 saved with photo proof.')
@@ -77,7 +106,8 @@ function makeVisit(status) {
   return {
     visitId: 101,
     requestId: 50,
-    visitDate: '2026-11-03T04:00:00.000Z',
+    // today, so the visit can be completed (proof is only allowed on the visit day)
+    visitDate: new Date().toISOString(),
     status,
     request: { tokenReward: 3, waterSource: 'left_out', note: 'Thank you!' },
     plants: [
@@ -85,8 +115,20 @@ function makeVisit(status) {
       { plantId: 12, plantName: 'Pothos', photoUrl: '' },
     ],
     items: [
-      { plantId: 11, amountToWater: 120, plant: { plantId: 11, plantName: 'Fern' } },
-      { plantId: 12, amountToWater: 250, plant: { plantId: 12, plantName: 'Pothos' } },
+      {
+        requestItemId: 1,
+        plantId: 11,
+        amountToWater: 120,
+        careInstructions: 'Water the soil\nCheck the leaves',
+        plant: { plantId: 11, plantName: 'Fern' },
+      },
+      {
+        requestItemId: 2,
+        plantId: 12,
+        amountToWater: 250,
+        careInstructions: 'Wipe the leaves',
+        plant: { plantId: 12, plantName: 'Pothos' },
+      },
     ],
   }
 }
