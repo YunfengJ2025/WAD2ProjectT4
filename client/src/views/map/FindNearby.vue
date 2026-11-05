@@ -105,16 +105,21 @@ const filteredRequests = computed(() => {
     .sort((a, b) => a.distanceKm - b.distanceKm)
 })
 
+// "See all" starts with no date, so every request shows. The date picked on
+// Find nearby is remembered and put back when the user returns (not reset to today).
+let nearbyDate = todayYmd
 function toggleView() {
-  const returningToDate = showAll.value
+  if (!showAll.value) {
+    nearbyDate = selectedDate.value
+    selectedDate.value = ''
+  } else {
+    selectedDate.value = nearbyDate
+  }
   showAll.value = !showAll.value
   pinSelected.value = null
   activeGroupKey.value = ''
   acceptedNote.value = ''
   searchCenter.value = null
-  radiusKm.value = 1
-  selectedDate.value = returningToDate
-    ? singaporeDate(new Date()) : ''
 }
 
 function resetOverview() {
@@ -307,7 +312,9 @@ async function acceptVisit(visit) {
   -->
   <div class="d-flex flex-column flex-md-row flex-wrap gap-4 my-3">
     <!-- text and slider stay side by side at every screen size; the slider shrinks when space runs out -->
-    <label v-if="!showAll || searchCenter" class="distanceLabel">
+    <!-- Always shown, so switching views doesn't make the map jump up and down.
+         In "See all" with no pin there's no distance to set yet, so the slider is disabled. -->
+    <label class="distanceLabel" :class="{ isDisabled: showAll && !searchCenter }">
       <span class="distanceText">Distance: {{ formatDistance(radiusKm) }}</span>
       <span
         class="sliderWrap"
@@ -322,6 +329,8 @@ async function acceptVisit(visit) {
           :max="sliderMax"
           step="0.1"
           v-model.number="radiusKm"
+          :disabled="showAll && !searchCenter"
+          :title="showAll && !searchCenter ? 'Tap the map to drop a pin first' : ''"
           @pointerdown="sliding = true"
           @pointercancel="stopSliding"
         />
@@ -348,7 +357,8 @@ async function acceptVisit(visit) {
     </button>
   </div>
 
-  <p v-if="showAll && !searchCenter">Click the map to search within 1 km of a new pin.</p>
+  <!-- Shown in both views (tapping the map works in both), so the layout never shifts -->
+  <p class="mapHint">Tap the map to search around a different spot in Singapore.</p>
   <!-- Use the same indicator for nearby and island-wide request searches. -->
   <Loading v-if="loading" label="Finding plants near you…" />
 
@@ -680,6 +690,18 @@ h1 {
   display: flex;
   align-items: flex-end; /* the slider has bubble space above it, so line the text up with the track instead of the top */
   gap: 0.75rem;
+}
+/* "See all" with no pin yet: slider greyed out but still taking its space */
+.distanceLabel.isDisabled {
+  opacity: 0.45;
+}
+.distanceLabel.isDisabled .plantSlider {
+  cursor: not-allowed;
+}
+.mapHint {
+  margin: 0 0 0.75rem;
+  color: var(--muted, #68766b);
+  font-size: 0.9rem;
 }
 
 .distanceText {

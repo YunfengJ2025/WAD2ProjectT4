@@ -177,7 +177,7 @@ describe('Find nearby', () => {
 })
 
 describe('Find requests', () => {
-  it('keeps all visits in a date-matching request and restores today when returning nearby', async () => {
+  it('keeps all visits in a date-matching request and restores the Find nearby date when returning', async () => {
     const nationwideVisits = [
       visit,
       { ...visit, visitId: 2, date: tomorrow, visitDate: tomorrow },
@@ -211,9 +211,20 @@ describe('Find requests', () => {
     expect(wrapper.get('h1').text()).toBe('Find requests')
     expect(wrapper.findAll('.requestCard')).toHaveLength(2)
 
+    // Switching back restores the date that was picked on Find nearby (today here)
     await wrapper.get('.allRequests').trigger('click')
     expect(wrapper.get('h1').text()).toBe('Find nearby')
     expect(wrapper.get('input[type=date]').element.value).toBe(today)
+  })
+
+  it('remembers a non-today date picked on Find nearby', async () => {
+    const wrapper = panel()
+    await flushPromises()
+    await wrapper.get('input[type=date]').setValue(tomorrow)
+    await all(wrapper)
+    expect(wrapper.get('input[type=date]').element.value).toBe('') // See all: every date
+    await wrapper.get('.allRequests').trigger('click')
+    expect(wrapper.get('input[type=date]').element.value).toBe(tomorrow)
   })
 
   it('loads nationwide groups with one map pin per postal code', async () => {
@@ -227,8 +238,10 @@ describe('Find requests', () => {
     await all(wrapper)
     expect(request).toHaveBeenCalledWith('/find-nearby?all=1')
     expect(wrapper.get('h1').text()).toBe('Find requests')
+    // See all shows every date; the slider stays in place (disabled until a pin
+    // is dropped) so the layout doesn't jump
     expect(wrapper.get('input[type=date]').element.value).toBe('')
-    expect(wrapper.find('input[type=range]').exists()).toBe(false)
+    expect(wrapper.get('input[type=range]').element.disabled).toBe(true)
     expect(wrapper.findAll('.requestCard')).toHaveLength(2)
     expect(wrapper.text()).toContain('2 days open')
     expect(mapPins(wrapper)).toHaveLength(2)

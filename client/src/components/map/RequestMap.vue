@@ -5,6 +5,8 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import 'maplibre-gl/dist/maplibre-gl.css'
 import plantPin from '@/assets/plant.png'
 import homePin from '@/assets/home.png'
+import { useToast } from '@/composables/useToast'
+import { isWithinSingapore, SINGAPORE_MAP_BOUNDS } from '@/utils/mapBoundary'
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl) // must run before any map is created
 
@@ -18,12 +20,15 @@ const props = defineProps({
   selected: { type: Object, default: null },
 })
 const emit = defineEmits(['select', 'drop-pin', 'select-home', 'reset-overview'])
+const { show: toast } = useToast()
 
 const mapEl = ref(null)
 let map = null
 let ready = false // true once the style and layers have loaded
 let plantMarkers = []
 let searchMarker = null
+let resizeObserver = null
+let singaporeAreas = null
 
 
 const RADIUS_COLOR = '#2563eb' // blue, like your original; change to taste
@@ -195,15 +200,29 @@ function updateSearchArea() {
     pinElement.addEventListener('click', (event) => event.stopPropagation())
     searchMarker.on('dragend', () => {
       const { lat, lng } = searchMarker.getLngLat()
-      emit('drop-pin', { lat, lng })
+      if (!placeSearchPin({ lat, lng })) {
+        // Invalid drags leave the last valid search and its results unchanged.
+        searchMarker.setLngLat([props.searchPin.lng, props.searchPin.lat])
+      }
     })
   }
   animateRadius(props.radiusKm)
   if (props.overview) {
-    map.fitBounds([[103.59, 1.16], [104.1, 1.48]], { padding: 40, pitch: 0, bearing: 0, duration: reduceMotion ? 0 : 1500 })
+    fitOverview(reduceMotion ? 0 : 1500)
   } else {
     map.flyTo({ center: [props.center.lng, props.center.lat], ...NEIGHBOURHOOD, duration: reduceMotion ? 0 : 1800 })
   }
+}
+
+function fitOverview(duration = 0) {
+  map.fitBounds([[103.59, 1.16], [104.1, 1.48]], {
+    padding: mapEl.value.clientWidth < 600
+      ? { top: 64, bottom: 24, left: 24, right: 48 }
+      : 40,
+    pitch: 0,
+    bearing: 0,
+    duration,
+  })
 }
 
 function showAllRequests() {
@@ -212,29 +231,54 @@ function showAllRequests() {
   if (props.overview) updateSearchArea()
 }
 
+function placeSearchPin(point) {
+  if (!singaporeAreas) {
+    toast('Singapore boundary is unavailable. Please reload the map and try again.', 'info')
+    return false
+  }
+  if (!isWithinSingapore(point, singaporeAreas)) {
+    toast('Choose a location within Singapore.', 'info')
+    return false
+  }
+  emit('drop-pin', point)
+  return true
+}
+
 onMounted(() => {
   map = new maplibregl.Map({
     container: mapEl.value,
     style: mapStyle,
     center: [103.8198, 1.3521], // start on the whole island
-    zoom: 6,
-    pitch: 55,
-    bearing: -15,
+    zoom: 10,
+    pitch: 0,
+    bearing: 0,
     minZoom: 8.5,
     maxZoom: 18,
+    maxBounds: SINGAPORE_MAP_BOUNDS,
+    renderWorldCopies: false,
     attributionControl: false, // we add our own below, with OneMap's required credit
   })
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: ATTRIBUTION }))
 
+  // Flex layouts and phone rotation can resize the canvas without a window resize.
+  resizeObserver = new ResizeObserver(() => {
+    map.resize()
+    if (ready && props.overview && !props.selected) fitOverview()
+  })
+  resizeObserver.observe(mapEl.value)
+
   map.on('click', (event) => {
-    emit('drop-pin', { lat: event.lngLat.lat, lng: event.lngLat.lng })
+    placeSearchPin({ lat: event.lngLat.lat, lng: event.lngLat.lng })
   })
 
   map.on('load', async () => {
     // 3D island: the planning areas extruded upwards, shrinking to flat as you zoom in
     try {
-      const areas = await (await fetch('/sg-areas.json')).json()
+      const response = await fetch('/sg-areas.json')
+      if (!response.ok) throw new Error('Could not load Singapore boundary')
+      const areas = await response.json()
+      singaporeAreas = areas
       map.addSource('areas', { type: 'geojson', data: areas })
       map.addLayer({
         id: 'areas-3d',
@@ -329,6 +373,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
   cancelAnimationFrame(rippleId)
   cancelAnimationFrame(tweenId)
   map?.remove()
