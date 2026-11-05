@@ -1,4 +1,5 @@
 <script setup>
+// Component: shows a compact visit-history summary and a detailed proof/reward pop-up.
 import plantPlaceholder from '@/assets/plant.png'
 import { computed, ref } from 'vue'
 import { getRequestSteps } from '@/utils/careSteps'
@@ -10,6 +11,7 @@ const props = defineProps({
   paid: { type: Boolean, default: false },
   busy: { type: Boolean, default: false },
 })
+// Normalize visits from both multi-plant and older single-plant responses.
 const plants = computed(() => props.visit.plants?.length ? props.visit.plants : (props.visit.plant ? [props.visit.plant] : []))
 const emit = defineEmits(['claim-reward'])
 const detailsOpen = ref(false)

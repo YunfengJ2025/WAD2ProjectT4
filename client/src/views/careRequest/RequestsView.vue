@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router'
 import CareRequestsView from './CareRequestsView.vue'
 
 const route = useRoute()
+// Use the query tab to switch between the request form and the owner's list.
 const creating = computed(() => ['new', 'care'].includes(route.query.tab))
 </script>
 

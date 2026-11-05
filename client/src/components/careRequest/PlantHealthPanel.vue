@@ -14,6 +14,7 @@ const emit = defineEmits(['seen'])
 const VISIBLE = 4 // rows shown before "Show more"
 const showAll = ref(false)
 
+// Use the health-check result to sort and count plants that need attention.
 const isSick = (entry) => entry.check.isHealthy === false
 
 // The newest finished result for each plant, plus the request and visit it came from.
@@ -44,12 +45,15 @@ const entries = computed(() => {
   )
 })
 
+// Limit the panel to a few rows until the owner asks to see all results.
 const visibleEntries = computed(() => (showAll.value ? entries.value : entries.value.slice(0, VISIBLE)))
 const issueCount = computed(() => entries.value.filter(isSick).length)
 const newCount = computed(() => entries.value.filter((entry) => isSick(entry) && !entry.check.ownerSeenAt).length)
 const hasMock = computed(() => entries.value.some((entry) => entry.check.provider === 'mock'))
 
+// Convert API probabilities into a compact percentage for the advice dialog.
 const percent = (value) => (typeof value === 'number' ? `${Math.round(value * 100)}%` : '')
+// Format health-check timestamps using the app's Singapore date convention.
 function shortDate(value) {
   return new Date(value).toLocaleDateString('en-SG', {
     weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Singapore',
@@ -71,6 +75,7 @@ const otherIssues = computed(() => (selected.value?.check.issues ?? []).slice(1)
 // only offer the tabs that actually have advice
 const tabs = computed(() => TABS.filter(({ key }) => issue.value?.treatment?.[key]?.length))
 
+// Select a result, open its available advice tab, and mark it seen through the parent.
 function openAdvice(entry) {
   selected.value = entry
   tab.value = (entry.check.issues?.[0] && TABS.find(({ key }) => entry.check.issues[0].treatment?.[key]?.length)?.key) || ''
@@ -89,6 +94,7 @@ watch(
   { flush: 'post' },
 )
 
+// Close the native dialog only when the user clicks its backdrop.
 function onBackdropClick(event) {
   if (event.target === dialog.value) selected.value = null
 }

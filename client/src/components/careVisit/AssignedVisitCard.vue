@@ -1,4 +1,5 @@
 <script setup>
+// Component: summarizes an accepted visit and collects required care steps, notes, and proof photos.
 import { computed, reactive, ref } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
 // Care checklist (Carolyn): same helper as the owner's plant page, so both split
@@ -26,6 +27,7 @@ const actions = reactive({})
 const photos = reactive({})
 const error = ref('')
 const detailsOpen = ref(false)
+// Normalize the visit's plant items, including the older one-plant response shape.
 const items = props.visit.items?.length
   ? props.visit.items
   : (props.visit.plants || [props.visit.plant]).filter(Boolean).map((plant) => ({ plant }))
@@ -73,6 +75,7 @@ const mapsUrl = computed(() => {
 })
 const tokens = props.visit.request?.tokenReward // may be missing on old visits
 
+// Convert timestamps to YYYY-MM-DD in Singapore time for visit-day checks.
 function singaporeDate(value) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Singapore',
@@ -84,6 +87,7 @@ function singaporeDate(value) {
   return `${dateParts.year}-${dateParts.month}-${dateParts.day}`
 }
 
+// Format the private owner address returned for the sitter's accepted visit.
 function ownerAddress(owner) {
   if (!owner) return ''
   const building = owner.block ? `Blk ${owner.block}` : ''
@@ -108,8 +112,7 @@ const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2 MB, same limit as the server
 const photoErrors = reactive({}) // e.g. { 5: 'Photo must be 2 MB or smaller' }
 const previews = reactive({}) // e.g. { 5: 'data:image/jpeg;base64,…' } for the <img>
 
-// Same photos object and field names as before; a bad file is rejected and the
-// previous photo (if any) is kept
+// Validate one selected image, keep its preview, and report issues for that plant.
 function choosePhoto(event, plantId) {
   const file = event.target.files[0]
   delete photoErrors[plantId]
@@ -147,6 +150,7 @@ const readyToSubmit = computed(
   () => canCompleteToday.value && allStepsTicked.value && allPhotosAdded.value,
 )
 
+// Validate visit-day eligibility and per-plant requirements before emitting proof data.
 function submit() {
   error.value = ''
   if (!canCompleteToday.value) {

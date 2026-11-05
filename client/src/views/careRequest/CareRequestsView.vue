@@ -1,4 +1,5 @@
 <script setup>
+// View: loads the owner's plants and requests, and coordinates create/cancel/make-up actions.
 import Loading from '@/components/Loading.vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -40,6 +41,7 @@ async function focusRequestedCard() {
 
 watch(() => route.query.requestId, focusRequestedCard)
 
+// Refresh the owner's plant data and request list from the stores/API.
 async function load() {
   loading.value = true
   error.value = ''
@@ -57,6 +59,7 @@ async function load() {
 
 onMounted(load)
 
+// Post the form payload, show feedback, and reload the newly created request.
 async function createRequest(requestDetails) {
   saving.value = true
   error.value = ''
@@ -77,6 +80,7 @@ async function createRequest(requestDetails) {
   }
 }
 
+// Cancel an eligible request and refresh its status and token balance.
 async function cancelRequest(request) {
   cancellingRequestId.value = request.requestId
   error.value = ''
@@ -101,6 +105,7 @@ function singaporeDateString(value) {
   return `${date.year}-${date.month}-${date.day}`
 }
 
+// Add whole calendar days to an ISO date without local timezone shifts.
 function addCalendarDays(value, days) {
   const [year, month, day] = value.split('-').map(Number)
   const result = new Date(Date.UTC(year, month - 1, day + days))
@@ -140,6 +145,7 @@ const GROUPS = [
 const filter = ref('active')
 
 // anything that is not finished or cancelled counts as active (funding, open, in progress)
+// Map backend statuses into the three owner-facing filter groups.
 const groupOf = (request) => (['completed', 'cancelled'].includes(request.status) ? request.status : 'active')
 const groups = computed(() =>
   GROUPS.map((group) => ({ ...group, requests: owned.value.filter((request) => groupOf(request) === group.key) })),

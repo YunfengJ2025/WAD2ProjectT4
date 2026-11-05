@@ -7,9 +7,12 @@ const { reserveTokens, releaseTokens } = require("../models/userModel");
 const { planVisits } = require("../services/visitPlan");
 const { enrichVisits } = require("./careVisitController");
 
+// Create an error carrying the HTTP status expected by the response handler.
 const fail = (status, message) => Object.assign(new Error(message), { status });
+// Parse a date-only value at midnight in Singapore time.
 const dateInSingapore = (value) => new Date(`${value}T00:00:00+08:00`);
 
+// Convert controller errors into consistent client responses.
 function handleError(err, res) {
   if (err.status) return res.status(err.status).json({ message: err.message });
   // A sparse unique link prevents owners from duplicating make-up requests.
@@ -128,6 +131,7 @@ async function createCareRequest(ownerId, body, makeupForVisitId) {
   return { request: { ...request.toObject(), plants } };
 }
 
+// Handle the owner's create-request endpoint and return the new request.
 exports.create = async (req, res) => {
   try {
 
@@ -138,6 +142,7 @@ exports.create = async (req, res) => {
 };
 exports.createCareRequest = createCareRequest;
 
+// Return the signed-in owner's requests with visits, plants, and health checks attached.
 exports.mine = async (req, res) => {
   try {
     const requests = await CareRequest.find({ ownerId: req.userId })
@@ -209,6 +214,7 @@ exports.markHealthSeen = async (req, res) => {
   }
 };
 
+// Cancel an unclaimed request, its open visits, and the tokens reserved for them.
 exports.cancel = async (req, res) => {
   try {
     const requestId = Number(req.params.requestId);
