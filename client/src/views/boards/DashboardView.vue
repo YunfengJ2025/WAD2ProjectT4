@@ -97,6 +97,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { apiUrl } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import InteractiveBarChart from '../../components/dashboard/InteractiveBarChart.vue'
 import BadgeCard from '../../components/dashboard/BadgeCard.vue'
@@ -135,15 +136,15 @@ const timeOfDay = computed(() => {
 // Fetch user stats, badges, and 6-month chart datasets
 async function fetchDashboard() {
   try {
-    const leadRes = await axios.get('http://localhost:8000/api/leaderboard')
+    const leadRes = await axios.get(apiUrl('/api/leaderboard'))
     const activeUserId = auth.user?.userId || auth.user?.id || (leadRes.data?.leaderboard?.[0]?.id)
     if (activeUserId) {
-      const statsRes = await axios.get(`http://localhost:8000/api/dashboard/stats/${activeUserId}`)
+      const statsRes = await axios.get(apiUrl(`/api/dashboard/stats/${activeUserId}`))
       userData.value = statsRes.data.user
       stats.value = statsRes.data.stats
       badges.value = statsRes.data.badges
 
-      const chartRes = await axios.get(`http://localhost:8000/api/dashboard/charts/${activeUserId}`)
+      const chartRes = await axios.get(apiUrl(`/api/dashboard/charts/${activeUserId}`))
       activityChartData.value = chartRes.data.activityChart
       tokenChartData.value = chartRes.data.tokenFlowChart
     }
@@ -391,11 +392,15 @@ onMounted(() => {
 
 .section-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: space-between;
   align-items: center;
 }
 
 .section-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--color-primary-900);

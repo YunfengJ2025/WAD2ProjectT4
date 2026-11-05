@@ -1,4 +1,20 @@
-# Community and Profile API configuration
+# Frontend deployment and API configuration
+
+## Vercel
+
+Import `YunfengJ2025/WAD2ProjectT4` into Vercel and set **Root Directory** to
+`client`. Use the Vite preset, `npm run build` as the build command, and `dist`
+as the output directory. The checked-in `vercel.json` supplies these build
+settings and serves `index.html` for Vue Router routes opened directly.
+
+Alternatively, run `npx vercel login`, then `npx vercel --prod` from `client`.
+Keep the CLI project root as `./` when deploying from that directory.
+
+The frontend can be deployed before the backend. Until a hosted backend is
+available, the landing page and frontend assets work, but sign-in and API-backed
+features cannot load data. Once the backend is hosted, add
+`VITE_API_BASE_URL=https://your-backend.example.com` in Vercel's project
+environment variables and redeploy. Do not put backend secrets in Vite variables.
 
 ## Local development
 
@@ -30,4 +46,4 @@ Configure the frontend host to serve index.html for client-side routes too.
 - Inspect Network requests: URLs should use the deployed origin, never localhost.
 
 Changing the base URL affects every caller of the shared helper, including auth.
-Hardcoded calls elsewhere in the app are outside this initial Community/Profile pass.
+Dashboard and Leaderboard also use the shared API URL configuration.
