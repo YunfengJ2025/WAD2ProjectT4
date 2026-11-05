@@ -2,6 +2,7 @@
 // Component: shows a compact visit-history summary and a detailed proof/reward pop-up.
 import plantPlaceholder from '@/assets/plant.png'
 import { computed, ref } from 'vue'
+import { useScrollLock } from '@/composables/useScrollLock'
 import { getRequestSteps } from '@/utils/careSteps'
 // (Carolyn) Fix 5: shared date / token / status wording for all visit cards.
 // formatLongDate = "Tue, 10 Nov 2026" in Singapore time (no meaningless 08:00:00)
@@ -15,6 +16,7 @@ const props = defineProps({
 const plants = computed(() => props.visit.plants?.length ? props.visit.plants : (props.visit.plant ? [props.visit.plant] : []))
 const emit = defineEmits(['claim-reward'])
 const detailsOpen = ref(false)
+useScrollLock(detailsOpen) // the page behind the pop-up can't scroll while it's open
 
 // (Carolyn) Fix 4: pop-up summary
 const plantNames = computed(
@@ -206,4 +208,6 @@ a { white-space: normal; }
   .card-actions button { min-height: 44px; }
   .details-modal { max-height: calc(100dvh - 2rem); }
 }
+/* Scrolling inside the pop-up never spills over to the page behind (needed on iPhones too) */
+.modal-backdrop, .modal-backdrop [role="dialog"] { overscroll-behavior: contain; }
 </style>
