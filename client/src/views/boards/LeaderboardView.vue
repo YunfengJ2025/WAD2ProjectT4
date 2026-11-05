@@ -579,7 +579,9 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  min-width: 140px;
+  min-width: 0;
+  flex: 1;
+  word-break: break-word;
 }
 
 .you-tag {
@@ -755,10 +757,15 @@ onMounted(async () => {
   .podium-section {
     gap: 6px;
     align-items: flex-end;
+    width: 100%;
+    box-sizing: border-box;
   }
   .podium-card {
-    width: 105px;
+    flex: 1 1 0;
+    max-width: 115px;
+    min-width: 0;
     padding: var(--space-sm) 4px;
+    box-sizing: border-box;
   }
   .podium-card h4 {
     font-size: 0.78rem;
@@ -770,34 +777,46 @@ onMounted(async () => {
   .token-pill {
     font-size: 0.75rem;
     padding: 2px 6px;
+    white-space: nowrap;
   }
   .lb-row {
     gap: var(--space-xs);
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-xs) 6px;
+    box-sizing: border-box;
+    width: 100%;
   }
   .lb-rank {
     font-size: 0.95rem;
-    min-width: 24px;
+    min-width: 20px;
   }
   .lb-avatar-wrap, .lb-avatar, .lb-avatar-img {
-    width: 30px;
-    height: 30px;
-    font-size: 0.8rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
   }
   .lb-name {
-    min-width: 85px;
-    font-size: 0.82rem;
+    min-width: 0;
+    flex: 1;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+  .you-tag {
+    font-size: 0.6rem;
+    padding: 1px 5px;
   }
   .lb-area {
     display: none;
   }
   .lb-rating {
-    min-width: 44px;
-    font-size: 0.75rem;
+    min-width: 38px;
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
   .lb-tokens {
-    font-size: 0.82rem;
-    min-width: 55px;
+    font-size: 0.8rem;
+    min-width: 46px;
+    white-space: nowrap;
+    text-align: right;
   }
 }
 
@@ -806,33 +825,42 @@ onMounted(async () => {
     gap: 4px;
   }
   .podium-card {
-    width: 96px;
+    max-width: 96px;
     padding: var(--space-xs) 2px;
   }
   .podium-avatar {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
   }
   .podium-avatar.top {
-    width: 50px;
-    height: 50px;
+    width: 46px;
+    height: 46px;
   }
   .medal {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
   .crown {
-    font-size: 1.3rem;
-    top: -14px;
+    font-size: 1.15rem;
+    top: -12px;
   }
   .lb-row {
-    gap: 4px;
+    gap: 3px;
+    padding: var(--space-xs) 4px;
+  }
+  .lb-rank {
+    font-size: 0.85rem;
+    min-width: 18px;
   }
   .lb-name {
-    min-width: 76px;
-    font-size: 0.76rem;
+    font-size: 0.74rem;
+  }
+  .lb-rating {
+    font-size: 0.68rem;
+    min-width: 34px;
   }
   .lb-tokens {
-    font-size: 0.76rem;
+    font-size: 0.74rem;
+    min-width: 42px;
   }
 }
 </style>
