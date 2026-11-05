@@ -1,4 +1,5 @@
 <script setup>
+// Component: collects plant-specific care details, dates, water source, and reward for a request.
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import plantPlaceholder from '@/assets/plant.png'
 import { buildRequestPlan } from '@/composables/schedule/buildRequestPlan'
@@ -25,6 +26,7 @@ const animatedCalendar = ref('')
 const selectionError = ref('')
 let calendarAnimationTimer
 
+// Keep selected plant objects and an ID lookup in sync with the form selection.
 const selectedPlants = computed(() => props.plants.filter((plant) => form.value.plantIds.includes(plant.plantId)))
 const plantById = computed(() => Object.fromEntries(props.plants.map((plant) => [plant.plantId, plant])))
 const todayISO = toDateInputValue(new Date()) // local date, so no UTC off-by-one in Singapore
@@ -68,10 +70,12 @@ const plan = computed(() =>
 const visitCount = computed(() => plan.value.length)
 const totalReward = computed(() => visitCount.value * Number(form.value.tokenReward || 0))
 
+// Format a planned visit date for the preview list.
 function formatDay(iso) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+// Briefly animate the chosen date field when its calendar control is clicked.
 function animateCalendar(field) {
   animatedCalendar.value = field
   clearTimeout(calendarAnimationTimer)
@@ -80,6 +84,7 @@ function animateCalendar(field) {
   }, 500)
 }
 
+// Correct a manually selected start date if it precedes the plants' due date.
 function clampStartDate() {
   if (form.value.startDate && form.value.startDate < earliestStartDate.value) {
     form.value.startDate = earliestStartDate.value
@@ -88,6 +93,7 @@ function clampStartDate() {
   }
 }
 
+// Validate the planned visits, then send normalized per-plant details to the parent view.
 function submit() {
   if (!visitCount.value) {
     return
@@ -108,6 +114,7 @@ function submit() {
   })
 }
 
+// Add or remove a plant, copying its saved care defaults when it is first selected.
 function togglePlant(plant) {
   const plantId = plant.plantId
   if (plant.isOutdoor === false) {
@@ -137,6 +144,7 @@ function instructionRows(plantId) {
   return Math.min(8, Math.max(3, lines + 1))
 }
 
+// Clear the calendar animation timer when the form is removed.
 onBeforeUnmount(() => clearTimeout(calendarAnimationTimer))
 </script>
 

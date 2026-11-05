@@ -1,4 +1,5 @@
 <script setup>
+// View: loads sitter opportunities and assignments, then coordinates accept/proof/reward actions.
 import Loading from '@/components/Loading.vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -24,12 +25,16 @@ const submittingVisitId = ref(0)
 const acceptingVisitId = ref(0)
 const optingOutVisitId = ref(0)
 
+// Load the visit lists, reward transactions, and refreshed sitter balance.
 async function load() {
   loading.value = true
   error.value = ''
   try {
+    // My Sits does not render open opportunities, so skip that unused fetch there.
     const [available, active, past, transactions] = await Promise.all([
-      auth.authorizedRequest('/care-visits/available'),
+      props.section === 'mine'
+        ? Promise.resolve({ visits: [] })
+        : auth.authorizedRequest('/care-visits/available'),
       auth.authorizedRequest('/care-visits/assignments'),
       auth.authorizedRequest('/care-visits'),
       auth.authorizedRequest(`/token/user/${auth.user.userId}`),
@@ -50,6 +55,7 @@ async function load() {
 
 onMounted(load)
 
+// Accept an open visit and refresh the lists to reflect the new assignment.
 async function acceptVisit(visit) {
   acceptingVisitId.value = visit.visitId
   error.value = ''
@@ -93,6 +99,7 @@ async function optOutVisit(visit) {
   }
 }
 
+// Claim the server-calculated token reward for a completed visit.
 async function awardReward(visitId) {
   const reward = await auth.authorizedRequest('/token/', {
     method: 'POST',
@@ -102,6 +109,7 @@ async function awardReward(visitId) {
   return reward.transaction.amount
 }
 
+// Prevent duplicate claims while the reward is posted and the history reloads.
 async function claimReward(visit) {
   if (submittingVisitId.value) return
   submittingVisitId.value = visit.visitId
@@ -118,6 +126,7 @@ async function claimReward(visit) {
   }
 }
 
+// Package each plant's note, checklist, and photo into the visit-proof request.
 async function submitVisitProof(details) {
   if (submittingVisitId.value) return
   const { visit, actions, photos, completedSteps } = details

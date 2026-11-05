@@ -1,4 +1,5 @@
 <script setup>
+// View: presents one visit's owner/sitter details, plant proofs, and participant reviews.
 import Loading from '@/components/Loading.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -34,6 +35,7 @@ const activeSteps = computed(() => (activePlant.value ? getRequestSteps(activePl
 const showTicks = computed(
   () => visit.value?.status === 'completed' && (activePlant.value?.completedSteps || []).length > 0,
 )
+// Check whether the sitter recorded this care step as completed.
 function stepDone(step) {
   return (activePlant.value?.completedSteps || []).includes(step)
 }
@@ -66,6 +68,7 @@ const makeupDate = computed(() => {
   return afterRequest > tomorrow ? afterRequest : tomorrow
 })
 
+// Ask the server to create a future replacement request for this missed visit.
 async function requestMakeup() {
   if (makeupBusy.value || !canRequestMakeup.value) return
   makeupBusy.value = true
@@ -93,6 +96,7 @@ function goBack() {
   }
 }
 
+// Change the active plant shown in the proof gallery and care checklist.
 function selectPlant(index) {
   activePlantIndex.value = index
 }
@@ -106,6 +110,7 @@ function movePlant(direction) {
   activePlantIndex.value = (activePlantIndex.value + direction + count) % count
 }
 
+// Remember a horizontal pointer gesture so the gallery can respond to swipes.
 function startPlantSwipe(event) {
   if (event.button > 0 || event.target.closest('button')) {
     return
@@ -127,6 +132,7 @@ function endPlantSwipe(event) {
   cancelPlantSwipe()
 }
 
+// Clear the saved pointer gesture after it ends or is cancelled.
 function cancelPlantSwipe() {
   swipeStart = null
 }
@@ -138,9 +144,11 @@ const statusLabel = computed(() => {
   }
   return visit.value?.status?.replaceAll('_', ' ') || ''
 })
+// Find the current user's review so they cannot submit another one.
 const ownReview = computed(() => {
   return reviews.value.find((review) => review.creatorId === auth.user?.userId)
 })
+// Only participants may review a completed visit, and only once each.
 const canReview = computed(() => {
   if (visit.value?.status !== 'completed' || ownReview.value) {
     return false
@@ -162,6 +170,7 @@ function formatDate(value, includeTime = false) {
   return new Intl.DateTimeFormat('en-SG', options).format(new Date(value))
 }
 
+// Display the owner's full address to visit participants.
 function formatOwnerAddress(owner) {
   if (!owner) return ''
   return [
