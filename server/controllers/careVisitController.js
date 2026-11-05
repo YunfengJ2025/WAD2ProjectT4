@@ -39,7 +39,10 @@ async function enrichVisits(visits, includeOwnerAddress = false) {
     CareRequest.find({ requestId: { $in: requestIds } }).lean(),
     RequestItem.find({ visitId: { $in: visitIds } }).lean(),
     PhotoProof.find({ visitId: { $in: visitIds } }).lean(),
-    CareRequest.find({ makeupForVisitId: { $in: visitIds } })
+    CareRequest.find({
+      makeupForVisitId: { $in: visitIds },
+      status: { $in: ["funding", "open", "in_progress", "completed"] },
+    })
       .select("requestId makeupForVisitId")
       .lean(),
   ]);
@@ -113,7 +116,11 @@ exports.makeUpRequest = async (req, res) => {
     if (!sourceRequest) throw fail(404, "Care request not found");
     if (sourceRequest.status === "cancelled")
       throw fail(409, "A cancelled request cannot be made up");
-    if (await CareRequest.exists({ makeupForVisitId: visitId }))
+    // A cancelled make-up frees this visit for another replacement request.
+    if (await CareRequest.exists({
+      makeupForVisitId: visitId,
+      status: { $in: ["funding", "open", "in_progress", "completed"] },
+    }))
       throw fail(409, "A make-up request has already been created for this visit");
     const items = await RequestItem.find({ visitId }).lean();
     if (!items.length) throw fail(404, "Visit plant details not found");
