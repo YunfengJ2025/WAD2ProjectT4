@@ -43,6 +43,7 @@ function stepsSummary(item) {
       <div class="plant-strip">
         <img v-for="plant in plants.slice(0, 3)" :key="plant.plantId" :src="plant.photoUrl || plantPlaceholder" :alt="plant.plantName" @error="$event.target.src = plantPlaceholder" />
         <span v-if="plants.length > 3" class="plant-count">+{{ plants.length - 3 }}</span>
+        <span v-if="plants.length > 2" class="mobile-plant-count">+{{ plants.length - 2 }} more</span>
       </div>
       <div class="history-text">
         <strong class="plant-names" :title="plantNames">{{ plantNames }}</strong>
@@ -189,4 +190,20 @@ a { white-space: normal; }
 .empty { color: #68766b; }
 .modal-foot { display: flex; justify-content: flex-end; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #e7ece7; }
 @media (prefers-reduced-motion: reduce) { .history-card { transition: none; } .history-card:hover { transform: none; } }
+.mobile-plant-count { display: none; }
+@media (max-width: 600px) {
+  .history-card { padding: 0.85rem; }
+  .history-heading { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0.5rem 0.75rem; }
+  .plant-strip { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; gap: 0.4rem; }
+  .plant-strip img { width: 56px; height: 56px; margin: 0; border-width: 2px; border-radius: 10px; }
+  .plant-strip img:nth-of-type(n+3), .plant-strip .plant-count { display: none; }
+  .mobile-plant-count { display: block; font-size: 0.7rem; color: var(--muted); text-align: center; }
+  .history-text { grid-column: 2; grid-row: 1; gap: 0.35rem; }
+  .plant-names { display: block; max-height: none; overflow: visible; -webkit-line-clamp: unset; font-size: 1rem; line-height: 1.4; word-break: normal; overflow-wrap: break-word; }
+  .history-heading > .status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .history-text p { line-height: 1.5; }
+  .card-actions { flex-wrap: wrap; margin-top: 0.5rem; }
+  .card-actions button { min-height: 44px; }
+  .details-modal { max-height: calc(100dvh - 2rem); }
+}
 </style>

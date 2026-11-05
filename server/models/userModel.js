@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const { getNextSequence } = require("./counterModel");
 const { uploadImage, deleteImage, FOLDERS } = require("../config/cloudinary");
 const { Review } = require("./reviewModel");
+// Kept as an object (not destructured) so tests can swap in a fake lookupPostal.
+const onemap = require("../utils/onemap");
 const userSchema = new mongoose.Schema(
   {
     userId: {
@@ -231,13 +233,29 @@ async function getAllUsers() {
 
 // module.exports = { User, registerUser, loginUser, toAuthJSON, getAllUsers };
 
+// Checks the postal code with OneMap. Not found -> 400 with a postalCode field error.
+// If OneMap is down, lookupPostal throws 503, so the save is blocked.
+async function findAddress(postalCode) {
+  const place = await onemap.lookupPostal(postalCode);
+  if (!place) {
+    const err = httpError(400, "We couldn't find that postal code in Singapore.");
+    err.errors = { postalCode: "This postal code doesn't exist. Please check it." };
+    throw err;
+  }
+  return place;
+}
+
 async function registerUser(data) {
-  const { userName, email, password, postalCode, block, unitNumber, lat, lng } =
-    data;
+  const { userName, email, password, postalCode, unitNumber } = data;
 
   if (password.length < 8) {
     throw httpError(400, "Password must be at least 8 characters");
   }
+
+  // The block and map position come from OneMap, not from the form.
+  const place = await findAddress(postalCode);
+  const block = place.block || data.block; // landed homes have no block, so keep what was typed
+  const { lat, lng } = place;
 
   const passwordHash = await bcrypt.hash(password, 12);
   // Step 1: create the user first; duplicates/validation errors fail here,
@@ -302,12 +320,17 @@ async function updateProfile(user, data, file) {
       user[field] = data[field].trim();
     }
   }
-  if (user.isModified("postalCode") || user.isModified("block")) {
-    // Coordinates from the old address must not be reused for nearby searches.
-    user.lat = undefined;
-    user.lng = undefined;
-  }
+  const addressChanged = user.isModified("postalCode") || user.isModified("block");
+  // Check the format first (6 digits etc.), so OneMap is only asked about sensible codes.
   await user.validate();
+  if (addressChanged) {
+    // New postal code: check it exists, fill in its block, and save its map position
+    // (the old coordinates must not be reused for nearby searches).
+    const place = await findAddress(user.postalCode);
+    if (place.block) user.block = place.block;
+    user.lat = place.lat;
+    user.lng = place.lng;
+  }
   if (!file) return user.save();
 
   // The public id is excluded from normal reads and all client responses.

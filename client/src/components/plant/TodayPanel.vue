@@ -150,7 +150,7 @@ async function undoWatering(watered) {
           </label>
 
           <!-- TransitionGroup: a watered row fades and slides out, the rest glide up -->
-          <TransitionGroup tag="ul" name="row" class="check-list">
+          <TransitionGroup tag="ul" name="row" class="check-list" tabindex="0" aria-label="Plants needing water">
             <li v-for="plant in needsWater" :key="plant.plantId" class="plant-row">
               <label class="row-check">
                 <input
@@ -175,6 +175,7 @@ async function undoWatering(watered) {
               </RouterLink>
             </li>
           </TransitionGroup>
+          <p v-if="needsWater.length > 3" class="phone-list-hint">Scroll to see all {{ needsWater.length }} plants</p>
         </template>
         <p v-else class="muted">All caught up 🌱</p>
       </div>
@@ -370,17 +371,31 @@ ul {
   font-size: 0.9rem;
 }
 
-/* Phones: name + tag on the first line, care steps underneath */
+.phone-list-hint { display: none; }
+/* Keep the phone summary short while leaving every plant reachable. */
 @media (max-width: 600px) {
+  .today { padding: 0.75rem; }
+  .panel-head .btn { min-height: 44px; padding-inline: 0.65rem; font-size: 0.75rem; }
+  .select-all { min-height: 44px; }
+  .check-list { max-height: 14rem; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; scrollbar-width: thin; padding-right: 0.25rem; }
+  .check-list:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .plant-row {
     grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.2rem 0.4rem;
+    padding-block: 0.4rem;
   }
-
+  .row-check { grid-column: 1 / -1; min-height: 36px; }
+  .name { white-space: normal; overflow: visible; font-size: 0.85rem; line-height: 1.3; overflow-wrap: break-word; }
+  .plant-row .status-pill { margin-left: 1.75rem; font-size: 0.65rem; padding: 0.15rem 0.4rem; }
   .care-link {
-    grid-column: 1 / -1;
-    justify-self: start;
-    margin-left: 1.75rem; /* line up with the plant name, past the tick box */
+    grid-column: 2;
+    justify-self: end;
+    margin-left: 0;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
   }
+  .phone-list-hint { display: block; margin: 0.4rem 0 0; font-size: 0.7rem; color: var(--muted); }
+  .watered { margin-top: 0.6rem; padding-top: 0.6rem; font-size: 0.8rem; }
 }
 
 /* ---------- List animations (TransitionGroup adds these classes) ---------- */

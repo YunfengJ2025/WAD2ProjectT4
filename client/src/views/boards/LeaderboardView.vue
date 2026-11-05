@@ -95,8 +95,8 @@
               <span class="lb-username">{{ u.name }}</span>
               <span v-if="isCurrentUser(u)" class="you-tag">You</span>
             </div>
-            <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}</div>
-            <div class="lb-tokens">🪙 {{ u.availableTokens }}</div>
+            <div class="lb-rating">⭐ {{ u.ratingAverage ? Number(u.ratingAverage).toFixed(1) : '5.0' }}<span class="mobile-metric-label"> rating</span></div>
+            <div class="lb-tokens">🪙 {{ u.availableTokens }}<span class="mobile-metric-label"> tokens</span></div>
           </div>
 
           <div v-if="filteredLeaderboard.length === 0" class="empty-state">
@@ -432,10 +432,12 @@ onMounted(async () => {
   pointer-events: none;
 }
 
+/* The crown sits inside the card above the medal. (It used to poke out above the
+   card, but the card's overflow: hidden - needed for the shimmer - cut it off.) */
 .crown {
-  position: absolute;
-  top: -18px;
-  left: calc(50% - 14px);
+  display: inline-block; /* so the float animation's transform works */
+  line-height: 1;
+  margin: 2px 0 -2px;
   font-size: 1.6rem;
   animation: crownFloat 3s ease-in-out infinite;
   filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.45));
@@ -847,7 +849,6 @@ onMounted(async () => {
   }
   .crown {
     font-size: 1.15rem;
-    top: -12px;
   }
   .lb-row {
     gap: 3px;
@@ -869,5 +870,37 @@ onMounted(async () => {
     font-size: 0.74rem;
     min-width: 42px;
   }
+}
+.mobile-metric-label { display: none; }
+@media (max-width: 600px) {
+  .content { padding-inline: 0; }
+  .page-header { margin-bottom: 1.25rem; }
+  .page-header h1 { font-size: 1.6rem; line-height: 1.2; }
+  .header-actions { gap: 0.65rem; }
+  .header-actions .btn, .switch-label { min-height: 44px; }
+  .switch-label { line-height: 1.4; }
+  .styled-checkbox { flex-shrink: 0; width: 18px; height: 18px; }
+  .leaderboard-card { padding: 0.75rem; border-radius: 18px; }
+  .lb-header-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .chart-title { font-size: 1rem; line-height: 1.4; }
+  .lb-list { gap: 0; margin-top: 0.75rem; }
+  .lb-row { display: grid; grid-template-columns: 30px 36px minmax(0, 1fr) auto; gap: 0.35rem 0.5rem; padding: 0.85rem 0.25rem; border-radius: 0; animation: none; }
+  .lb-row + .lb-row { border-top-color: var(--color-border); }
+  .lb-row:hover { transform: none; box-shadow: none; }
+  .lb-rank { grid-column: 1; grid-row: 1 / span 2; min-width: 0; font-size: 0.9rem; }
+  .lb-avatar-wrap { grid-column: 2; grid-row: 1 / span 2; width: 36px; height: 36px; }
+  .lb-avatar-img { width: 36px !important; height: 36px !important; font-size: 14px !important; }
+  .lb-name { grid-column: 3 / -1; grid-row: 1; gap: 0.35rem; align-self: end; font-size: 0.9rem; line-height: 1.4; }
+  .lb-username { font-weight: 600; }
+  .you-tag { flex-shrink: 0; font-size: 0.65rem; }
+  .lb-rating { grid-column: 3; grid-row: 2; min-width: 0; font-size: 0.75rem; white-space: nowrap; }
+  .lb-tokens { grid-column: 4; grid-row: 2; min-width: 0; margin-left: 0; font-size: 0.8rem; white-space: nowrap; }
+  .mobile-metric-label { display: inline; font-size: 0.7rem; font-weight: 400; }
+  .lb-me { border-radius: 12px; box-shadow: none; animation: none; }
+  .podium-section { gap: 0.5rem; }
+  .podium-card { max-width: none; padding: 0.75rem 0.35rem; }
+  .podium-card h4 { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; font-size: 0.8rem; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 18px !important; }
+  .podium-avatar.top { width: 52px !important; height: 52px !important; font-size: 20px !important; }
 }
 </style>

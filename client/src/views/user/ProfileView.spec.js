@@ -129,12 +129,37 @@ it('validates and saves account and address details through Pinia', async () => 
   await wrapper.get('form').trigger('submit')
   expect(wrapper.text()).toContain('Enter a 6-digit postal code')
   expect(fetch).not.toHaveBeenCalled()
+  // Typing a new postal code checks it with OneMap and fills in the block
+  fetch.mockResolvedValueOnce({
+    ok: true, status: 200,
+    json: async () => ({ postalCode: '654321', block: '640', road: 'ROWELL ROAD' }),
+  })
   await wrapper.get('#postalCode').setValue('654321')
-  fetch.mockResolvedValueOnce(reply({ ...auth.user, postalCode: '654321' }))
+  await flushPromises()
+  expect(fetch.mock.calls[0][0]).toBe('/api/user/postal/654321')
+  expect(wrapper.text()).toContain('Blk 640 ROWELL ROAD')
+  expect(wrapper.get('#block').element.value).toBe('640')
+  expect(wrapper.get('#block').attributes('readonly')).toBeDefined()
+  fetch.mockResolvedValueOnce(reply({ ...auth.user, postalCode: '654321', block: '640' }))
   await wrapper.get('form').trigger('submit')
   await flushPromises()
   expect(auth.user.postalCode).toBe('654321')
   expect(wrapper.get('[role="status"]').text()).toContain('saved')
+})
+
+it('will not save a postal code that OneMap cannot find', async () => {
+  await wrapper.get('.edit-button').trigger('click')
+  fetch.mockResolvedValueOnce({
+    ok: false, status: 404,
+    json: async () => ({ message: "This postal code doesn't exist. Please check it." }),
+  })
+  await wrapper.get('#postalCode').setValue('000000')
+  await flushPromises()
+  expect(wrapper.text()).toContain("doesn't exist")
+  await wrapper.get('form').trigger('submit')
+  await flushPromises()
+  expect(fetch).toHaveBeenCalledTimes(1) // only the postal check, no save
+  expect(auth.user.postalCode).toBe('123456')
 })
 
 it('previews and uploads a photo without forcing a multipart Content-Type header', async () => {

@@ -2,6 +2,7 @@
 // Component: summarizes one owner request and opens its visit/plant details on demand.
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import plantPlaceholder from '@/assets/plant.png'
 import { getCareSteps, getRequestSteps } from '@/utils/careSteps'
 // (Carolyn) Fix 5: shared date / token / water / status wording for all visit cards.
@@ -60,10 +61,11 @@ const nextVisitText = computed(() => {
 })
 
 // (Carolyn) Cancel asks first (it used to cancel straight away on one click)
-function askCancel() {
-  if (window.confirm(`Cancel the request for ${title.value}? Visits not done yet will be cancelled.`)) {
-    emit('cancel-request', props.request)
-  }
+const confirmingCancel = ref(false)
+function confirmCancel() {
+  if (props.busy) return
+  confirmingCancel.value = false
+  emit('cancel-request', props.request)
 }
 
 // ---------- the visit chips ----------
@@ -205,7 +207,7 @@ function healthLine(item) {
         type="button"
         class="cancel-link"
         :disabled="busy"
-        @click="askCancel"
+        @click="confirmingCancel = true"
       >
         {{ busy ? 'Cancelling…' : 'Cancel request' }}
       </button>
@@ -244,7 +246,8 @@ function healthLine(item) {
               />
               <div class="plant-card-body">
                 <strong>{{ plant.plantName || 'Unnamed plant' }}</strong>
-                <span class="water-amount">💧 {{ plant.amountToWater ?? 0 }} ml each visit</span>
+                <span class="water-amount">💧 {{ plant.amountToWater ?? 0 }} ml {{ nextVisit ? 'per upcoming visit' : 'per visit' }}</span>
+                <small v-if="nextVisit" class="no-steps">{{ plant.usePlantAmount ? 'Follows plant’s watering amount' : 'Custom amount for this request' }}</small>
                 <!-- Care instructions as a checklist (one line = one step) -->
                 <ul v-if="plantSteps(plant).length" class="care-steps" aria-label="Care steps">
                   <li v-for="step in plantSteps(plant)" :key="step">
@@ -289,6 +292,16 @@ function healthLine(item) {
       </section>
     </div>
     </Teleport>
+  <ConfirmDialog
+    :open="confirmingCancel"
+    title="Cancel request?"
+    :message="`Cancel the request for ${title}? Visits not done yet will be cancelled.`"
+    confirm-label="Cancel request"
+    :busy="busy"
+    busy-label="Cancelling..."
+    @confirm="confirmCancel"
+    @cancel="confirmingCancel = false"
+  />
   </article>
 </template>
 

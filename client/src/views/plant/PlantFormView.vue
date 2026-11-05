@@ -1,5 +1,6 @@
 <script setup>
 import Loading from '@/components/Loading.vue'
+import MobileBackButton from '@/components/nav/MobileBackButton.vue'
 // PlantFormView: the page around the plant form, used by TWO routes:
 //   /plants/new           -> add a plant (no plantId)
 //   /plants/:plantId/edit -> edit a plant (plantId from the URL)
@@ -52,6 +53,7 @@ function onSaved(saved) {
 
 <template>
   <main class="form-page">
+    <MobileBackButton />
     <!-- The form shows its own title (with Save beside it); this one is for loading/errors -->
     <h1 v-if="loading || loadError">{{ isEdit ? 'Edit plant' : 'Add a plant' }}</h1>
 

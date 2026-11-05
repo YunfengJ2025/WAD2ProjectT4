@@ -24,11 +24,12 @@ test('sitter opts out → owner notification → another sitter can accept', asy
     await requestCard(sitterPage, plantName)
       .getByRole('button', { name: 'View visit', exact: true })
       .click()
-    sitterPage.once('dialog', (dialog) => dialog.accept())
     await sitterPage
       .getByRole('dialog')
       .getByRole('button', { name: 'Opt out of this visit', exact: true })
       .click()
+    await sitterPage.getByRole('dialog', { name: 'Opt out of this visit?', exact: true })
+      .getByRole('button', { name: 'Opt out', exact: true }).click()
     await expect(
       sitterPage
         .getByRole('status')

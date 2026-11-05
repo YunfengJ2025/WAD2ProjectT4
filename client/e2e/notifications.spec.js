@@ -93,8 +93,13 @@ test('shows unread notifications, marks them read, deletes one and clears the re
   await expect(page.getByText('Rain is forecast', { exact: false })).toHaveCount(0)
   await expect(page.getByText('You missed the visit scheduled for 04/11/2026.')).toBeVisible()
 
-  // Clear all: accept the browser's "are you sure?" box, then the list is empty
-  page.once('dialog', (dialog) => dialog.accept())
+  // Cancelling keeps the notices; confirming clears them through the app dialog.
   await page.getByRole('button', { name: 'Clear all', exact: true }).click()
+  const clearDialog = page.getByRole('dialog', { name: 'Clear all notifications?', exact: true })
+  await expect(clearDialog).toBeVisible()
+  await clearDialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByText('You missed the visit scheduled for 04/11/2026.')).toBeVisible()
+  await page.getByRole('button', { name: 'Clear all', exact: true }).click()
+  await clearDialog.getByRole('button', { name: 'Clear all', exact: true }).click()
   await expect(page.getByText('You’re all caught up.')).toBeVisible()
 })

@@ -12,6 +12,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['saved', 'cancel'])
 const plantsStore = usePlantsStore()
+const mobilePreviewOpen = ref(false)
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2MB in bytes
@@ -576,7 +577,10 @@ async function onSubmit() {
       </div>
 
       <!-- ===== Live preview: shows the plant card as the user types ===== -->
-      <aside class="preview-card" aria-label="Live preview">
+      <button type="button" class="mobile-preview-toggle" :aria-expanded="mobilePreviewOpen" aria-controls="plant-live-preview" @click="mobilePreviewOpen = !mobilePreviewOpen">
+        {{ mobilePreviewOpen ? 'Hide preview' : 'Show preview' }}
+      </button>
+      <aside id="plant-live-preview" class="preview-card" :class="{ 'mobile-open': mobilePreviewOpen }" aria-label="Live preview">
         <div class="preview-head">
           <h2><span class="section-icon" aria-hidden="true">👁️</span> Live Preview</h2>
           <span class="live-tag">Updates as you type</span>
@@ -584,7 +588,7 @@ async function onSubmit() {
 
         <div class="mini-card">
           <div class="mini-photo">
-            <img v-if="photoPreview" :src="photoPreview" alt="" />
+            <img v-if="photoPreview" :src="photoPreview" alt="Selected plant photo preview" />
             <PlantIcon v-else type="monstera" :size="96" />
             <span v-if="form.isOutdoor !== null" class="place-tag">
               {{ form.isOutdoor ? '☀️ Outdoor' : '🏠 Indoor' }}
@@ -1182,14 +1186,13 @@ textarea:focus-visible {
   background: #f3f7f4;
 }
 
-/* Pinned to the frame's 4 edges, so a tall photo can't grow past 180px
-   and cover the name below (same fix as the small photo preview) */
+/* Keep the whole photo visible inside the frame, including portrait uploads. */
 .mini-photo img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .place-tag {
@@ -1354,5 +1357,62 @@ textarea:focus-visible {
   .form-actions .btn {
     flex: 1;
   }
+}
+.mobile-preview-toggle { display: none; }
+/* Below 1200px the preview can't sit beside the form, so (like on phones) it hides
+   behind a "Show preview" button instead of always sitting under the whole form. */
+@media (max-width: 1199.98px) {
+  .mobile-preview-toggle {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+  }
+  .preview-card { display: none; }
+  .preview-card.mobile-open { display: flex; }
+}
+/* Tablets: the preview is as wide as the form, so lay the plant card out sideways
+   (photo left, details right) to keep it short instead of a huge image on top. */
+@media (min-width: 601px) and (max-width: 1199.98px) {
+  .mini-card { flex-direction: row; }
+  .mini-photo {
+    width: 38%;
+    max-width: 300px;
+    height: auto;
+    min-height: 220px;
+  }
+}
+@media (max-width: 600px) {
+  .plant-form, .form-layout { gap: 0.75rem; }
+  .form-head { display: contents; }
+  .form-head h1 { font-size: 1.75rem; margin: 0; }
+  /* The subtitle mentions the preview, which is tucked away on phones, so skip it */
+  .subtitle { display: none; }
+  /* Inside / outside side by side (they stacked into two rows before) */
+  .segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .segmented label > span { width: 100%; justify-content: center; gap: 6px; padding: 0 8px; font-size: 0.9rem; }
+  .form-actions { order: 2; width: 100%; position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 3; padding: 0.5rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  .form-actions .btn { flex: 1; min-height: 44px; }
+  .form-card { padding: 0.85rem; gap: 1rem; }
+  .form-col { gap: 1rem; }
+  .form-col + .form-col, .form-section + .form-section { padding-top: 1rem; }
+  .form-section { gap: 0.75rem; }
+  .form-section h2 { font-size: 1.1rem; }
+  .field { gap: 0.35rem; }
+  .pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+  .photo-row { gap: 0.65rem; }
+  .preview { width: 76px; height: 76px; }
+  .preview :deep(svg) { width: 44px; height: 44px; }
+  .photo-controls { padding: 0.5rem; }
+  .paste-text { display: none; }
+  .hint { font-size: 0.75rem; }
+  .mobile-preview-toggle { display: block; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--accent); font: inherit; font-weight: 600; }
+  .preview-card { display: none; padding: 1rem; }
+  .preview-card.mobile-open { display: flex; }
 }
 </style>

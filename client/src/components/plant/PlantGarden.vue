@@ -984,6 +984,17 @@ function decoration(index) {
   cursor: wait;
 }
 
+@media (max-width: 600px) {
+  .garden { padding: 0.65rem; }
+  .side { padding: 0.85rem; }
+  .plant-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0.4rem 0.5rem; padding-block: 0.75rem; }
+  .list-icon { grid-column: 1; grid-row: 1; width: 26px; }
+  .list-text { grid-column: 2; grid-row: 1; }
+  .list-name { font-size: 1rem; overflow-wrap: break-word; }
+  .plant-list .water-btn { grid-column: 2; grid-row: 2; justify-self: start; min-height: 44px; padding-inline: 1rem; }
+  .revive-hint { font-size: 0.85rem; }
+}
+
 /* Stop animations if the user turned on "reduce motion" */
 @media (prefers-reduced-motion: reduce) {
   .plant .emoji,

@@ -22,8 +22,23 @@ describe('CareRequestForm plant details', () => {
 
     await wrapper.find('.plant-option').trigger('click')
 
-    expect(wrapper.find('.plant-care input').element.value).toBe('100')
+    expect(wrapper.find('.plant-care input[type="checkbox"]').element.checked).toBe(true)
+    expect(wrapper.find('.plant-care input[type="number"]').element.value).toBe('100')
+    expect(wrapper.find('.plant-care input[type="number"]').element.disabled).toBe(true)
     expect(wrapper.find('.plant-care textarea').element.value).toBe('Mist the leaves\nKeep out of sun')
+  })
+
+  it('follows updated plant amounts until the owner chooses a custom amount', async () => {
+    const wrapper = mount(CareRequestForm, { props: { plants } })
+    await wrapper.find('.plant-option').trigger('click')
+    const updatedPlants = [{ ...plants[0], wateringInfo: { ...plants[0].wateringInfo, amountMl: 300 } }]
+    await wrapper.setProps({ plants: updatedPlants })
+    expect(wrapper.find('.plant-care input[type="number"]').element.value).toBe('300')
+    await wrapper.find('.plant-care input[type="checkbox"]').setValue(false)
+    await wrapper.find('.plant-care input[type="number"]').setValue(150)
+    await wrapper.setProps({ plants })
+    expect(wrapper.find('.plant-care input[type="number"]').element.value).toBe('150')
+    expect(wrapper.text()).toContain('Custom amount for this request')
   })
 
   // Verify that the owner can still change them for this request.

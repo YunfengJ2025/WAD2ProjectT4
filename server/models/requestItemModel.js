@@ -7,6 +7,8 @@ const requestItemSchema = new mongoose.Schema({
   plantId: { type: Number, required: true, immutable: true },
   action: { type: String, required: true, trim: true, maxlength: 100 },
   amountToWater: { type: Number, min: 0, default: 0 },
+  // Undefined on older requests; preserve their custom amounts during migration.
+  usePlantAmount: { type: Boolean },
   careInstructions: { type: String, trim: true, maxlength: 500, default: "" },
   // Care checklist (Carolyn): the plant's care steps the sitter ticked during this visit,
   // e.g. ["Water the soil", "Wipe the leaves"]. Steps come from the plant's care notes.

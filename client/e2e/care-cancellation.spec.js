@@ -7,10 +7,11 @@ test('owner cancels an open request → visits cancelled → reserved tokens rel
   await addPlantAndRequest(care, singaporeDate(2))
 
   await test.step('Owner confirms cancellation before any sitter accepts', async () => {
-    ownerPage.once('dialog', (dialog) => dialog.accept())
     await requestCard(ownerPage, plantName)
       .getByRole('button', { name: 'Cancel request', exact: true })
       .click()
+    await ownerPage.getByRole('dialog', { name: 'Cancel request?', exact: true })
+      .getByRole('button', { name: 'Cancel request', exact: true }).click()
     await expect(
       ownerPage
         .getByRole('status')

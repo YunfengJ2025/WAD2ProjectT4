@@ -196,6 +196,7 @@ function submit() {
           alt=""
           @error="$event.target.src = plantPlaceholder"
         />
+        <span v-if="plants.length > 2" class="mobile-plant-count">+{{ plants.length - 2 }} more</span>
       </div>
       <div class="heading-text">
         <h3 :title="plantNames.join(', ')">{{ title }}</h3>
@@ -1042,5 +1043,19 @@ p {
   height: 16px;
   margin-top: 0.2rem;
   accent-color: #2d6740;
+}
+.mobile-plant-count { display: none; }
+@media (max-width: 600px) {
+  .visit-card { min-width: 0; padding: 0.85rem; }
+  .visit-heading { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: start; }
+  .thumbs { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; gap: 0.4rem; }
+  .thumbs img { width: 56px; height: 56px; margin: 0; border-width: 2px; border-radius: 10px; }
+  .thumbs img:nth-of-type(n+3) { display: none; }
+  .mobile-plant-count { display: block; font-size: 0.7rem; color: var(--muted); text-align: center; }
+  .heading-text { grid-column: 2; grid-row: 1; }
+  .heading-text h3 { font-size: 1rem; line-height: 1.4; word-break: normal; overflow-wrap: break-word; }
+  .visit-heading > .day-badge, .visit-heading > .status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .visit-action { min-height: 44px; }
+  .details-modal { max-height: calc(100dvh - 2rem); }
 }
 </style>
