@@ -19,6 +19,26 @@ const { show: toast } = useToast()
 const searchCenter = ref(null)
 const origin = ref(null) // the sitter's home { lat, lng }, sent by the server
 const allVisits = ref([]) // every open visit within 1 km, already sorted nearest first
+const requestScroller = ref(null)
+const requestContent = ref(null)
+const requestsOverflow = ref(false)
+
+// Contain gestures only when results really overflow. Short lists leave page
+// scrolling available; long lists never hand their edge gestures to the page.
+watch([requestScroller, requestContent], ([scroller, content], previous, onCleanup) => {
+  if (!scroller || !content) {
+    requestsOverflow.value = false
+    return
+  }
+  const updateOverflow = () => {
+    requestsOverflow.value = scroller.scrollHeight > scroller.clientHeight + 1
+  }
+  const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateOverflow)
+  observer?.observe(scroller)
+  observer?.observe(content)
+  updateOverflow()
+  onCleanup(() => observer?.disconnect())
+}, { flush: 'post' })
 const loading = ref(true)
 const loadError = ref('')
 
@@ -357,7 +377,8 @@ async function acceptVisit(visit) {
 
     <!-- The outer frame keeps its spacing while the inner results scroll. -->
     <div class="requestPanel">
-    <div class="requests" tabindex="0" role="region" aria-label="Plant care requests">
+    <div ref="requestScroller" class="requests" :class="{ 'is-scrollable': requestsOverflow }" tabindex="0" role="region" aria-label="Plant care requests">
+    <div ref="requestContent">
       <!-- no pin selected: scrollable list, nearest first -->
       <div v-if="!pinSelected">
         <p v-if="acceptedNote" class="acceptedNote" role="status">
@@ -616,6 +637,7 @@ async function acceptVisit(visit) {
       </div>
     </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -856,6 +878,10 @@ h1 {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
+}
+
+.requests.is-scrollable {
+  overscroll-behavior-y: contain;
 }
 
 .requestList {
@@ -1249,6 +1275,15 @@ h1 {
 
   .styledDate {
     flex: 1;
+  }
+}
+
+/* Stacked layouts need a smaller results window: a few cards should scroll
+   inside the list rather than requiring another screenful of page scrolling. */
+@media (max-width: 991px) {
+  .requests {
+    max-height: 40vh;
+    max-height: min(40dvh, 20rem);
   }
 }
 

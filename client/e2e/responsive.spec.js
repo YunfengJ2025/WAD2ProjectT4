@@ -65,7 +65,10 @@ for (const width of [320, 375, 390]) {
     for (const row of await page.locator('.lb-row').all()) {
       const name = await row.locator('.lb-name').boundingBox()
       const rating = await row.locator('.lb-rating').boundingBox()
-      expect(name.x + name.width).toBeLessThanOrEqual(rating.x + 1)
+      // Desktop places the rating beside the name; phones place it below.
+      const beside = name.x + name.width <= rating.x + 1
+      const below = name.y + name.height <= rating.y + 1
+      expect(beside || below).toBe(true)
     }
 
     await page.goto('/profile')
