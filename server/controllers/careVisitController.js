@@ -14,7 +14,7 @@ const {
 } = require("../services/visitPolicyService");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
-const dateInSingapore = (value) => new Date(`${value}T00:00:00+08:00`);
+const { dateInSingapore } = require("../utils/calendarDate");
 
 function handleError(err, res) {
   if (err.status) return res.status(err.status).json({ message: err.message });

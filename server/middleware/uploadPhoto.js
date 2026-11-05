@@ -1,31 +1,8 @@
-const multer = require("multer");
+const { createImageUpload } = require("./imageUpload");
 
-const MAX_BYTES = 2 * 1024 * 1024;
-const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-// Reads the form (multipart/form-data) and keeps an optional "photo" file in
-// memory as req.file.buffer. The controller sends it on to Cloudinary.
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_BYTES, files: 1 },
-  fileFilter: (req, file, cb) => {
-    if (PHOTO_TYPES.includes(file.mimetype)) return cb(null, true);
-    const err = new Error("Photo must be a JPG, PNG or WebP image");
-    err.code = "INVALID_TYPE";
-    cb(err);
-  },
-}).single("photo");
-
-const uploadPhotos = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_BYTES },
-  fileFilter: (req, file, cb) => {
-    if (PHOTO_TYPES.includes(file.mimetype)) return cb(null, true);
-    const err = new Error("Photo must be a JPG, PNG or WebP image");
-    err.code = "INVALID_TYPE";
-    cb(err);
-  },
-}).any();
+// Single optional profile/plant photo; proof uploads retain per-plant field names.
+const upload = createImageUpload({ files: 1 }).single("photo");
+const uploadPhotos = createImageUpload().any();
 
 // Turns upload errors into { errors: { photo } } responses the form can show
 // next to the field.
