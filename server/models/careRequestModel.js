@@ -40,8 +40,21 @@ const careRequestSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
-// A missed visit can have at most one make-up request.
-careRequestSchema.index({ makeupForVisitId: 1 }, { unique: true, sparse: true });
+// Keep one make-up request per missed visit, allowing a replacement after cancellation.
+careRequestSchema.index(
+  { makeupForVisitId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      makeupForVisitId: { $exists: true },
+      status: { $in: ["funding", "open", "in_progress", "completed"] },
+    },
+    name: "one_live_makeup_per_visit",
+  },
+);
+
+// The server drops the previous sparse unique index before creating this replacement.
+careRequestSchema.set("autoIndex", false);
 
 careRequestSchema.pre("save", async function () {
   if (this.isNew && this.requestId == null)

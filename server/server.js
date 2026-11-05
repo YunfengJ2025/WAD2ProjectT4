@@ -5,6 +5,7 @@ const session = require("express-session");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
+const CareRequest = require("./models/careRequestModel");
 const fs = require("fs");
 const server = express();
 const userRoutes = require("./routes/userRoute");
@@ -50,11 +51,28 @@ async function connectDB() {
   try {
     // connecting to Database with our config.env file and DB is constant in config.env
     await mongoose.connect(process.env.DB);
+    await migrateCareRequestIndexes();
     console.log("MongoDB connected successfully");
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
     process.exit(1);
   }
+}
+
+// Replace the old unique make-up index so cancelled records no longer block a retry.
+async function migrateCareRequestIndexes() {
+  let indexes = [];
+  try {
+    indexes = await CareRequest.collection.indexes();
+  } catch (error) {
+    if (error.code !== 26 && error.codeName !== "NamespaceNotFound") throw error;
+  }
+  const oldMakeupIndex = indexes.find(
+    (index) => Object.keys(index.key || {}).length === 1 &&
+      index.key.makeupForVisitId === 1 && index.unique && !index.partialFilterExpression,
+  );
+  if (oldMakeupIndex) await CareRequest.collection.dropIndex(oldMakeupIndex.name);
+  await CareRequest.createIndexes();
 }
 
 function startServer() {
