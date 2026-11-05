@@ -1,6 +1,4 @@
-// Week 10 slides 17–29, 41–42: test a component in isolation using child stubs.
-// Each case sets up data, performs an action, and asserts observable behaviour.
-// Find nearby and Find requests are two modes of the same component.
+
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FindNearby from './FindNearby.vue'
@@ -13,7 +11,7 @@ vi.mock('@/components/map/RequestMap.vue', () => ({
     name: 'RequestMap',
     props: ['requests', 'searchPin', 'radiusKm', 'center'],
     emits: ['select', 'drop-pin'],
-    // Like the StudentProfile example, echo received props. Buttons simulate child events.
+    // Echo received props. Buttons simulate child events.
     template: `<div aria-label="Map stub">
     <button v-for="request in requests" :key="request.visitId"
       :data-visit-id="request.visitId" @click="$emit('select', request)">

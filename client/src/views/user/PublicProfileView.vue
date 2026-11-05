@@ -65,8 +65,8 @@ const average = computed(() =>
           <!--
             Public Badges Showcase (Above "Member since"):
             Displays unlocked badges for this neighbour so visitors can see their verified achievements.
-            v-if="store.profile.user.badges && store.profile.user.badges.length" — covered in WAD2 wk4
-            v-for="b in store.profile.user.badges" :key="b.id" — covered in WAD2 wk4
+            v-if="store.profile.user.badges && store.profile.user.badges.length"
+            v-for="b in store.profile.user.badges" :key="b.id"
             Hovering over the emoji pill reveals badge title + description via HTML title attribute.
           -->
           <div v-if="store.profile.user.badges && store.profile.user.badges.length" class="public-badges-box">

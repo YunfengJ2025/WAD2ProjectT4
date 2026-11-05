@@ -1,4 +1,3 @@
-Map page component tests follow Week 10 slides 17–29 and 41–42.
 
 `MapFeature.spec.js` uses Vitest (`describe`, `it`, `expect`) and Vue Test Utils
 (`mount`, `trigger`, `setValue`). Each test sets up data, performs an action,
@@ -7,8 +6,7 @@ and checks the resulting display. The fixed date makes results repeatable.
 `views/map/FindNearby.vue` is the routed page for both Find nearby and Find requests.
 `components/map/RequestMap.vue` is its reusable map component. The API is mocked
 so tests need no account, server, or database. `RequestMap` is replaced with a
-custom stub that displays received requests and emits `select` when clicked,
-following the slides' prop-passing and child-event examples. These are isolated
+custom stub that displays received requests and emits `select` when clicked. These are isolated
 component tests; they do not verify real map rendering or full application workflows.
 
 | Case               | Input / action                              | Expected result                                                              |
@@ -41,11 +39,8 @@ For watch mode:
 npm run test:unit -- src/views/map/
 ```
 
-Playwright (slides 45–61) is for E2E tests of complete workflows and is separate
-from these component tests. No E2E or real-map integration coverage is claimed here.
-
 The four real-browser lifecycle flows are documented in
-[`client/e2e/README.md`](../../../e2e/README.md). They cover completion and feedback,
+[`client/E2E_TESTING.md`](../../../E2E_TESTING.md). They cover completion and feedback,
 sitter opt-out, missed visits and make-up requests, and owner cancellation.
 
 Acceptance conflicts (404/409) are also covered: the unavailable visit is removed,
