@@ -23,7 +23,9 @@ it('signs in through the form, creates and edits a shared plant, and redirects o
       body = { user: { userId: 1, userName: 'Gardener' }, accessToken: 'test-token' }
     } else {
       expect(options.headers.get('Authorization')).toBe('Bearer test-token')
-      if (url === '/api/plants' && !options.method) body = { plants: [...plants] }
+      // Fix: the navbar now loads notifications after sign-in, so the fake server answers with an empty list
+      if (url === '/api/notifications') body = { notifications: [] }
+      else if (url === '/api/plants' && !options.method) body = { plants: [...plants] }
       else if (options.method === 'POST' || options.method === 'PATCH') {
         const data = options.body
         plants = [{ plantId: 1, plantName: data.get('plantName'), plantLocation: data.get('plantLocation'),
@@ -35,8 +37,12 @@ it('signs in through the form, creates and edits a shared plant, and redirects o
     return { ok: true, status: 200, json: async () => body }
   }))
   const auth = useAuthStore(pinia)
+  // Fix: signed-out visitors are now sent to Register (not Sign in), keeping ?redirect=/plants,
+  // so check that, then open Sign in with the same redirect to log in
   await router.push('/plants')
-  expect(router.currentRoute.value.name).toBe('sign-in')
+  expect(router.currentRoute.value.name).toBe('register')
+  expect(router.currentRoute.value.query.redirect).toBe('/plants')
+  await router.push('/signin?redirect=/plants')
   wrapper = mount(App, { global: { plugins: [pinia, router] } })
   await flushPromises()
   await wrapper.get('#email').setValue('gardener@example.com')
